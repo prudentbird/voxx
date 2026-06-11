@@ -1,9 +1,10 @@
 {
-  "extends": "@repo/typescript-config/react-library.json",
+  "extends": "@voxx/typescript-config/react-library.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "strictNullChecks": true
+    "paths": {
+      "@voxx/ui/*": ["./src/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["."],
   "exclude": ["node_modules", "dist"]
 }

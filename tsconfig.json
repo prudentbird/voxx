@@ -1,0 +1,3 @@
+{
+  "extends": "@voxx/typescript-config/base.json"
+}

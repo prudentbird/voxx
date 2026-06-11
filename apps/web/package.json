@@ -1,28 +1,35 @@
 {
-  "name": "web",
-  "version": "0.1.0",
-  "type": "module",
+  "name": "@voxx/web",
+  "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev --port 3000",
-    "build": "next build",
     "start": "next start",
-    "lint": "eslint --max-warnings 0",
-    "check-types": "next typegen && tsc --noEmit"
+    "build": "next build --turbopack",
+    "dev": "next dev --port 3000 --turbopack",
+    "preview": "next build --turbopack && next start",
+    "lint": "eslint . && echo Lint Checks successfully completed!",
+    "lint:fix": "eslint --fix . && echo Lint Checks successfully completed!",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache && echo Prettier Format successfully completed!",
+    "code-quality": "npm run lint && npm run typecheck && npm run build && echo Code Quality successfully completed!",
+    "typecheck": "SKIP_ENV_VALIDATION=1 next typegen && tsgo --pretty --noEmit && echo Type Checks successfuly completed!"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*",
-    "next": "16.2.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@voxx/ui": "workspace:*",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
-    "@types/node": "^22.15.3",
-    "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
-    "eslint": "^9.39.1",
-    "typescript": "5.9.2"
+    "@voxx/eslint-config": "workspace:*",
+    "@voxx/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^25.3.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@typescript/native-preview": "7.0.0-dev.20260610.1",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^10.0.2",
+    "tailwindcss": "^4.2.1"
   }
 }
