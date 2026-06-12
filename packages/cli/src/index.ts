@@ -9,7 +9,7 @@ const HELP = `${c.bold("voxx")} — a zero-friction, file-based CMS for blogs an
 
 ${c.bold("Usage:")}
   voxx init [blog|docs|changelog] [--dir <content>] [--base <path>] [--app <dir>] [--force]
-  voxx new "Title" [--slug <slug>] [--dir <content>] [--date <YYYY-MM-DD>] [--flat] [--section <path>] [--order <n>]
+  voxx new "Title" [--collection <name>] [--slug <slug>] [--dir <content>] [--date <YYYY-MM-DD>] [--flat] [--section <path>] [--order <n>]
   voxx build [--out <dir>] [--drafts]
   voxx dev [--port <n>] [--drafts]
 

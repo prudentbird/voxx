@@ -170,6 +170,52 @@ describe("voxx new", () => {
     expect(await exists(join(dir, "content", "junk-post.md"))).toBe(false);
   });
 
+  it("targets a named collection with --collection", async () => {
+    await writeConfig({
+      content: undefined,
+      collections: [
+        { name: "blog", dir: "content/blog" },
+        { name: "docs", type: "docs", dir: "content/docs" },
+      ],
+    });
+    await newPost(["Install Guide", "--collection", "docs"]);
+    const file = join(dir, "content/docs/install-guide.md");
+    expect(await exists(file)).toBe(true);
+    const raw = await readFile(file, "utf8");
+    expect(raw).toContain("title: Install Guide");
+    // docs frontmatter has no date/tags lines
+    expect(raw).not.toContain("date:");
+    expect(raw).not.toContain("tags:");
+  });
+
+  it("rejects an unknown --collection without creating a file", async () => {
+    await writeConfig({
+      content: undefined,
+      collections: [
+        { name: "blog", dir: "content/blog" },
+        { name: "docs", type: "docs", dir: "content/docs" },
+      ],
+    });
+    await newPost(["Lost Page", "--collection", "nope"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "content/blog/lost-page.md"))).toBe(false);
+    expect(await exists(join(dir, "content/docs/lost-page.md"))).toBe(false);
+  });
+
+  it("targets the first collection when --collection is omitted", async () => {
+    await writeConfig({
+      content: undefined,
+      collections: [
+        { name: "blog", dir: "content/blog" },
+        { name: "docs", type: "docs", dir: "content/docs" },
+      ],
+    });
+    await newPost(["First Wins", "--date", "2026-06-01"]);
+    expect(
+      await exists(join(dir, "content/blog/2026-06-01-first-wins.md")),
+    ).toBe(true);
+  });
+
   it("creates an ordered docs page in a section", async () => {
     await writeConfig({
       content: { type: "docs", dir: "content", basePath: "/docs" },

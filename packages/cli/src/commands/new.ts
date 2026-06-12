@@ -16,17 +16,38 @@ type ContentType = "blog" | "docs" | "changelog";
 
 interface VoxxJson {
   content?: { type?: ContentType; dir?: string };
-  collections?: Array<{ type?: ContentType; dir?: string }>;
+  collections?: Array<{ name?: string; type?: ContentType; dir?: string }>;
 }
 
 async function readContentConfig(
   cwd: string,
-): Promise<{ type: ContentType; dir: string }> {
+  collectionName?: string,
+): Promise<{ type: ContentType; dir: string } | undefined> {
   const cfgPath = join(cwd, "voxx.json");
   if (!(await exists(cfgPath))) return { type: "blog", dir: "content" };
   const cfg = JSON.parse(await readFile(cfgPath, "utf8")) as VoxxJson;
-  const first = cfg.collections?.[0] ?? cfg.content;
-  return { type: first?.type ?? "blog", dir: first?.dir ?? "content" };
+  // Defaulting (name ?? type, dir ?? content/<name>) mirrors mergeCollections
+  // in packages/core/src/config.ts — that file owns the naming contract.
+  const collections = (cfg.collections ?? []).map((c) => {
+    const type = c.type ?? "blog";
+    const name = c.name ?? type;
+    return { name, type, dir: c.dir ?? `content/${name}` };
+  });
+  if (collectionName) {
+    const found = collections.find((c) => c.name === collectionName);
+    if (!found) {
+      log.error(
+        `Unknown collection "${collectionName}" — defined: ${collections.map((c) => c.name).join(", ")}`,
+      );
+      return undefined;
+    }
+    return found;
+  }
+  const first = collections[0] ?? {
+    type: cfg.content?.type ?? "blog",
+    dir: cfg.content?.dir ?? "content",
+  };
+  return { type: first.type, dir: first.dir };
 }
 
 async function existingSlugs(dir: string): Promise<Set<string>> {
@@ -95,6 +116,7 @@ export async function newPost(argv: string[]): Promise<void> {
       flat: { type: "boolean" },
       section: { type: "string" },
       order: { type: "string" },
+      collection: { type: "string" },
     },
     allowPositionals: true,
   });
@@ -107,7 +129,11 @@ export async function newPost(argv: string[]): Promise<void> {
   }
 
   const cwd = process.cwd();
-  const detected = await readContentConfig(cwd);
+  const detected = await readContentConfig(cwd, values.collection);
+  if (!detected) {
+    process.exitCode = 1;
+    return;
+  }
   const contentDir = values.dir ?? detected.dir;
   const date = values.date ?? new Date().toISOString().slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
