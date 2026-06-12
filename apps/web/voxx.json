@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/@voxx/core/voxx.schema.json",
+  "site": {
+    "title": "Voxx",
+    "description": "A zero-friction, file-based CMS for blogs, docs, and changelogs.",
+    "url": "https://voxx.dev",
+    "author": { "name": "Voxx" },
+    "locale": "en-US"
+  },
+  "content": {
+    "type": "docs",
+    "dir": "content/docs",
+    "basePath": "/docs",
+    "drafts": false
+  },
+  "theme": {
+    "preset": "shadcn",
+    "css": null,
+    "codeTheme": "github-light github-dark"
+  },
+  "seo": {
+    "openGraph": true,
+    "twitter": null,
+    "jsonLd": true,
+    "defaultImage": null
+  }
+}

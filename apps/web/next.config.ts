@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
+  cacheComponents: true,
+  serverExternalPackages: ["@voxx/core"],
 };
 
 export default nextConfig;
