@@ -23,7 +23,7 @@ Verification commands for this repo: `pnpm build` / `pnpm test` /
 | 004 | Test + harden `voxx dev` | P2 | M | — | DONE |
 | 005 | Clear `pnpm audit` via workspace overrides | P2 | S | — | DONE (overrides placed in root `package.json` `pnpm.overrides` instead — pinned pnpm 10.4.1 ignores them in pnpm-workspace.yaml) |
 | 006 | `voxx new --collection` + `init --add` design doc | P3 | M | 001 | DONE |
-| 007 | Tags/categories decision spike (design doc only) | P3 | M | — | TODO |
+| 007 | Tags/categories decision spike (design doc only) | P3 | M | — | DONE (recommends Option B: cut `features.categories`, keep+document `tags` — see `design/tags-categories.md`) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
