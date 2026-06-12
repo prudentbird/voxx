@@ -21,7 +21,7 @@ Verification commands for this repo: `pnpm build` / `pnpm test` /
 | 002 | Reconcile drifted templates + dogfood sync test | P1 | S | — | DONE |
 | 003 | Typecheck `voxx init` scaffold output (all presets) | P2 | M | 002 | DONE |
 | 004 | Test + harden `voxx dev` | P2 | M | — | DONE |
-| 005 | Clear `pnpm audit` via workspace overrides | P2 | S | — | TODO |
+| 005 | Clear `pnpm audit` via workspace overrides | P2 | S | — | BLOCKED (pinned pnpm 10.4.1 ignores `overrides` in pnpm-workspace.yaml — support landed in pnpm 10.6.0; fix needs a `package.json` change, which the plan forbids) |
 | 006 | `voxx new --collection` + `init --add` design doc | P3 | M | 001 | TODO |
 | 007 | Tags/categories decision spike (design doc only) | P3 | M | — | TODO |
 
