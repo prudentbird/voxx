@@ -18,7 +18,7 @@ Verification commands for this repo: `pnpm build` / `pnpm test` /
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 001 | YAML-safe frontmatter in `voxx new` + help-text sync | P1 | S | — | DONE |
-| 002 | Reconcile drifted templates + dogfood sync test | P1 | S | — | TODO |
+| 002 | Reconcile drifted templates + dogfood sync test | P1 | S | — | DONE |
 | 003 | Typecheck `voxx init` scaffold output (all presets) | P2 | M | 002 | TODO |
 | 004 | Test + harden `voxx dev` | P2 | M | — | TODO |
 | 005 | Clear `pnpm audit` via workspace overrides | P2 | S | — | TODO |
