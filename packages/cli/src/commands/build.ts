@@ -1,0 +1,504 @@
+import { copyFile, mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { basename, dirname, join, relative } from "node:path";
+import { parseArgs } from "node:util";
+import {
+  buildNavTree,
+  buildSeo,
+  escapeXml as esc,
+  formatDate,
+  getPosts,
+  humanize,
+  loadConfig,
+  renderLlmsFull,
+  renderLlmsTxtSections,
+  renderRobotsTxt,
+  renderRss,
+  renderSitemap,
+  rssPath,
+  sectionHeading,
+  type CollectionConfig,
+  type NavNode,
+  type Post,
+  type SeoData,
+  type VoxxConfig,
+} from "@voxx/core";
+import { c, exists, log, resolveCoreAsset } from "../util";
+
+function stripLead(path: string): string {
+  return path.replace(/^\/+/, "");
+}
+
+function headTags(seo: SeoData, config: VoxxConfig): string {
+  const tags: string[] = [
+    `<meta name="description" content="${esc(seo.description)}">`,
+    `<link rel="canonical" href="${esc(seo.canonical)}">`,
+  ];
+  const og = seo.openGraph;
+  if (og) {
+    tags.push(
+      `<meta property="og:type" content="article">`,
+      `<meta property="og:title" content="${esc(og.title)}">`,
+      `<meta property="og:description" content="${esc(og.description)}">`,
+      `<meta property="og:url" content="${esc(og.url)}">`,
+      `<meta property="og:site_name" content="${esc(og.siteName)}">`,
+      ...og.images.map(
+        (src) => `<meta property="og:image" content="${esc(src)}">`,
+      ),
+    );
+  }
+  if (seo.twitter) {
+    tags.push(
+      `<meta name="twitter:card" content="summary_large_image">`,
+      `<meta name="twitter:title" content="${esc(seo.twitter.title)}">`,
+      `<meta name="twitter:description" content="${esc(seo.twitter.description)}">`,
+    );
+  }
+  if (config.seo.jsonLd && seo.jsonLd) {
+    tags.push(
+      `<script type="application/ld+json">${JSON.stringify(seo.jsonLd)}</script>`,
+    );
+  }
+  return tags.join("\n    ");
+}
+
+function shell(opts: {
+  title: string;
+  lang: string;
+  head: string;
+  body: string;
+}): string {
+  return `<!doctype html>
+<html lang="${esc(opts.lang)}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${esc(opts.title)}</title>
+    <link rel="stylesheet" href="/_voxx/voxx-globals.css">
+    <link rel="stylesheet" href="/_voxx/voxx.css">
+    ${opts.head}
+  </head>
+  <body>
+${opts.body}
+  </body>
+</html>
+`;
+}
+
+function metaLine(post: Post, config: VoxxConfig): string {
+  const rt = config.features.readingTime
+    ? ` · ${post.readingTimeMinutes} min read`
+    : "";
+  return `<time datetime="${esc(post.date)}">${esc(formatDate(post.date, config.site.locale))}</time>${esc(rt)}`;
+}
+
+function tocAside(post: Post): string {
+  if (post.toc.length === 0) return "";
+  const items = post.toc
+    .map(
+      (t) =>
+        `          <li class="voxx-toc__item" data-depth="${t.depth}"><a href="#${esc(t.id)}">${esc(t.text)}</a></li>`,
+    )
+    .join("\n");
+  return `      <aside class="voxx-aside"><div class="voxx-aside__inner">
+        <nav class="voxx-toc" aria-label="On this page">
+          <p class="voxx-toc__title">On this page</p>
+          <ul class="voxx-toc__list">
+${items}
+          </ul>
+        </nav>
+      </div></aside>`;
+}
+
+function indexBody(posts: Post[], config: VoxxConfig): string {
+  const cards =
+    posts.length === 0
+      ? `<p class="voxx-empty">No posts yet.</p>`
+      : `<ul class="voxx-postlist">
+${posts
+        .map((post) => {
+          const tags =
+            config.features.tags && post.tags.length
+              ? `<ul class="voxx-tags">${post.tags.map((t) => `<li class="voxx-tag">${esc(t)}</li>`).join("")}</ul>`
+              : "";
+          const excerpt = post.excerpt
+            ? `<p class="voxx-postcard__excerpt">${esc(post.excerpt)}</p>`
+            : "";
+          return `      <li class="voxx-postcard"><a class="voxx-postcard__link" href="${esc(post.url)}">
+        <h2 class="voxx-postcard__title">${esc(post.title)}</h2>
+        <p class="voxx-postcard__meta">${metaLine(post, config)}</p>
+        ${excerpt}
+        ${tags}
+      </a></li>`;
+        })
+        .join("\n")}
+    </ul>`;
+
+  return `    <main class="voxx voxx-index">
+      <header class="voxx-index__header">
+        <h1>${esc(config.site.title)}</h1>
+        ${config.site.description ? `<p class="voxx-index__desc">${esc(config.site.description)}</p>` : ""}
+      </header>
+      ${cards}
+    </main>`;
+}
+
+function postBody(post: Post, config: VoxxConfig): string {
+  const aside = config.features.toc ? tocAside(post) : "";
+  return `    <main class="voxx voxx-layout">
+      <article class="voxx-article">
+        <header class="voxx-article__header">
+          <h1>${esc(post.title)}</h1>
+          <p class="voxx-article__meta">${metaLine(post, config)}</p>
+        </header>
+        <div class="voxx-prose">${post.html}</div>
+      </article>
+${aside}
+    </main>`;
+}
+
+
+function navHtml(items: NavNode[], activeUrl: string): string {
+  if (items.length === 0) return "";
+  const lis = items
+    .map((item) => {
+      const label = item.url
+        ? `<a class="voxx-nav__link" href="${esc(item.url)}"${item.url === activeUrl ? ' data-active="true"' : ""}>${esc(item.title)}</a>`
+        : `<span class="voxx-nav__section">${esc(item.title)}</span>`;
+      return `<li>${label}${navHtml(item.children, activeUrl)}</li>`;
+    })
+    .join("\n");
+  return `<ul class="voxx-nav__list">\n${lis}\n</ul>`;
+}
+
+function pagerHtml(prev: Post | undefined, next: Post | undefined): string {
+  if (!prev && !next) return "";
+  const link = (post: Post, label: string, cls: string) =>
+    `<a class="voxx-pager__link${cls}" href="${esc(post.url)}"><span class="voxx-pager__label">${label}</span><span class="voxx-pager__title">${esc(post.title)}</span></a>`;
+  return `        <nav class="voxx-pager">
+          ${prev ? link(prev, "Previous", "") : "<span></span>"}
+          ${next ? link(next, "Next", " voxx-pager__link--next") : "<span></span>"}
+        </nav>`;
+}
+
+function docBody(
+  post: Post,
+  posts: Post[],
+  nav: NavNode[],
+  config: VoxxConfig,
+): string {
+  const index = posts.findIndex((p) => p.url === post.url);
+  const prev = index > 0 ? posts[index - 1] : undefined;
+  const next = index >= 0 ? posts[index + 1] : undefined;
+  const aside = config.features.toc ? tocAside(post) : "";
+  const desc = post.description
+    ? `<p class="voxx-article__meta">${esc(post.description)}</p>`
+    : "";
+
+  return `    <div class="voxx voxx-docs">
+      <aside class="voxx-docs__nav"><div class="voxx-docs__nav-inner">
+        <nav class="voxx-nav">${navHtml(nav, post.url)}</nav>
+      </div></aside>
+      <main class="voxx-layout">
+        <article class="voxx-article">
+          <header class="voxx-article__header">
+            <h1>${esc(post.title)}</h1>
+            ${desc}
+          </header>
+          <div class="voxx-prose">${post.html}</div>
+${pagerHtml(prev, next)}
+        </article>
+${aside}
+      </main>
+    </div>`;
+}
+
+function docsIndexBody(nav: NavNode[], config: VoxxConfig): string {
+  return `    <div class="voxx voxx-docs">
+      <aside class="voxx-docs__nav"><div class="voxx-docs__nav-inner">
+        <nav class="voxx-nav">${navHtml(nav, "")}</nav>
+      </div></aside>
+      <main class="voxx-layout">
+        <article class="voxx-article">
+          <header class="voxx-article__header">
+            <h1>${esc(config.site.title)}</h1>
+            ${config.site.description ? `<p class="voxx-article__meta">${esc(config.site.description)}</p>` : ""}
+          </header>
+          <div class="voxx-prose">${navHtml(nav, "")}</div>
+        </article>
+      </main>
+    </div>`;
+}
+
+function changelogBody(posts: Post[], config: VoxxConfig): string {
+  const releases =
+    posts.length === 0
+      ? `<p class="voxx-empty">No releases yet.</p>`
+      : `<div class="voxx-releases">
+${posts
+        .map(
+          (post) => `      <section class="voxx-release" id="${esc(post.slug)}">
+        <header class="voxx-release__header">
+          <h2 class="voxx-release__version"><a href="#${esc(post.slug)}">${esc(post.version ? `v${post.version}` : post.title)}</a></h2>
+          <time datetime="${esc(post.date)}">${esc(formatDate(post.date, config.site.locale))}</time>
+        </header>
+        <div class="voxx-prose">${post.html}</div>
+      </section>`,
+        )
+        .join("\n")}
+    </div>`;
+
+  return `    <main class="voxx voxx-index">
+      <header class="voxx-index__header">
+        <h1>${esc(config.site.title)}</h1>
+        ${config.site.description ? `<p class="voxx-index__desc">${esc(config.site.description)}</p>` : ""}
+      </header>
+      ${releases}
+    </main>`;
+}
+
+async function writePage(path: string, html: string): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, html);
+}
+
+const SOURCE_RE = /\.mdx?$/;
+
+async function copyContentAssets(
+  contentDir: string,
+  targetDir: string,
+): Promise<number> {
+  let copied = 0;
+  let entries: string[];
+  try {
+    entries = await readdir(contentDir, { recursive: true });
+  } catch {
+    return 0;
+  }
+  for (const rel of entries) {
+    const name = basename(rel);
+    if (SOURCE_RE.test(name) || name.startsWith(".")) continue;
+    const source = join(contentDir, rel);
+    if (!(await stat(source)).isFile()) continue;
+    const target = join(targetDir, rel);
+    await mkdir(dirname(target), { recursive: true });
+    await copyFile(source, target);
+    copied++;
+  }
+  return copied;
+}
+
+async function buildCollection(
+  config: VoxxConfig,
+  posts: Post[],
+  outDir: string,
+): Promise<void> {
+  const type = config.content.type;
+  const indexPath = join(
+    outDir,
+    stripLead(config.content.basePath),
+    "index.html",
+  );
+
+  if (type === "changelog") {
+    await writePage(
+      indexPath,
+      shell({
+        title: config.site.title,
+        lang: config.site.locale,
+        head: `<meta name="description" content="${esc(config.site.description)}">`,
+        body: changelogBody(posts, config),
+      }),
+    );
+  } else if (type === "docs") {
+    const nav = buildNavTree(posts);
+    for (const post of posts) {
+      const seo = buildSeo(post, config);
+      await writePage(
+        join(outDir, stripLead(post.url), "index.html"),
+        shell({
+          title: `${post.title} — ${config.site.title}`,
+          lang: config.site.locale,
+          head: headTags(seo, config),
+          body: docBody(post, posts, nav, config),
+        }),
+      );
+    }
+    if (!posts.some((p) => p.path.length === 0)) {
+      await writePage(
+        indexPath,
+        shell({
+          title: config.site.title,
+          lang: config.site.locale,
+          head: `<meta name="description" content="${esc(config.site.description)}">`,
+          body: docsIndexBody(nav, config),
+        }),
+      );
+    }
+  } else {
+    await writePage(
+      indexPath,
+      shell({
+        title: config.site.title,
+        lang: config.site.locale,
+        head: `<meta name="description" content="${esc(config.site.description)}">`,
+        body: indexBody(posts, config),
+      }),
+    );
+
+    for (const post of posts) {
+      const seo = buildSeo(post, config);
+      await writePage(
+        join(outDir, stripLead(post.url), "index.html"),
+        shell({
+          title: `${post.title} — ${config.site.title}`,
+          lang: config.site.locale,
+          head: headTags(seo, config),
+          body: postBody(post, config),
+        }),
+      );
+    }
+  }
+}
+
+export interface BuildSiteOptions {
+  cwd: string;
+  outDir: string;
+  includeDrafts?: boolean | undefined;
+  quiet?: boolean;
+}
+
+export interface BuildSiteResult {
+  config: VoxxConfig;
+  pageCount: number;
+  collectionCount: number;
+  indexRel: string;
+}
+
+export async function buildSite(
+  opts: BuildSiteOptions,
+): Promise<BuildSiteResult> {
+  const { cwd, outDir } = opts;
+  const config = await loadConfig({ cwd });
+  const collections = config.collections;
+  const multi = collections.length > 1;
+
+  await mkdir(join(outDir, "_voxx"), { recursive: true });
+  await copyFile(
+    resolveCoreAsset("theme/voxx.css"),
+    join(outDir, "_voxx", "voxx.css"),
+  );
+  await copyFile(
+    resolveCoreAsset("theme/demo-globals.css"),
+    join(outDir, "_voxx", "voxx-globals.css"),
+  );
+
+  const allPosts: Post[] = [];
+  const sections: Array<{ heading: string; posts: Post[] }> = [];
+  let pageCount = 0;
+
+  for (const collection of collections) {
+    const view: VoxxConfig = { ...config, content: { ...collection } };
+    const posts = await getPosts({
+      config: view,
+      includeDrafts: opts.includeDrafts,
+    });
+    await buildCollection(view, posts, outDir);
+    const assetTarget = join(outDir, stripLead(collection.basePath));
+    await copyContentAssets(collection.dir, assetTarget);
+
+    if (config.features.rss && isFeedType(collection)) {
+      await writePage(
+        join(outDir, stripLead(rssPath(view))),
+        renderRss(posts, view),
+      );
+    }
+
+    sections.push({
+      heading: multi ? humanize(collection.name) : sectionHeading(collection.type),
+      posts,
+    });
+    allPosts.push(...posts);
+    pageCount += posts.length;
+  }
+
+  if (config.features.sitemap) {
+    await writeFile(
+      join(outDir, "sitemap.xml"),
+      renderSitemap(allPosts, config, {
+        indexPaths: collections.map((col) => col.basePath),
+      }),
+    );
+    await writeFile(join(outDir, "robots.txt"), renderRobotsTxt(config));
+  }
+  if (config.features.llmsTxt) {
+    await writeFile(
+      join(outDir, "llms.txt"),
+      renderLlmsTxtSections(sections, config),
+    );
+    await writeFile(
+      join(outDir, "llms-full.txt"),
+      renderLlmsFull(allPosts, config),
+    );
+  }
+
+  return {
+    config,
+    pageCount,
+    collectionCount: collections.length,
+    indexRel: join(
+      relative(cwd, outDir),
+      stripLead(collections[0]!.basePath),
+      "index.html",
+    ),
+  };
+}
+
+function isFeedType(collection: CollectionConfig): boolean {
+  return collection.type === "blog" || collection.type === "changelog";
+}
+
+export async function build(argv: string[]): Promise<void> {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      out: { type: "string" },
+      drafts: { type: "boolean" },
+    },
+    allowPositionals: true,
+  });
+
+  const cwd = process.cwd();
+  if (!(await exists(join(cwd, "voxx.json")))) {
+    log.error("No voxx.json found. Run `voxx init` first.");
+    process.exitCode = 1;
+    return;
+  }
+
+  const outDir = join(cwd, values.out ?? "dist");
+  const result = await buildSite({
+    cwd,
+    outDir,
+    // `undefined` (not `false`) when the flag is absent, so a collection's
+    // `drafts: true` in voxx.json still takes effect.
+    includeDrafts: values.drafts ? true : undefined,
+  });
+
+  const { config } = result;
+  if (!config.site.url || /example\.com/.test(config.site.url)) {
+    log.warn(
+      `site.url is ${config.site.url ? `"${config.site.url}"` : "empty"} — feeds, sitemap, and SEO tags need the real production URL in voxx.json.`,
+    );
+  }
+
+  const type = config.content.type;
+  const noun =
+    type === "changelog" ? "release" : type === "docs" ? "page" : "post";
+  const what =
+    result.collectionCount > 1
+      ? `${result.pageCount} pages across ${result.collectionCount} collections`
+      : `${result.pageCount} ${noun}${result.pageCount === 1 ? "" : "s"}`;
+  log.success(`Built ${what} → ${relative(cwd, outDir)}/`);
+  log.info(
+    `  Open ${c.cyan(result.indexRel)} in a browser, or run ${c.cyan("voxx dev")} to preview with a local server.`,
+  );
+}

@@ -1,0 +1,65 @@
+{
+  "name": "voxx",
+  "version": "0.1.0",
+  "description": "A zero-friction CMS for you and your agents. Write the way you ship code, and Voxx handles the rest.",
+  "license": "MIT",
+  "author": "prudentbird <me@prudentbird.com> (https://prudentbird.com)",
+  "homepage": "https://github.com/prudentbird/voxx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prudentbird/voxx.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/prudentbird/voxx/issues"
+  },
+  "keywords": [
+    "cms",
+    "markdown",
+    "blog",
+    "docs",
+    "changelog",
+    "static-site-generator",
+    "nextjs",
+    "cli",
+    "scaffold"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "voxx": "./dist/index.mjs"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "typecheck": "tsgo --pretty --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@voxx/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@voxx/eslint-config": "workspace:*",
+    "@voxx/typescript-config": "workspace:*",
+    "@types/node": "^25.9.3",
+    "@typescript/native-preview": "7.0.0-dev.20260610.1",
+    "eslint": "^10.0.2",
+    "jiti": "^2.7.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
