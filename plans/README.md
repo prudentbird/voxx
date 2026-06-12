@@ -20,7 +20,7 @@ Verification commands for this repo: `pnpm build` / `pnpm test` /
 | 001 | YAML-safe frontmatter in `voxx new` + help-text sync | P1 | S | — | DONE |
 | 002 | Reconcile drifted templates + dogfood sync test | P1 | S | — | DONE |
 | 003 | Typecheck `voxx init` scaffold output (all presets) | P2 | M | 002 | DONE |
-| 004 | Test + harden `voxx dev` | P2 | M | — | TODO |
+| 004 | Test + harden `voxx dev` | P2 | M | — | DONE |
 | 005 | Clear `pnpm audit` via workspace overrides | P2 | S | — | TODO |
 | 006 | `voxx new --collection` + `init --add` design doc | P3 | M | 001 | TODO |
 | 007 | Tags/categories decision spike (design doc only) | P3 | M | — | TODO |
