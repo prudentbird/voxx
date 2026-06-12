@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Voxx configuration",
+  "type": "object",
+  "required": [
+    "site"
+  ],
+  "properties": {
+    "site": {
+      "type": "object",
+      "required": [
+        "title",
+        "url"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "author": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "locale": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "blog",
+            "docs",
+            "changelog"
+          ]
+        },
+        "dir": {
+          "type": "string"
+        },
+        "basePath": {
+          "type": "string"
+        },
+        "drafts": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "blog",
+              "docs",
+              "changelog"
+            ]
+          },
+          "dir": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          },
+          "drafts": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "theme": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "preset": {
+          "type": "string",
+          "enum": [
+            "shadcn"
+          ]
+        },
+        "css": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "codeTheme": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "features": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "toc": {
+          "type": "boolean"
+        },
+        "rss": {
+          "type": "boolean"
+        },
+        "sitemap": {
+          "type": "boolean"
+        },
+        "llmsTxt": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "boolean"
+        },
+        "readingTime": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "seo": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "openGraph": {
+          "type": "boolean"
+        },
+        "twitter": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "jsonLd": {
+          "type": "boolean"
+        },
+        "defaultImage": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
