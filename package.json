@@ -1,22 +1,36 @@
 {
   "name": "voxx",
   "private": true,
+  "license": "MIT",
   "scripts": {
+    "test": "turbo run test",
     "lint": "turbo run lint",
+    "changeset": "changeset",
     "build": "turbo run build",
     "dev": "turbo dev --ui tui",
     "lint:fix": "turbo run lint:fix",
     "typecheck": "turbo run typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "version-packages": "changeset version",
     "dev:app": "turbo dev --filter=@voxx/web",
-    "build:app": "turbo run build --filter=@voxx/web"
+    "build:app": "turbo run build --filter=@voxx/web",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "release": "turbo run build --filter=@voxx/core --filter=voxx && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
+    "@typescript/native-preview": "7.0.0-dev.20260610.1",
     "@voxx/eslint-config": "workspace:*",
     "@voxx/typescript-config": "workspace:*",
-    "@typescript/native-preview": "7.0.0-dev.20260610.1",
     "prettier": "^3.8.1",
     "turbo": "^2.9.18"
   },
-  "packageManager": "pnpm@10.4.1"
+  "packageManager": "pnpm@10.4.1",
+  "pnpm": {
+    "overrides": {
+      "flatted@<3.4.2": ">=3.4.2",
+      "picomatch@<2.3.2": ">=2.3.2",
+      "picomatch@>=4.0.0 <4.0.4": ">=4.0.4",
+      "postcss@<8.5.10": ">=8.5.10"
+    }
+  }
 }
