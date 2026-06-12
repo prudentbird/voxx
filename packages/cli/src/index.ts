@@ -9,6 +9,7 @@ const HELP = `${c.bold("voxx")} — a zero-friction, file-based CMS for blogs an
 
 ${c.bold("Usage:")}
   voxx init [blog|docs|changelog] [--dir <content>] [--base <path>] [--app <dir>] [--force]
+  voxx init --add [blog|docs|changelog] [--name <name>] [--dir <dir>] [--base <path>] [--app <dir>]
   voxx new "Title" [--collection <name>] [--slug <slug>] [--dir <content>] [--date <YYYY-MM-DD>] [--flat] [--section <path>] [--order <n>]
   voxx build [--out <dir>] [--drafts]
   voxx dev [--port <n>] [--drafts]
@@ -17,6 +18,7 @@ ${c.bold("Examples:")}
   voxx init                 Scaffold a blog into your Next.js app
   voxx init docs            Scaffold a docs site instead
   voxx init changelog       Scaffold a release-notes page
+  voxx init --add docs      Add a docs collection to an existing site
   voxx new "Hello world"    Create a new markdown post (or doc page, or release)
   voxx build                Render a static HTML site to ./dist
   voxx dev                  Preview the static site locally, rebuilding on change

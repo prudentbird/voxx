@@ -5,6 +5,7 @@ description: voxx init, voxx new, voxx build, and voxx dev — flags and behavio
 
 ```
 voxx init [blog|docs|changelog] [--dir <content>] [--base <path>] [--app <dir>] [--force]
+voxx init --add [blog|docs|changelog] [--name <name>] [--dir <dir>] [--base <path>] [--app <dir>]
 voxx new "Title" [--collection <name>] [--dir <content>] [--date <YYYY-MM-DD>] [--slug <slug>] [--flat] [--section <path>] [--order <n>]
 voxx build [--out <dir>] [--drafts]
 voxx dev [--port <n>]
@@ -42,6 +43,34 @@ non-interactive shell it defaults to static.
 
 `init` is idempotent — existing files are skipped and reported, never
 overwritten, unless you pass `--force`.
+
+## `voxx init --add <preset>`
+
+Adds a second (or third…) collection to a site that already has a
+`voxx.json` — `voxx init --add docs` on a blog gives you a
+[multi-collection](/docs/reference/collections) site:
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `--name notes` | the preset name | The collection's name — what `voxx new --collection` and `getPosts({ collection })` use |
+| `--dir content/notes` | `content/<name>` | The new collection's content folder |
+| `--base /notes` | `/<name>` | Mount path for the new collection's routes |
+| `--app src/app` | auto-detected | The Next.js app directory |
+
+It rewrites `voxx.json` (migrating a single-collection `content` config to a
+`collections` array — resolved behavior is preserved exactly), then scaffolds
+only the new collection's content samples and routes. Site-wide files
+(`sitemap.ts`, `robots.ts`, the `llms.txt` routes) are left alone if present
+and created only when missing.
+
+`--add` never overwrites: it requires an existing `voxx.json`, refuses
+`--force`, and fails — writing nothing — if the new collection's name, `dir`,
+or `basePath` collides with an existing one. Pass `--name`, `--dir`, or
+`--base` to resolve a collision.
+
+Note that feature defaults (`rss`, `toc`, …) follow the *first* collection's
+type — review `features` in `voxx.json` after adding a collection of a
+different type.
 
 ## `voxx new "Title"`
 

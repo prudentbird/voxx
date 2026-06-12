@@ -32,4 +32,18 @@ describe("voxx init scaffold output typechecks", () => {
       expect(diagnostics).toEqual([]);
     });
   }
+
+  it("an --add-augmented app typechecks", async () => {
+    await writeFile(
+      join(dir, "package.json"),
+      JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
+    );
+    await mkdir(join(dir, "app"), { recursive: true });
+    await init(["blog"]);
+    await init(["--add", "docs"]);
+    await init(["--add", "changelog"]);
+    expect(process.exitCode).not.toBe(1);
+    const diagnostics = await typecheckDir(join(dir, "app"));
+    expect(diagnostics).toEqual([]);
+  });
 });

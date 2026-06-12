@@ -28,20 +28,36 @@ const TYPE_FEATURE_DEFAULTS: Record<
   },
 };
 
+export interface CollectionInput {
+  readonly name?: string;
+  readonly type?: ContentType;
+  readonly dir?: string;
+  readonly basePath?: string;
+  readonly drafts?: boolean;
+}
+
+/**
+ * The naming contract for `collections` entries: `name ?? type`,
+ * `dir ?? content/<name>`, `basePath ?? /<name>`. This function is the single
+ * owner of that defaulting — the CLI (`voxx new`, `voxx init --add`) imports
+ * it instead of mirroring the rules. Pure and Effect-free by design.
+ */
+export function resolveCollectionDefaults(c: CollectionInput): CollectionConfig {
+  const type = c.type ?? "blog";
+  const name = c.name ?? type;
+  return {
+    name,
+    type,
+    dir: c.dir ?? `content/${name}`,
+    basePath: c.basePath ?? `/${name}`,
+    drafts: c.drafts ?? false,
+  };
+}
+
 function mergeCollections(input: VoxxConfigInput): CollectionConfig[] {
   const d = DEFAULT_CONFIG;
   if (input.collections && input.collections.length > 0) {
-    return input.collections.map((c) => {
-      const type = c.type ?? "blog";
-      const name = c.name ?? type;
-      return {
-        name,
-        type,
-        dir: c.dir ?? `content/${name}`,
-        basePath: c.basePath ?? `/${name}`,
-        drafts: c.drafts ?? false,
-      };
-    });
+    return input.collections.map(resolveCollectionDefaults);
   }
   const type = input.content?.type ?? d.content.type;
   return [

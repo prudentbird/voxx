@@ -16,7 +16,11 @@ const WEB_APP = join(ROOT, "apps/web/src/app");
 const PAIRS: Array<
   [tpl: string, web: string, vars?: Record<string, string>]
 > = [
-  ["shared/data.ts.tpl", "docs/_voxx/data.ts"],
+  [
+    "shared/data.ts.tpl",
+    "docs/_voxx/data.ts",
+    { COLLECTION_ARG: '{ collection: "docs" }' },
+  ],
   ["shared/on-this-page.tsx.tpl", "docs/_voxx/on-this-page.tsx"],
   ["shared/metadata.ts.tpl", "docs/_voxx/metadata.ts"],
   ["docs/sidebar-nav.tsx.tpl", "docs/_voxx/sidebar-nav.tsx"],

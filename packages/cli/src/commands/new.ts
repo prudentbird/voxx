@@ -4,6 +4,7 @@ import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
 import {
   parseVersion,
+  resolveCollectionDefaults,
   slugify,
   splitDatePrefix,
   splitOrderPrefix,
@@ -26,13 +27,8 @@ async function readContentConfig(
   const cfgPath = join(cwd, "voxx.json");
   if (!(await exists(cfgPath))) return { type: "blog", dir: "content" };
   const cfg = JSON.parse(await readFile(cfgPath, "utf8")) as VoxxJson;
-  // Defaulting (name ?? type, dir ?? content/<name>) mirrors mergeCollections
-  // in packages/core/src/config.ts — that file owns the naming contract.
-  const collections = (cfg.collections ?? []).map((c) => {
-    const type = c.type ?? "blog";
-    const name = c.name ?? type;
-    return { name, type, dir: c.dir ?? `content/${name}` };
-  });
+  // packages/core/src/config.ts owns the naming contract.
+  const collections = (cfg.collections ?? []).map(resolveCollectionDefaults);
   if (collectionName) {
     const found = collections.find((c) => c.name === collectionName);
     if (!found) {

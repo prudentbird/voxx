@@ -227,6 +227,142 @@ describe("voxx new", () => {
   });
 });
 
+describe("voxx init --add", () => {
+  it("migrates a single-collection config and scaffolds the new collection", async () => {
+    await writeFile(
+      join(dir, "package.json"),
+      JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
+    );
+    await mkdir(join(dir, "app"), { recursive: true });
+    await init(["blog"]);
+    await init(["--add", "docs"]);
+    expect(process.exitCode).not.toBe(1);
+
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.content).toBeUndefined();
+    expect(cfg.collections).toEqual([
+      {
+        name: "blog",
+        type: "blog",
+        dir: "content",
+        basePath: "/blog",
+        drafts: false,
+      },
+      {
+        name: "docs",
+        type: "docs",
+        dir: "content/docs",
+        basePath: "/docs",
+        drafts: false,
+      },
+    ]);
+    // top-level key order: collections sits where content was
+    expect(Object.keys(cfg)).toEqual([
+      "$schema",
+      "site",
+      "collections",
+      "theme",
+      "seo",
+    ]);
+
+    // new collection's routes + samples
+    expect(await exists(join(dir, "app/docs/[[...slug]]/page.tsx"))).toBe(true);
+    expect(await exists(join(dir, "content/docs/index.md"))).toBe(true);
+    const data = await readFile(join(dir, "app/docs/_voxx/data.ts"), "utf8");
+    expect(data).toContain('coreGetPosts({ collection: "docs" })');
+
+    // site-wide files untouched (still the blog-flavored originals)
+    const sitemap = await readFile(join(dir, "app/sitemap.ts"), "utf8");
+    expect(sitemap).toContain("./blog/_voxx/data");
+  });
+
+  it("backfills an omitted dir so migration preserves resolved behavior", async () => {
+    await writeConfig({ content: { type: "docs" } });
+    await init(["--add", "changelog"]);
+    expect(process.exitCode).not.toBe(1);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    // content-branch defaults (content/blog, /blog) survive the rewrite
+    expect(cfg.collections[0]).toEqual({
+      name: "docs",
+      type: "docs",
+      dir: "content/blog",
+      basePath: "/blog",
+    });
+  });
+
+  it("appends to an existing collections array without touching entries", async () => {
+    await writeConfig({
+      content: undefined,
+      collections: [{ name: "blog", dir: "content/blog" }],
+    });
+    await init(["--add", "changelog"]);
+    expect(process.exitCode).not.toBe(1);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.collections).toEqual([
+      { name: "blog", dir: "content/blog" },
+      {
+        name: "changelog",
+        type: "changelog",
+        dir: "content/changelog",
+        basePath: "/changelog",
+        drafts: false,
+      },
+    ]);
+    expect(await exists(join(dir, "content/changelog/0.1.0.md"))).toBe(true);
+  });
+
+  it("requires an existing voxx.json", async () => {
+    await init(["--add", "docs"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "voxx.json"))).toBe(false);
+    expect(await exists(join(dir, "content/docs/index.md"))).toBe(false);
+  });
+
+  it("rejects --add together with --force", async () => {
+    await writeConfig();
+    await init(["--add", "docs", "--force"]);
+    expect(process.exitCode).toBe(1);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.collections).toBeUndefined();
+  });
+
+  it("errors on name, basePath, and dir collisions without writing", async () => {
+    await writeConfig(); // content: blog at content/, /blog
+    const before = await readFile(join(dir, "voxx.json"), "utf8");
+
+    await init(["--add", "blog"]); // duplicate name (implicit "blog")
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+
+    await init(["--add", "docs", "--base", "/blog"]); // duplicate basePath
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+
+    await init(["--add", "docs", "--dir", "content"]); // duplicate dir
+    expect(process.exitCode).toBe(1);
+
+    expect(await readFile(join(dir, "voxx.json"), "utf8")).toBe(before);
+    expect(await exists(join(dir, "content/docs"))).toBe(false);
+  });
+
+  it("resolves a name collision via --name", async () => {
+    await writeConfig({
+      content: undefined,
+      collections: [{ name: "docs", type: "docs", dir: "content/docs" }],
+    });
+    await init(["--add", "docs", "--name", "guides"]);
+    expect(process.exitCode).not.toBe(1);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.collections[1]).toMatchObject({
+      name: "guides",
+      type: "docs",
+      dir: "content/guides",
+      basePath: "/guides",
+    });
+    expect(await exists(join(dir, "content/guides/index.md"))).toBe(true);
+  });
+});
+
 describe("voxx init (static, non-TTY)", () => {
   it("writes voxx.json and sample content", async () => {
     await init(["blog"]);
