@@ -4,7 +4,9 @@ packages:
   - "packages/*"
 
 onlyBuiltDependencies:
+  - "@parcel/watcher"
   - core-js-pure
   - esbuild
+  - msgpackr-extract
   - sharp
   - unrs-resolver
