@@ -2,20 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to publish (e.g. 0.2.0)"
-        required: true
-        type: string
-      package:
-        description: "Which package(s) to release"
-        required: true
-        default: both
-        type: choice
-        options:
-          - both
-          - core
-          - cli
 
 concurrency:
   group: ${{ github.workflow }}
@@ -42,41 +28,20 @@ jobs:
           cache: pnpm
           registry-url: "https://registry.npmjs.org"
 
-      - name: Resolve target packages
-        id: targets
-        run: |
-          case "${{ inputs.package }}" in
-            core) dirs="packages/core"; filters="--filter=@prudentbird/voxx-core" ;;
-            cli)  dirs="packages/cli"; filters="--filter=@prudentbird/voxx" ;;
-            both) dirs="packages/core packages/cli"; filters="--filter=@prudentbird/voxx-core --filter=@prudentbird/voxx" ;;
-          esac
-          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
-          echo "filters=$filters" >> "$GITHUB_OUTPUT"
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Set version
-        run: |
-          for pkg in ${{ steps.targets.outputs.dirs }}; do
-            (cd "$pkg" && npm version "${{ inputs.version }}" --no-git-tag-version)
-          done
-
       - name: Build
-        run: pnpm turbo run build ${{ steps.targets.outputs.filters }}
+        run: pnpm turbo run build --filter=@prudentbird/voxx-core --filter=@prudentbird/voxx
 
+      # Versions are bumped locally via `pnpm version-packages` (changeset version)
+      # and committed before triggering this workflow. `changeset publish` only
+      # publishes packages whose version is not yet on npm and creates their git tags.
       - name: Publish
         run: pnpm changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
-      - name: Commit version bump and push tags
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          for pkg in ${{ steps.targets.outputs.dirs }}; do
-            git add "$pkg/package.json"
-          done
-          git commit -m "chore(release): ${{ inputs.package }} v${{ inputs.version }}"
-          git push origin HEAD:${{ github.ref_name }} --follow-tags
+      - name: Push tags
+        run: git push origin --tags
