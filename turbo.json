@@ -7,7 +7,7 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**", "voxx.schema.json"],
-      "env": ["NODE_ENV", "SKIP_ENV_VALIDATION"]
+      "env": ["NODE_ENV", "SKIP_ENV_VALIDATION", "NEXT_RUNTIME"]
     },
     "lint": {
       "dependsOn": ["^lint"]
