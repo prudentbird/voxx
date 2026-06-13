@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { buildNavTree, buildSeo } from "@voxx/core";
+import { buildSeo, serializeJsonLd } from "@voxx/core";
 import { getConfig, getPost, getPosts } from "../_voxx/data";
 import { toMetadata } from "../_voxx/metadata";
 import { DocPage } from "../_voxx/doc-page";
-import { SidebarNav } from "../_voxx/sidebar-nav";
 
 type Params = { params: Promise<{ slug?: string[] }> };
 
@@ -38,19 +37,14 @@ export default async function DocRoute({ params }: Params) {
   const seo = buildSeo(post, config);
 
   return (
-    <div className="voxx voxx-docs">
+    <>
       {config.seo.jsonLd && seo.jsonLd ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(seo.jsonLd) }}
         />
       ) : null}
-      <aside className="voxx-docs__nav">
-        <div className="voxx-docs__nav-inner">
-          <SidebarNav items={buildNavTree(posts)} />
-        </div>
-      </aside>
       <DocPage post={post} config={config} prev={prev} next={next} />
-    </div>
+    </>
   );
 }

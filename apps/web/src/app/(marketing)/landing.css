@@ -1,0 +1,151 @@
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-up {
+    animation: rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--d, 0) * 110ms);
+  }
+
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(26px);
+    transition:
+      opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-reveal].in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tk-fm {
+  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+}
+.tk-key {
+  color: oklch(0.5 0.11 290);
+}
+.tk-str {
+  color: oklch(0.52 0.1 150);
+}
+.tk-h {
+  color: var(--primary);
+  font-weight: 600;
+}
+.tk-b {
+  font-weight: 700;
+}
+.tk-i {
+  font-style: italic;
+}
+.tk-code {
+  color: oklch(0.5 0.11 250);
+}
+.tk-mark {
+  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+}
+
+.dark .tk-key {
+  color: oklch(0.74 0.1 290);
+}
+.dark .tk-str {
+  color: oklch(0.75 0.1 150);
+}
+.dark .tk-h {
+  color: var(--primary);
+}
+.dark .tk-code {
+  color: oklch(0.74 0.1 250);
+}
+
+.demo-prose h2 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 22px 0 8px;
+}
+.demo-prose h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 18px 0 6px;
+}
+.demo-prose p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  margin: 0 0 12px;
+  text-wrap: pretty;
+}
+.demo-prose strong {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.demo-prose code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--secondary);
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: var(--foreground);
+}
+.demo-prose pre {
+  background: #161410;
+  color: #ede8dd;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 14px;
+}
+.dark .demo-prose pre {
+  background: #0e0d0a;
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+}
+.demo-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+.demo-prose ul {
+  margin: 0 0 12px;
+  padding-left: 22px;
+  list-style: disc;
+}
+.demo-prose li {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  margin-bottom: 4px;
+}
+.demo-prose blockquote {
+  border-left: 2px solid var(--primary);
+  padding: 2px 0 2px 16px;
+  margin: 0 0 14px;
+}
+.demo-prose blockquote p {
+  color: var(--foreground);
+  font-size: 15px;
+  font-style: italic;
+  margin: 0;
+}
+.demo-prose a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

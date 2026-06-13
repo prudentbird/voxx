@@ -6,19 +6,28 @@ import {
   type Post,
   type VoxxConfig,
 } from "@voxx/core";
+import { CONTENT_VERSION } from "./content-version";
 
-export async function getPosts(): Promise<Post[]> {
+async function getPostsCached(version: number): Promise<Post[]> {
   "use cache";
+  void version;
   return coreGetPosts({ collection: "docs" });
 }
 
-export async function getConfig(): Promise<VoxxConfig> {
+export async function getPosts(): Promise<Post[]> {
+  return getPostsCached(CONTENT_VERSION);
+}
+
+async function getConfigCached(version: number): Promise<VoxxConfig> {
   "use cache";
+  void version;
   return coreLoadConfig();
 }
 
-// Derived from the cached list so a build renders every post exactly once,
-// and drafts stay as invisible by direct URL as they are in lists.
+export async function getConfig(): Promise<VoxxConfig> {
+  return getConfigCached(CONTENT_VERSION);
+}
+
 export async function getPost(slug: string): Promise<Post | null> {
   const posts = await getPosts();
   return findPost(posts, slug) ?? null;

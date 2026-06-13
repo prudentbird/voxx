@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "next start",
+    "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "dev": "next dev --port 3000 --turbopack",
     "preview": "next build --turbopack && next start",
     "lint": "eslint . && echo Lint Checks successfully completed!",
     "lint:fix": "eslint --fix . && echo Lint Checks successfully completed!",

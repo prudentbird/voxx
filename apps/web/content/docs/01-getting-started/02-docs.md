@@ -19,15 +19,19 @@ content/01-getting-started/      # a sample section
   index.md                       #   the section's landing page
   01-installation.md             #   an ordered page inside it
 app/docs/[[...slug]]/page.tsx    # one route renders the whole tree
-app/docs/layout.tsx              # imports the Voxx stylesheet
-app/docs/_voxx/*                 # sidebar, pager, TOC — yours to edit
+app/docs/layout.tsx              # the docs shell — sidebar, theme toggle
+app/docs/_voxx/*                 # nav, drawer, pager, TOC — yours to edit
 app/sitemap.ts                   # sitemap.xml
 app/llms.txt/route.ts            # /llms.txt
+instrumentation.ts               # dev content watcher (live reload)
 ```
 
 Open `/docs` and you'll see the sidebar built from your folders, a prev/next
 pager that walks the tree in order, and an "On this page" widget built from
-your headings.
+your headings. The shell is self-contained — your site title at the top of
+the sidebar, a theme toggle pinned to the bottom, a drawer on mobile. See
+[Layouts](/docs/reference/layouts) for how it's arranged and how to keep
+your app's own navbar out of it.
 
 ## The conventions
 
@@ -53,6 +57,26 @@ npx voxx new "Deploying" --section guides --order 3
 
 creates `content/guides/03-deploying.md`. Or just create the file — the CLI
 is a convenience, never a requirement.
+
+## Live reload
+
+Editing a `.md` file updates the page in `next dev` without a manual refresh.
+Voxx reads content off the filesystem rather than importing it, so Next's HMR
+can't see those edits on its own. The scaffolded `instrumentation.ts` fixes
+that — it starts a dev-only watcher (shipped in `@voxx/core`) that bumps
+`_voxx/content-version.ts` whenever content or `voxx.json` changes:
+
+```ts
+export async function register() {
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  const { registerContentWatcher } = await import("@voxx/core");
+  await registerContentWatcher();
+}
+```
+
+`data.ts` threads that version into its `"use cache"` calls, so a bump both
+refreshes the open page and busts the content cache. It runs in development
+only; production builds are untouched. Delete `instrumentation.ts` to opt out.
 
 ## What docs get by default
 

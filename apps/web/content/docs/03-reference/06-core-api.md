@@ -84,6 +84,20 @@ The small utilities the engine uses are exported too: `slugify`,
 `readingTimeMinutes`, `splitDatePrefix`, `splitOrderPrefix`, `humanize`,
 `parseVersion`, and `escapeXml`.
 
+## Dev content watcher
+
+`registerContentWatcher(options?)` powers [live reload](/docs/getting-started/docs#live-reload)
+for Next.js. Call it from `instrumentation.ts`; it watches every content
+directory and `voxx.json` and bumps the generated `_voxx/content-version.ts`
+module on each change, which `data.ts` feeds into its `"use cache"` key to
+refresh the page and invalidate the cache. It is a no-op outside the Node.js
+runtime and outside development. Options:
+
+- `versionModules` — explicit paths to bump; by default it finds every
+  `_voxx/content-version.ts` under the project
+- `cwd` — where to find `voxx.json` (defaults to `process.cwd()`)
+- `debounceMs` — coalesce rapid edits (default `80`)
+
 ## The Effect entry point
 
 If you *do* speak Effect, `@voxx/core/effect` exposes the raw programs —

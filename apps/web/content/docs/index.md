@@ -30,10 +30,10 @@ A folder of files will outlive every CMS.
 
 Voxx renders three kinds of content, all through the same pipeline:
 
-| Surface | Shape | Convention |
-| --- | --- | --- |
-| Blog | Flat, newest-first | `2026-06-11-hello.md` date-stamps a post |
-| Docs | Ordered tree | Folders become sections; `01-` prefixes pin order |
+| Surface   | Shape              | Convention                                        |
+| -----------| --------------------| ---------------------------------------------------|
+| Blog      | Flat, newest-first | `2026-06-11-hello.md` date-stamps a post          |
+| Docs      | Ordered tree       | Folders become sections; `01-` prefixes pin order |
 | Changelog | Versioned timeline | `1.4.0.md` becomes a release with a stable anchor |
 
 Need more than one on the same site? Mount them side by side with
