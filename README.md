@@ -22,7 +22,7 @@ npx voxx dev             # no framework? preview a static site locally
 | Package                       | What it is                                                                 |
 | ----------------------------- | -------------------------------------------------------------------------- |
 | [`voxx`](packages/cli)        | The CLI: `init`, `new`, `build`, `dev`.                                    |
-| [`@voxx/core`](packages/core) | The portable content engine — use it directly to bring your own framework. |
+| [`@prudentbird/voxx-core`](packages/core) | The portable content engine — use it directly to bring your own framework. |
 
 This repo also dogfoods itself: [`apps/web`](apps/web) is the Voxx docs site, built with Voxx.
 

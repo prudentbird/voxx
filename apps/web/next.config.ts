@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
   reactCompiler: true,
   cacheComponents: true,
-  serverExternalPackages: ["@voxx/core"],
+  serverExternalPackages: ["@prudentbird/voxx-core"],
 };
 
 export default nextConfig;

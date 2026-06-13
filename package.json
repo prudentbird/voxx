@@ -14,7 +14,7 @@
     "dev:app": "turbo dev --filter=@voxx/web",
     "build:app": "turbo run build --filter=@voxx/web",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "release": "turbo run build --filter=@voxx/core --filter=voxx && changeset publish"
+    "release": "turbo run build --filter=@prudentbird/voxx-core --filter=voxx && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

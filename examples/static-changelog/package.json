@@ -7,7 +7,7 @@
     "build": "voxx build"
   },
   "devDependencies": {
-    "@voxx/core": "workspace:*",
-    "voxx": "workspace:*"
+    "@prudentbird/voxx-core": "workspace:*",
+    "@prudentbird/voxx": "workspace:*"
   }
 }

@@ -7,7 +7,7 @@ From the root of your Next.js app:
 
 ```bash
 npx voxx init changelog
-npm i @voxx/core
+npm i @prudentbird/voxx-core
 ```
 
 This writes:

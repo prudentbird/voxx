@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/@voxx/core/voxx.schema.json",
+  "$schema": "./node_modules/@prudentbird/voxx-core/voxx.schema.json",
   "site": {
     "title": "Voxx",
     "description": "A zero-friction, file-based CMS for blogs, docs, and changelogs.",

@@ -2,7 +2,7 @@ import "./_voxx/voxx.css";
 {{GLOBALS_IMPORT}}
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { buildNavTree } from "@voxx/core";
+import { buildNavTree } from "@prudentbird/voxx-core";
 import { getConfig, getPosts } from "./_voxx/data";
 import { SidebarNav } from "./_voxx/sidebar-nav";
 import { MobileNav } from "./_voxx/mobile-nav";

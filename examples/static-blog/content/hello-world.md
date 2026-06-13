@@ -25,7 +25,7 @@ Voxx reads this file, parses the frontmatter, renders the markdown, and hands
 your app clean data. Code blocks are highlighted automatically:
 
 ```ts
-import { getPosts } from "@voxx/core";
+import { getPosts } from "@prudentbird/voxx-core";
 
 const posts = await getPosts();
 ```

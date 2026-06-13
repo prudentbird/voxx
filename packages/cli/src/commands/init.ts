@@ -7,7 +7,7 @@ import {
   DEFAULT_CONFIG,
   resolveCollectionDefaults,
   type CollectionInput,
-} from "@voxx/core";
+} from "@prudentbird/voxx-core";
 import {
   c,
   exists,
@@ -727,7 +727,7 @@ export async function init(argv: string[]): Promise<void> {
     );
   } else if (!hasNext) {
     log.warn("No Next.js detected — wrote voxx.json + sample content only.");
-    log.info(`  Install the engine:  ${c.cyan("npm i @voxx/core")}`);
+    log.info(`  Install the engine:  ${c.cyan("npm i @prudentbird/voxx-core")}`);
     log.info(`  Or build static HTML: ${c.cyan("npx voxx build")}`);
   } else if (!appDir) {
     log.warn(
@@ -740,7 +740,7 @@ export async function init(argv: string[]): Promise<void> {
         `  ${step++}. ${c.cyan(`cd ${relative(process.cwd(), createdAppDir)}`)}`,
       );
     }
-    log.info(`  ${step++}. Install the engine:  ${c.cyan("npm i @voxx/core")}`);
+    log.info(`  ${step++}. Install the engine:  ${c.cyan("npm i @prudentbird/voxx-core")}`);
     if (cache?.kind === "manual") {
       log.info(
         `  ${step++}. Enable Cache Components — add ${c.cyan("cacheComponents: true")} to next.config.`,

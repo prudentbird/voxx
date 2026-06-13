@@ -25,7 +25,7 @@ npx voxx init changelog  # a release-notes page
 Then install the engine the scaffolded files import:
 
 ```bash
-npm i @voxx/core
+npm i @prudentbird/voxx-core
 ```
 
 Set `site.url` in `voxx.json`, start your dev server, and open the mount path

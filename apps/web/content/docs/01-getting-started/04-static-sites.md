@@ -47,11 +47,11 @@ npx serve dist
 ## Bring your own framework
 
 The static builder and the Next.js scaffolding are both thin layers over
-[`@voxx/core`](/docs/reference/core-api), whose public API is plain async
+[`@prudentbird/voxx-core`](/docs/reference/core-api), whose public API is plain async
 functions:
 
 ```ts
-import { getPosts, buildSeo, renderRss } from "@voxx/core";
+import { getPosts, buildSeo, renderRss } from "@prudentbird/voxx-core";
 
 const posts = await getPosts(); // reads voxx.json, returns Post[]
 ```

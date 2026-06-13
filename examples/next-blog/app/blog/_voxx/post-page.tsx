@@ -1,6 +1,6 @@
-import type { Post, VoxxConfig } from "@voxx/core";
+import type { Post, VoxxConfig } from "@prudentbird/voxx-core";
 import { OnThisPage } from "./on-this-page";
-import { formatDate } from "@voxx/core";
+import { formatDate } from "@prudentbird/voxx-core";
 
 export function PostPage({ post, config }: { post: Post; config: VoxxConfig }) {
   const showToc = config.features.toc && post.toc.length > 0;

@@ -12,7 +12,7 @@ voxx dev [--port <n>]
 ```
 
 The CLI is a convenience layer — everything it does, you could do by hand
-with files and [`@voxx/core`](/docs/reference/core-api).
+with files and [`@prudentbird/voxx-core`](/docs/reference/core-api).
 
 ## `voxx init [preset]`
 

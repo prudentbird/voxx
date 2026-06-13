@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { buildSeo } from "@voxx/core";
+import { buildSeo } from "@prudentbird/voxx-core";
 import { getConfig, getPost, getPosts } from "../_voxx/data";
 import { toMetadata } from "../_voxx/metadata";
 import { DocPage } from "../_voxx/doc-page";

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { PanelLeft } from "lucide-react";
-import type { NavNode } from "@voxx/core";
+import type { NavNode } from "@prudentbird/voxx-core";
 import { Button } from "@voxx/ui/components/button";
 import {
   Sheet,

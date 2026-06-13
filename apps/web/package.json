@@ -15,7 +15,7 @@
     "typecheck": "SKIP_ENV_VALIDATION=1 next typegen && tsgo --pretty --noEmit && echo Type Checks successfuly completed!"
   },
   "dependencies": {
-    "@voxx/core": "workspace:*",
+    "@prudentbird/voxx-core": "workspace:*",
     "@voxx/ui": "workspace:*",
     "lucide-react": "^0.575.0",
     "next": "16.2.9",

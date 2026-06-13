@@ -3,7 +3,7 @@ import "./_voxx/voxx.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { buildNavTree } from "@voxx/core";
+import { buildNavTree } from "@prudentbird/voxx-core";
 import { getConfig, getPosts } from "./_voxx/data";
 import { SidebarNav } from "./_voxx/sidebar-nav";
 import { MobileNav } from "./_voxx/mobile-nav";

@@ -1,5 +1,5 @@
 {
-  "name": "voxx",
+  "name": "@prudentbird/voxx",
   "version": "1.0.0",
   "description": "A zero-friction CMS for you and your agents. Write the way you ship code, and Voxx handles the rest.",
   "license": "MIT",
@@ -25,7 +25,6 @@
     "scaffold"
   ],
   "publishConfig": {
-    "name": "@prudentbird/voxx",
     "access": "public"
   },
   "type": "module",
@@ -50,7 +49,7 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@voxx/core": "workspace:*"
+    "@prudentbird/voxx-core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

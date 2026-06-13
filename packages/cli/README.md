@@ -38,4 +38,4 @@ A preview server for static sites: builds to a temp directory, watches `voxx.jso
 - `2026-06-11-hello.md` date-stamps a post; frontmatter always wins.
 - Release files are named by version (`1.4.0.md`) or carry `version:` frontmatter.
 
-Configuration lives in `voxx.json` (JSON-schema autocompleted). The engine is [`@voxx/core`](../core) — use it directly if you'd rather bring your own framework.
+Configuration lives in `voxx.json` (JSON-schema autocompleted). The engine is [`@prudentbird/voxx-core`](../core) — use it directly if you'd rather bring your own framework.
