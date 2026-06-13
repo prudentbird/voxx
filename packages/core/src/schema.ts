@@ -41,6 +41,7 @@ export const ConfigInput = Schema.Struct({
     title: Schema.String,
     description: Schema.optional(Schema.String),
     url: Schema.String,
+    titleHref: Schema.optional(Schema.String),
     author: Schema.optional(
       Schema.Struct({
         name: Schema.String,

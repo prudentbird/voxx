@@ -87,7 +87,7 @@ ${opts.body}
 }
 
 function siteHeader(config: VoxxConfig): string {
-  const base = config.content.basePath || "/";
+  const base = config.site.titleHref ?? (config.content.basePath || "/");
   const rssIcon = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="5" cy="19" r="1" fill="currentColor"/></svg>`;
   const rss = config.features.rss
     ? `<div class="voxx-header__actions"><a class="voxx-icon-button" href="${esc(rssPath(config))}" aria-label="RSS feed">${rssIcon}</a></div>`
@@ -198,7 +198,7 @@ function docsSidebar(
   activeUrl: string,
   config: VoxxConfig,
 ): string {
-  const base = config.content.basePath || "/";
+  const base = config.site.titleHref ?? (config.content.basePath || "/");
   const menuIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>`;
   return `<aside class="voxx-docs__nav"><div class="voxx-docs__nav-inner">
         <div class="voxx-docs__nav-header">

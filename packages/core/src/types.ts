@@ -26,6 +26,8 @@ export interface VoxxConfig {
     description: string;
     /** Canonical origin, e.g. `https://example.com`. */
     url: string;
+    /** Link target for the header / sidebar title. Falls back to the collection `basePath` when unset. Distinct from `url`, which is the canonical origin used for SEO. */
+    titleHref?: string;
     author?: VoxxAuthor;
     /** BCP 47 locale tag, e.g. `en-US`. */
     locale: string;

@@ -160,3 +160,68 @@ describe("changelog build output structure", () => {
     }
   });
 });
+
+describe("site.titleHref header link", () => {
+  it("points the blog header title at titleHref when set, basePath otherwise", async () => {
+    await writeConfig({ site: { title: "Test Site", url: "https://test.dev" } });
+    await writeFileAt(
+      "first.md",
+      "---\ntitle: First Post\ndate: 2026-01-01\n---\n\nBody one.\n",
+    );
+    await build([]);
+    const post = await readDom("dist/blog/first/index.html");
+    expect(
+      post.querySelector(".voxx-header__title")?.getAttribute("href"),
+    ).toMatch(/\/blog$/);
+
+    await writeConfig({
+      site: {
+        title: "Test Site",
+        url: "https://test.dev",
+        titleHref: "https://test.dev",
+      },
+    });
+    await build([]);
+    const overridden = await readDom("dist/blog/first/index.html");
+    expect(
+      overridden.querySelector(".voxx-header__title")?.getAttribute("href"),
+    ).toBe("https://test.dev");
+  });
+
+  it("points the changelog header title at titleHref when set", async () => {
+    await writeConfig({
+      site: {
+        title: "Test Site",
+        url: "https://test.dev",
+        titleHref: "https://test.dev",
+      },
+      content: { type: "changelog", dir: "content", basePath: "/changelog" },
+    });
+    await writeFileAt(
+      "1.0.0.md",
+      "---\ntitle: v1.0.0\ndate: 2026-01-01\n---\n\nFirst.\n",
+    );
+    await build([]);
+    const page = await readDom("dist/changelog/index.html");
+    expect(
+      page.querySelector(".voxx-header__title")?.getAttribute("href"),
+    ).toBe("https://test.dev");
+  });
+
+  it("points the docs sidebar title at titleHref when set", async () => {
+    await writeConfig({
+      site: {
+        title: "Test Site",
+        url: "https://test.dev",
+        titleHref: "https://test.dev",
+      },
+      content: { type: "docs", dir: "content", basePath: "/docs" },
+    });
+    await writeFileAt("index.md", "---\ntitle: Welcome\n---\n\nIntro.\n");
+    await build([]);
+    const page = await readDom("dist/docs/index.html");
+    expect(
+      page.querySelector(".voxx-docs__title")?.getAttribute("href"),
+    ).toBe("https://test.dev");
+  });
+});
