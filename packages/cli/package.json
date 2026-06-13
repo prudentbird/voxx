@@ -1,5 +1,5 @@
 {
-  "name": "@voxx/cli",
+  "name": "voxx",
   "version": "1.0.0",
   "description": "A zero-friction CMS for you and your agents. Write the way you ship code, and Voxx handles the rest.",
   "license": "MIT",
