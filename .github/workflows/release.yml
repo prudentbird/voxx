@@ -1,13 +1,16 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g. 0.2.0)"
+        required: true
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -15,7 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
       id-token: write
 
     steps:
@@ -34,15 +36,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Set version
+        run: |
+          for pkg in packages/core packages/cli; do
+            (cd "$pkg" && npm version "${{ inputs.version }}" --no-git-tag-version)
+          done
+
       - name: Build
         run: pnpm turbo run build --filter=@voxx/core --filter=voxx
 
-      - name: Create Release PR or Publish
-        uses: changesets/action@v1
-        with:
-          publish: pnpm changeset publish
-          title: "chore: release packages"
-          commit: "chore: release packages"
+      - name: Publish
+        run: pnpm changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
+
+      - name: Commit version bump and push tags
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/core/package.json packages/cli/package.json
+          git commit -m "chore(release): v${{ inputs.version }}"
+          git push origin HEAD:${{ github.ref_name }} --follow-tags
