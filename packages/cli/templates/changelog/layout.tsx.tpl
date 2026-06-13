@@ -14,7 +14,7 @@ export default async function ChangelogLayout({
   return (
     <div className="voxx">
       <header className="voxx-header">
-        <Link href="{{BASE_PATH}}" className="voxx-header__title">
+        <Link href={config.site.titleHref ?? "/"} className="voxx-header__title">
           {config.site.title}
         </Link>
         <div className="voxx-header__actions">

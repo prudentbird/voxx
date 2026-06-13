@@ -365,6 +365,27 @@
   min-width: 0;
 }
 
+.voxx-article__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground, var(--voxx-muted-fg));
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.voxx-article__back:hover {
+  color: var(--foreground, var(--voxx-fg));
+}
+
+.voxx-article__back svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 .voxx-article__header {
   margin-bottom: 2.5rem;
 }

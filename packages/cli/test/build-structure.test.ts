@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -162,7 +162,7 @@ describe("changelog build output structure", () => {
 });
 
 describe("site.titleHref header link", () => {
-  it("points the blog header title at titleHref when set, basePath otherwise", async () => {
+  it("points the blog header title at titleHref when set, site root otherwise", async () => {
     await writeConfig({ site: { title: "Test Site", url: "https://test.dev" } });
     await writeFileAt(
       "first.md",
@@ -172,7 +172,7 @@ describe("site.titleHref header link", () => {
     const post = await readDom("dist/blog/first/index.html");
     expect(
       post.querySelector(".voxx-header__title")?.getAttribute("href"),
-    ).toMatch(/\/blog$/);
+    ).toMatch(/^(\.\.\/)+$/);
 
     await writeConfig({
       site: {
@@ -223,5 +223,71 @@ describe("site.titleHref header link", () => {
     expect(
       page.querySelector(".voxx-docs__title")?.getAttribute("href"),
     ).toBe("https://test.dev");
+  });
+});
+
+describe("titleHref root warning", () => {
+  async function buildAndCaptureLogs(): Promise<string[]> {
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((msg: unknown) => {
+      logs.push(String(msg));
+    });
+    try {
+      await writeFileAt(
+        "first.md",
+        "---\ntitle: First Post\ndate: 2026-01-01\n---\n\nBody.\n",
+      );
+      await build([]);
+    } finally {
+      spy.mockRestore();
+    }
+    return logs;
+  }
+
+  it("warns when the title defaults to / but no collection serves the root", async () => {
+    await writeConfig();
+    const logs = await buildAndCaptureLogs();
+    expect(logs.some((l) => l.includes('title link defaults to "/"'))).toBe(
+      true,
+    );
+  });
+
+  it("does not warn when titleHref is set explicitly", async () => {
+    await writeConfig({
+      site: { title: "Test Site", url: "https://test.dev", titleHref: "/" },
+    });
+    const logs = await buildAndCaptureLogs();
+    expect(logs.some((l) => l.includes('title link defaults to "/"'))).toBe(
+      false,
+    );
+  });
+
+  it("does not warn when a collection is served at the root", async () => {
+    await writeConfig({
+      content: { type: "blog", dir: "content", basePath: "/" },
+    });
+    const logs = await buildAndCaptureLogs();
+    expect(logs.some((l) => l.includes('title link defaults to "/"'))).toBe(
+      false,
+    );
+  });
+});
+
+describe("blog post back link", () => {
+  it("renders a back link to the collection index above the article title", async () => {
+    await writeConfig();
+    await writeFileAt(
+      "first.md",
+      "---\ntitle: First Post\ndate: 2026-01-01\n---\n\nBody one.\n",
+    );
+    await build([]);
+    const post = await readDom("dist/blog/first/index.html");
+    const article = post.querySelector("article.voxx-article")!;
+    const back = article.querySelector(".voxx-article__back");
+    expect(back).not.toBeNull();
+    expect(back?.getAttribute("href")).toMatch(/\/blog$/);
+    const kids = article.querySelectorAll(":scope > *");
+    expect(kids[0]?.classList.contains("voxx-article__back")).toBe(true);
+    expect(kids[1]?.classList.contains("voxx-article__header")).toBe(true);
   });
 });

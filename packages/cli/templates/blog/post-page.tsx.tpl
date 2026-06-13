@@ -1,4 +1,5 @@
 import type { Post, VoxxConfig } from "@prudentbird/voxx-core";
+import Link from "next/link";
 import { OnThisPage } from "./on-this-page";
 import { formatDate } from "@prudentbird/voxx-core";
 
@@ -14,6 +15,18 @@ export function PostPage({
   return (
     <div className="voxx voxx-layout">
       <article className="voxx-article">
+        <Link href={config.content.basePath || "/"} className="voxx-article__back">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M10 12 6 8l4-4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          All posts
+        </Link>
         <header className="voxx-article__header">
           <h1>{post.title}</h1>
           <p className="voxx-article__meta">

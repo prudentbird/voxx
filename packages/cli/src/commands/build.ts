@@ -87,7 +87,7 @@ ${opts.body}
 }
 
 function siteHeader(config: VoxxConfig): string {
-  const base = config.site.titleHref ?? (config.content.basePath || "/");
+  const base = config.site.titleHref ?? "/";
   const rssIcon = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="5" cy="19" r="1" fill="currentColor"/></svg>`;
   const rss = config.features.rss
     ? `<div class="voxx-header__actions"><a class="voxx-icon-button" href="${esc(rssPath(config))}" aria-label="RSS feed">${rssIcon}</a></div>`
@@ -156,10 +156,17 @@ ${posts
     </main>`;
 }
 
+function backLink(config: VoxxConfig): string {
+  const href = config.content.basePath || "/";
+  const arrow = `<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12 6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<a class="voxx-article__back" href="${esc(href)}">${arrow}All posts</a>`;
+}
+
 function postBody(post: Post, config: VoxxConfig): string {
   const aside = config.features.toc ? tocAside(post) : "";
   return `    <main class="voxx voxx-layout">
       <article class="voxx-article">
+        ${backLink(config)}
         <header class="voxx-article__header">
           <h1>${esc(post.title)}</h1>
           <p class="voxx-article__meta">${metaLine(post, config)}</p>
@@ -198,7 +205,7 @@ function docsSidebar(
   activeUrl: string,
   config: VoxxConfig,
 ): string {
-  const base = config.site.titleHref ?? (config.content.basePath || "/");
+  const base = config.site.titleHref ?? "/";
   const menuIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>`;
   return `<aside class="voxx-docs__nav"><div class="voxx-docs__nav-inner">
         <div class="voxx-docs__nav-header">
@@ -548,6 +555,15 @@ export async function build(argv: string[]): Promise<void> {
   if (!config.site.url || /example\.com/.test(config.site.url)) {
     log.warn(
       `site.url is ${config.site.url ? `"${config.site.url}"` : "empty"} — feeds, sitemap, and SEO tags need the real production URL in voxx.json.`,
+    );
+  }
+
+  const servesRoot = config.collections.some(
+    (col) => stripLead(col.basePath) === "",
+  );
+  if (config.site.titleHref === undefined && !servesRoot) {
+    log.warn(
+      `The title link defaults to "/", but nothing is generated there (no collection uses basePath "/"). Set site.titleHref in voxx.json — e.g. "${config.collections[0]!.basePath}" to point at the index, or your parent site's home if this is embedded under a larger site.`,
     );
   }
 
