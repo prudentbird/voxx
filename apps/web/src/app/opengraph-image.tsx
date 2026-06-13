@@ -24,50 +24,81 @@ export default async function OgImage() {
         display: "flex",
         flexDirection: "column",
         alignItems: "flex-start",
-        justifyContent: "flex-end",
+        justifyContent: "center",
         padding: "72px 80px",
-        background: "#0a0a0a",
+        background: "#000",
         fontFamily: "Outfit",
-        letterSpacing: "-0.03em",
+        position: "relative",
       }}
     >
       <div
         style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundImage:
+            "repeating-linear-gradient(45deg, #1f1f1f 0px, #1f1f1f 2px, transparent 2px, transparent 28px)",
+          display: "flex",
+          opacity: 0.2,
+        }}
+      />
+
+      <div
+        style={{
           display: "flex",
           flexDirection: "column",
-          gap: 0,
-          marginBottom: 40,
+          gap: 24,
+          zIndex: 1,
+          maxWidth: 900,
         }}
       >
-        <span
-          style={{ fontWeight: 400, fontSize: 120, color: "#fff", lineHeight: 1 }}
-        >
-          vo
-        </span>
-        <span
+        <div
           style={{
+            display: "flex",
+            flexDirection: "column",
             fontWeight: 700,
-            fontSize: 120,
-            color: "#ff4a1c",
+            fontSize: 96,
             lineHeight: 1,
-            marginTop: -30,
+            letterSpacing: "-0.04em",
           }}
         >
-          xx
-        </span>
+          <span style={{ color: "#fff" }}>Write Markdown.</span>
+          <span style={{ color: "#ff4a1c" }}>Ship Content Fast.</span>
+        </div>
+        <p
+          style={{
+            fontWeight: 400,
+            fontSize: 30,
+            color: "#666",
+            margin: 0,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          A zero-friction CMS for you and your agents.
+        </p>
       </div>
-      <p
+
+      <div
         style={{
-          fontWeight: 400,
-          fontSize: 28,
-          color: "#888",
-          margin: 0,
-          maxWidth: 700,
-          lineHeight: 1.4,
+          position: "absolute",
+          bottom: 64,
+          right: 72,
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          zIndex: 1,
         }}
       >
-        A zero-friction CMS for Next.js — write markdown, ship content.
-      </p>
+        <span style={{ fontSize: 40, letterSpacing: "-0.05em", lineHeight: 1, marginTop: -6 }}>
+          <span style={{ fontWeight: 400, color: "#fff" }}>vo</span><span style={{ fontWeight: 700, color: "#ff4a1c" }}>xx</span>
+        </span>
+        <div style={{ width: 1, height: 36, background: "#333", display: "flex" }} />
+        <span style={{ fontWeight: 400, fontSize: 20, color: "#555", letterSpacing: "-0.02em" }}>
+          voxx.prudentbird.com
+        </span>
+      </div>
     </div>,
     {
       ...size,
