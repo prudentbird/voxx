@@ -14,7 +14,6 @@ const PAIRS: Array<[tpl: string, web: string, vars?: Record<string, string>]> =
       "docs/_voxx/data.ts",
       { COLLECTION_ARG: '{ collection: "docs" }' },
     ],
-    ["shared/content-version.ts.tpl", "docs/_voxx/content-version.ts"],
     ["shared/instrumentation.ts.tpl", "../instrumentation.ts"],
     ["shared/on-this-page.tsx.tpl", "docs/_voxx/on-this-page.tsx"],
     ["shared/metadata.ts.tpl", "docs/_voxx/metadata.ts"],
