@@ -406,10 +406,6 @@
   .voxx-layout {
     grid-template-columns: minmax(0, 1fr) 16rem;
   }
-
-  .voxx-layout .voxx-article {
-    margin: 0;
-  }
 }
 
 .voxx-aside {
@@ -559,12 +555,6 @@
 .voxx-docs .voxx-layout {
   max-width: none;
   margin: 0;
-}
-
-@media (min-width: 1024px) {
-  .voxx-docs .voxx-article {
-    margin-inline: auto;
-  }
 }
 
 .voxx-docs__nav-header {
