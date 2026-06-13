@@ -9,7 +9,7 @@ import { fontClasses } from "./fonts";
 const baseUrl = "https://voxx.prudentbird.com";
 const siteName = "Voxx";
 const siteDescription =
-  "A zero-friction CMS for Next.js. Write markdown, Voxx handles routing, SEO, RSS, and llms.txt — for you and your agents.";
+  "A zero-friction CMS for Next.js apps and your AI agents. Write markdown and voxx handles the routing, SEO, RSS, llms.txt, and more.";
 const keywords = [
   "Voxx",
   "CMS",
