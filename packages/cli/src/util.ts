@@ -8,8 +8,9 @@ const TEMPLATES_DIR = fileURLToPath(new URL("../templates", import.meta.url));
 
 const useColor = process.stdout.isTTY && !process.env["NO_COLOR"];
 const wrap = (code: string) => (s: string) =>
-  useColor ? `[${code}m${s}[0m` : s;
+  useColor ? `[${code}m${s}[0m` : s;
 
+/** ANSI color helpers that degrade gracefully in non-TTY environments. */
 export const c = {
   bold: wrap("1"),
   dim: wrap("2"),
@@ -19,6 +20,7 @@ export const c = {
   cyan: wrap("36"),
 };
 
+/** Prefixed console helpers used throughout the CLI commands. */
 export const log = {
   info: (msg: string) => console.log(msg),
   success: (msg: string) => console.log(`${c.green("✓")} ${msg}`),
@@ -26,6 +28,9 @@ export const log = {
   error: (msg: string) => console.error(`${c.red("✗")} ${msg}`),
 };
 
+/**
+ * Returns `true` if the path exists and is accessible, `false` otherwise.
+ */
 export async function exists(path: string): Promise<boolean> {
   try {
     await access(path);
@@ -35,16 +40,37 @@ export async function exists(path: string): Promise<boolean> {
   }
 }
 
+/**
+ * Reads a scaffold template file by name from the bundled `templates/` directory.
+ *
+ * @param name - Template filename, e.g. `"shared/data.ts.tpl"`.
+ */
 export async function readTemplate(name: string): Promise<string> {
   return readFile(join(TEMPLATES_DIR, name), "utf8");
 }
 
+/**
+ * Replaces `{{KEY}}` placeholders in a template string.
+ *
+ * @param tpl - Template string containing `{{VARIABLE}}` tokens.
+ * @param vars - Map of token names to replacement values.
+ */
 export function render(tpl: string, vars: Record<string, string> = {}): string {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? "");
 }
 
+/** Result of a `writeFileSafe` call. */
 export type WriteStatus = "written" | "skipped";
 
+/**
+ * Writes `content` to `path`, creating parent directories as needed.
+ * Skips the write if the file already exists and `force` is `false`.
+ *
+ * @param path - Destination file path.
+ * @param content - File content to write.
+ * @param force - Overwrite existing files when `true`. Defaults to `false`.
+ * @returns `"written"` if the file was created/replaced, `"skipped"` if it already existed.
+ */
 export async function writeFileSafe(
   path: string,
   content: string,
@@ -56,10 +82,20 @@ export async function writeFileSafe(
   return "written";
 }
 
+/**
+ * Resolves the path to a sub-asset of the installed `@voxx/core` package.
+ *
+ * @param subpath - Package-relative path, e.g. `"theme/voxx.css"`.
+ */
 export function resolveCoreAsset(subpath: string): string {
   return require.resolve(`@voxx/core/${subpath}`);
 }
 
+/**
+ * Converts a package name or slug to Title Case.
+ *
+ * Strips any npm scope prefix (`@scope/`) before converting.
+ */
 export function titleCase(name: string): string {
   return name
     .replace(/^@[^/]+\//, "")
@@ -68,16 +104,36 @@ export function titleCase(name: string): string {
     .trim();
 }
 
+/**
+ * Returns `true` if the path is a safe relative path that stays within the
+ * project root (no absolute paths, no `..` traversal, no null bytes).
+ */
+export function isSafeRelPath(p: string): boolean {
+  if (p === "") return true;
+  if (p.includes("\0")) return false;
+  if (p.startsWith("/") || /^[A-Za-z]:[\\/]/.test(p)) return false;
+  return p.split(/[\\/]/).every((seg) => seg !== "..");
+}
+
+/**
+ * Normalizes a URL base path to always have a leading slash and no trailing slash.
+ *
+ * @param base - Raw base path, e.g. `"blog/"` or `"/blog"`.
+ * @returns Normalized path, e.g. `"/blog"`.
+ */
 export function normalizeBase(base: string): string {
   const withLead = base.startsWith("/") ? base : `/${base}`;
   return withLead.length > 1 ? withLead.replace(/\/+$/, "") : withLead;
 }
 
-// A plain (unquoted) YAML scalar is only safe for a conservative charset.
-// Anything else is emitted as a double-quoted scalar — JSON string escaping
-// is valid YAML, so JSON.stringify does the quoting and escaping in one step.
 const YAML_PLAIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9 ._/()-]*[A-Za-z0-9._/()-])?$/;
 
+/**
+ * Returns a YAML-safe representation of `value`.
+ *
+ * Plain strings that match the safe character set are returned as-is;
+ * everything else is JSON-quoted.
+ */
 export function yamlValue(value: string): string {
   return YAML_PLAIN_RE.test(value) ? value : JSON.stringify(value);
 }

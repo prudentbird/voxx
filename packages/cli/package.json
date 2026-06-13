@@ -52,12 +52,13 @@
     "@voxx/core": "workspace:*"
   },
   "devDependencies": {
-    "@voxx/eslint-config": "workspace:*",
-    "@voxx/typescript-config": "workspace:*",
     "@types/node": "^25.9.3",
     "@typescript/native-preview": "7.0.0-dev.20260610.1",
+    "@voxx/eslint-config": "workspace:*",
+    "@voxx/typescript-config": "workspace:*",
     "eslint": "^10.0.2",
     "jiti": "^2.7.0",
+    "node-html-parser": "^7.1.0",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"

@@ -1,5 +1,6 @@
-import { copyFile, mkdir, readdir, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, join, relative } from "node:path";
+import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
+import type { Dirent } from "node:fs";
+import { dirname, join, relative, sep } from "node:path";
 import { parseArgs } from "node:util";
 import {
   buildNavTree,
@@ -16,6 +17,7 @@ import {
   renderSitemap,
   rssPath,
   sectionHeading,
+  serializeJsonLd,
   type CollectionConfig,
   type NavNode,
   type Post,
@@ -55,7 +57,7 @@ function headTags(seo: SeoData, config: VoxxConfig): string {
   }
   if (config.seo.jsonLd && seo.jsonLd) {
     tags.push(
-      `<script type="application/ld+json">${JSON.stringify(seo.jsonLd)}</script>`,
+      `<script type="application/ld+json">${serializeJsonLd(seo.jsonLd)}</script>`,
     );
   }
   return tags.join("\n    ");
@@ -84,6 +86,18 @@ ${opts.body}
 `;
 }
 
+function siteHeader(config: VoxxConfig): string {
+  const base = config.content.basePath || "/";
+  const rssIcon = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="5" cy="19" r="1" fill="currentColor"/></svg>`;
+  const rss = config.features.rss
+    ? `<div class="voxx-header__actions"><a class="voxx-icon-button" href="${esc(rssPath(config))}" aria-label="RSS feed">${rssIcon}</a></div>`
+    : "";
+  return `    <header class="voxx voxx-header">
+      <a class="voxx-header__title" href="${esc(base)}">${esc(config.site.title)}</a>
+      ${rss}
+    </header>`;
+}
+
 function metaLine(post: Post, config: VoxxConfig): string {
   const rt = config.features.readingTime
     ? ` · ${post.readingTimeMinutes} min read`
@@ -101,7 +115,7 @@ function tocAside(post: Post): string {
     .join("\n");
   return `      <aside class="voxx-aside"><div class="voxx-aside__inner">
         <nav class="voxx-toc" aria-label="On this page">
-          <p class="voxx-toc__title">On this page</p>
+          <p class="voxx-toc__title"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h7M2.5 8h11M2.5 12h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>On this page</p>
           <ul class="voxx-toc__list">
 ${items}
           </ul>
@@ -115,22 +129,22 @@ function indexBody(posts: Post[], config: VoxxConfig): string {
       ? `<p class="voxx-empty">No posts yet.</p>`
       : `<ul class="voxx-postlist">
 ${posts
-        .map((post) => {
-          const tags =
-            config.features.tags && post.tags.length
-              ? `<ul class="voxx-tags">${post.tags.map((t) => `<li class="voxx-tag">${esc(t)}</li>`).join("")}</ul>`
-              : "";
-          const excerpt = post.excerpt
-            ? `<p class="voxx-postcard__excerpt">${esc(post.excerpt)}</p>`
-            : "";
-          return `      <li class="voxx-postcard"><a class="voxx-postcard__link" href="${esc(post.url)}">
+  .map((post) => {
+    const tags =
+      config.features.tags && post.tags.length
+        ? `<ul class="voxx-tags">${post.tags.map((t) => `<li class="voxx-tag">${esc(t)}</li>`).join("")}</ul>`
+        : "";
+    const excerpt = post.excerpt
+      ? `<p class="voxx-postcard__excerpt">${esc(post.excerpt)}</p>`
+      : "";
+    return `      <li class="voxx-postcard"><a class="voxx-postcard__link" href="${esc(post.url)}">
         <h2 class="voxx-postcard__title">${esc(post.title)}</h2>
         <p class="voxx-postcard__meta">${metaLine(post, config)}</p>
         ${excerpt}
         ${tags}
       </a></li>`;
-        })
-        .join("\n")}
+  })
+  .join("\n")}
     </ul>`;
 
   return `    <main class="voxx voxx-index">
@@ -156,7 +170,6 @@ ${aside}
     </main>`;
 }
 
-
 function navHtml(items: NavNode[], activeUrl: string): string {
   if (items.length === 0) return "";
   const lis = items
@@ -180,24 +193,40 @@ function pagerHtml(prev: Post | undefined, next: Post | undefined): string {
         </nav>`;
 }
 
+function docsSidebar(
+  nav: NavNode[],
+  activeUrl: string,
+  config: VoxxConfig,
+): string {
+  const base = config.content.basePath || "/";
+  const menuIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>`;
+  return `<aside class="voxx-docs__nav"><div class="voxx-docs__nav-inner">
+        <div class="voxx-docs__nav-header">
+          <details class="voxx-docs__menu"><summary aria-label="Navigation">${menuIcon}</summary>
+            <div class="voxx-docs__menu-panel"><nav class="voxx-nav">${navHtml(nav, activeUrl)}</nav></div>
+          </details>
+          <a class="voxx-docs__title" href="${esc(base)}">${esc(config.site.title)}</a>
+        </div>
+        <nav class="voxx-nav">${navHtml(nav, activeUrl)}</nav>
+      </div></aside>`;
+}
+
 function docBody(
   post: Post,
   posts: Post[],
+  index: number,
   nav: NavNode[],
   config: VoxxConfig,
 ): string {
-  const index = posts.findIndex((p) => p.url === post.url);
   const prev = index > 0 ? posts[index - 1] : undefined;
-  const next = index >= 0 ? posts[index + 1] : undefined;
+  const next = posts[index + 1];
   const aside = config.features.toc ? tocAside(post) : "";
   const desc = post.description
     ? `<p class="voxx-article__meta">${esc(post.description)}</p>`
     : "";
 
   return `    <div class="voxx voxx-docs">
-      <aside class="voxx-docs__nav"><div class="voxx-docs__nav-inner">
-        <nav class="voxx-nav">${navHtml(nav, post.url)}</nav>
-      </div></aside>
+      ${docsSidebar(nav, post.url, config)}
       <main class="voxx-layout">
         <article class="voxx-article">
           <header class="voxx-article__header">
@@ -214,9 +243,7 @@ ${aside}
 
 function docsIndexBody(nav: NavNode[], config: VoxxConfig): string {
   return `    <div class="voxx voxx-docs">
-      <aside class="voxx-docs__nav"><div class="voxx-docs__nav-inner">
-        <nav class="voxx-nav">${navHtml(nav, "")}</nav>
-      </div></aside>
+      ${docsSidebar(nav, "", config)}
       <main class="voxx-layout">
         <article class="voxx-article">
           <header class="voxx-article__header">
@@ -235,16 +262,16 @@ function changelogBody(posts: Post[], config: VoxxConfig): string {
       ? `<p class="voxx-empty">No releases yet.</p>`
       : `<div class="voxx-releases">
 ${posts
-        .map(
-          (post) => `      <section class="voxx-release" id="${esc(post.slug)}">
+  .map(
+    (post) => `      <section class="voxx-release" id="${esc(post.slug)}">
         <header class="voxx-release__header">
           <h2 class="voxx-release__version"><a href="#${esc(post.slug)}">${esc(post.version ? `v${post.version}` : post.title)}</a></h2>
           <time datetime="${esc(post.date)}">${esc(formatDate(post.date, config.site.locale))}</time>
         </header>
         <div class="voxx-prose">${post.html}</div>
       </section>`,
-        )
-        .join("\n")}
+  )
+  .join("\n")}
     </div>`;
 
   return `    <main class="voxx voxx-index">
@@ -256,9 +283,28 @@ ${posts
     </main>`;
 }
 
-async function writePage(path: string, html: string): Promise<void> {
+/**
+ * Rewrite root-absolute internal links (`href`/`src` beginning with a single
+ * `/`) to paths relative to the page's own location. This keeps navigation and
+ * asset links working whether the generated site is served from the domain
+ * root, a subpath, or opened directly from the filesystem. Protocol-relative
+ * (`//host`) and external URLs are left untouched.
+ */
+function relativizeLinks(html: string, fromDir: string, outDir: string): string {
+  const prefix = relative(fromDir, outDir).split(sep).join("/") || ".";
+  return html.replace(/\b(href|src)="\/(?!\/)([^"]*)"/g, `$1="${prefix}/$2"`);
+}
+
+async function writePage(
+  path: string,
+  html: string,
+  outDir: string,
+): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, html);
+  const out = path.endsWith(".html")
+    ? relativizeLinks(html, dirname(path), outDir)
+    : html;
+  await writeFile(path, out);
 }
 
 const SOURCE_RE = /\.mdx?$/;
@@ -268,17 +314,18 @@ async function copyContentAssets(
   targetDir: string,
 ): Promise<number> {
   let copied = 0;
-  let entries: string[];
+  let entries: Dirent[];
   try {
-    entries = await readdir(contentDir, { recursive: true });
+    entries = await readdir(contentDir, { recursive: true, withFileTypes: true });
   } catch {
     return 0;
   }
-  for (const rel of entries) {
-    const name = basename(rel);
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const name = entry.name;
     if (SOURCE_RE.test(name) || name.startsWith(".")) continue;
+    const rel = relative(contentDir, join(entry.parentPath, name));
     const source = join(contentDir, rel);
-    if (!(await stat(source)).isFile()) continue;
     const target = join(targetDir, rel);
     await mkdir(dirname(target), { recursive: true });
     await copyFile(source, target);
@@ -306,12 +353,14 @@ async function buildCollection(
         title: config.site.title,
         lang: config.site.locale,
         head: `<meta name="description" content="${esc(config.site.description)}">`,
-        body: changelogBody(posts, config),
+        body: `${siteHeader(config)}\n${changelogBody(posts, config)}`,
       }),
+      outDir,
     );
   } else if (type === "docs") {
     const nav = buildNavTree(posts);
-    for (const post of posts) {
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i]!;
       const seo = buildSeo(post, config);
       await writePage(
         join(outDir, stripLead(post.url), "index.html"),
@@ -319,8 +368,9 @@ async function buildCollection(
           title: `${post.title} — ${config.site.title}`,
           lang: config.site.locale,
           head: headTags(seo, config),
-          body: docBody(post, posts, nav, config),
+          body: docBody(post, posts, i, nav, config),
         }),
+        outDir,
       );
     }
     if (!posts.some((p) => p.path.length === 0)) {
@@ -332,6 +382,7 @@ async function buildCollection(
           head: `<meta name="description" content="${esc(config.site.description)}">`,
           body: docsIndexBody(nav, config),
         }),
+        outDir,
       );
     }
   } else {
@@ -341,8 +392,9 @@ async function buildCollection(
         title: config.site.title,
         lang: config.site.locale,
         head: `<meta name="description" content="${esc(config.site.description)}">`,
-        body: indexBody(posts, config),
+        body: `${siteHeader(config)}\n${indexBody(posts, config)}`,
       }),
+      outDir,
     );
 
     for (const post of posts) {
@@ -353,8 +405,9 @@ async function buildCollection(
           title: `${post.title} — ${config.site.title}`,
           lang: config.site.locale,
           head: headTags(seo, config),
-          body: postBody(post, config),
+          body: `${siteHeader(config)}\n${postBody(post, config)}`,
         }),
+        outDir,
       );
     }
   }
@@ -410,11 +463,14 @@ export async function buildSite(
       await writePage(
         join(outDir, stripLead(rssPath(view))),
         renderRss(posts, view),
+        outDir,
       );
     }
 
     sections.push({
-      heading: multi ? humanize(collection.name) : sectionHeading(collection.type),
+      heading: multi
+        ? humanize(collection.name)
+        : sectionHeading(collection.type),
       posts,
     });
     allPosts.push(...posts);
@@ -478,8 +534,6 @@ export async function build(argv: string[]): Promise<void> {
   const result = await buildSite({
     cwd,
     outDir,
-    // `undefined` (not `false`) when the flag is absent, so a collection's
-    // `drafts: true` in voxx.json still takes effect.
     includeDrafts: values.drafts ? true : undefined,
   });
 

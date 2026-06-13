@@ -9,7 +9,7 @@ import {
   splitDatePrefix,
   splitOrderPrefix,
 } from "@voxx/core";
-import { exists, log, writeFileSafe, yamlValue } from "../util";
+import { exists, isSafeRelPath, log, writeFileSafe, yamlValue } from "../util";
 
 const MD_RE = /\.md$/;
 
@@ -27,7 +27,6 @@ async function readContentConfig(
   const cfgPath = join(cwd, "voxx.json");
   if (!(await exists(cfgPath))) return { type: "blog", dir: "content" };
   const cfg = JSON.parse(await readFile(cfgPath, "utf8")) as VoxxJson;
-  // packages/core/src/config.ts owns the naming contract.
   const collections = (cfg.collections ?? []).map(resolveCollectionDefaults);
   if (collectionName) {
     const found = collections.find((c) => c.name === collectionName);
@@ -55,7 +54,6 @@ async function existingSlugs(dir: string): Promise<Set<string>> {
       slugs.add(slugify(splitOrderPrefix(rest).rest));
     }
   } catch {
-    // no content directory yet — no slugs taken
   }
   return slugs;
 }
@@ -113,6 +111,7 @@ export async function newPost(argv: string[]): Promise<void> {
       section: { type: "string" },
       order: { type: "string" },
       collection: { type: "string" },
+      index: { type: "boolean" },
     },
     allowPositionals: true,
   });
@@ -131,6 +130,18 @@ export async function newPost(argv: string[]): Promise<void> {
     return;
   }
   const contentDir = values.dir ?? detected.dir;
+  if (!isSafeRelPath(contentDir)) {
+    log.error(
+      `Invalid --dir "${contentDir}" — must stay within the project (no "..").`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (values.index && detected.type !== "docs") {
+    log.error("--index only applies to docs content.");
+    process.exitCode = 1;
+    return;
+  }
   const date = values.date ?? new Date().toISOString().slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     log.error(`Invalid --date "${values.date}" — expected YYYY-MM-DD.`);
@@ -140,6 +151,15 @@ export async function newPost(argv: string[]): Promise<void> {
 
   if (detected.type === "changelog") {
     const version = parseVersion(title) ?? title;
+    if (
+      !isSafeRelPath(`${version}.md`) ||
+      version.includes("/") ||
+      version.includes("\\")
+    ) {
+      log.error(`Invalid changelog name "${title}" — use a version like "1.2.0".`);
+      process.exitCode = 1;
+      return;
+    }
     const target = join(cwd, contentDir, `${version}.md`);
     const body = [
       "---",
@@ -170,10 +190,36 @@ export async function newPost(argv: string[]): Promise<void> {
   }
 
   if (detected.type === "docs") {
+    if (values.section && !isSafeRelPath(values.section)) {
+      log.error(
+        `Invalid --section "${values.section}" — must stay within the content directory (no "..").`,
+      );
+      process.exitCode = 1;
+      return;
+    }
     const section = (values.section ?? "").split("/").filter(Boolean).join("/");
     const targetDir = section
       ? join(cwd, contentDir, section)
       : join(cwd, contentDir);
+    if (values.index) {
+      const target = join(targetDir, "index.md");
+      const body = [
+        "---",
+        `title: ${yamlValue(title)}`,
+        "description: ",
+        "---",
+        "",
+        "Write your section landing page here.",
+        "",
+      ].join("\n");
+      const status = await writeFileSafe(target, body, false);
+      if (status === "skipped") {
+        log.warn(`${relative(cwd, target)} already exists — left untouched.`);
+      } else {
+        log.success(`Created ${relative(cwd, target)}`);
+      }
+      return;
+    }
     const taken = await existingSlugs(targetDir);
     const slug = await resolveSlug(baseSlug, taken);
     const order = values.order ? Number(values.order) : undefined;

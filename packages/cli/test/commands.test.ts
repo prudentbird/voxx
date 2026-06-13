@@ -72,7 +72,18 @@ describe("voxx build", () => {
 
     expect(await exists(join(dir, "dist/blog/diagram.png"))).toBe(true);
     const html = await readFile(join(dir, "dist/blog/pics/index.html"), "utf8");
-    expect(html).toContain('src="/blog/diagram.png"');
+    expect(html).toContain('src="../../blog/diagram.png"');
+  });
+
+  it("copies nested content assets preserving their relative path", async () => {
+    await writeConfig({
+      content: { type: "docs", dir: "content", basePath: "/docs" },
+    });
+    await writePost("guides/page.md", "title: Guide", "![i](./img.png)");
+    await mkdir(join(dir, "content/guides"), { recursive: true });
+    await writeFile(join(dir, "content/guides/img.png"), "not-a-real-png");
+    await build([]);
+    expect(await exists(join(dir, "dist/docs/guides/img.png"))).toBe(true);
   });
 
   it("hides drafts by default but honors drafts:true in config", async () => {
@@ -90,7 +101,6 @@ describe("voxx build", () => {
     await build(["--drafts", "--out", "dist2"]);
     expect(await exists(join(dir, "dist2/blog/wip/index.html"))).toBe(true);
 
-    // drafts:true in voxx.json must survive the absence of the CLI flag
     await writeConfig({
       content: { type: "blog", dir: "content", basePath: "/blog", drafts: true },
     });
@@ -121,7 +131,6 @@ describe("voxx build", () => {
     expect(await exists(join(dir, "dist/blog/post/index.html"))).toBe(true);
     expect(await exists(join(dir, "dist/docs/guide/index.html"))).toBe(true);
 
-    // per-collection feed under its basePath, with a matching self link
     const rss = await readFile(join(dir, "dist/blog/rss.xml"), "utf8");
     expect(rss).toContain('href="https://test.dev/blog/rss.xml" rel="self"');
     expect(await exists(join(dir, "dist/rss.xml"))).toBe(false);
@@ -183,7 +192,6 @@ describe("voxx new", () => {
     expect(await exists(file)).toBe(true);
     const raw = await readFile(file, "utf8");
     expect(raw).toContain("title: Install Guide");
-    // docs frontmatter has no date/tags lines
     expect(raw).not.toContain("date:");
     expect(raw).not.toContain("tags:");
   });
@@ -225,6 +233,74 @@ describe("voxx new", () => {
       await exists(join(dir, "content/getting-started/01-install.md")),
     ).toBe(true);
   });
+
+  it("rejects a --section that escapes the content directory", async () => {
+    await writeConfig({
+      content: { type: "docs", dir: "content", basePath: "/docs" },
+    });
+    await newPost(["Post", "--section", "../../escape"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "../escape"))).toBe(false);
+  });
+
+  it("rejects a --dir that escapes the project", async () => {
+    await writeConfig();
+    await newPost(["Post", "--dir", "../outside", "--date", "2026-06-01"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "../outside"))).toBe(false);
+  });
+
+  it("rejects a traversal changelog name", async () => {
+    await writeConfig({
+      content: { type: "changelog", dir: "content", basePath: "/" },
+    });
+    await newPost(["../../evil"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "../evil.md"))).toBe(false);
+  });
+
+  it("allows a legitimate nested --section", async () => {
+    await writeConfig({
+      content: { type: "docs", dir: "content", basePath: "/docs" },
+    });
+    await newPost(["Page", "--section", "guides/intro"]);
+    expect(await exists(join(dir, "content/guides/intro/page.md"))).toBe(true);
+  });
+
+  it("creates a docs section index.md with --index", async () => {
+    await writeConfig({
+      content: { type: "docs", dir: "content", basePath: "/docs" },
+    });
+    await newPost(["Getting Started", "--section", "getting-started", "--index"]);
+    const file = join(dir, "content/getting-started/index.md");
+    expect(await exists(file)).toBe(true);
+    expect(await readFile(file, "utf8")).toContain("title: Getting Started");
+  });
+
+  it("creates a top-level index.md with --index and no section", async () => {
+    await writeConfig({
+      content: { type: "docs", dir: "content", basePath: "/docs" },
+    });
+    await newPost(["Top", "--index"]);
+    expect(await exists(join(dir, "content/index.md"))).toBe(true);
+  });
+
+  it("rejects --index on a non-docs collection", async () => {
+    await writeConfig();
+    await newPost(["X", "--index"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "content/index.md"))).toBe(false);
+  });
+
+  it("still creates a normal docs page without --index", async () => {
+    await writeConfig({
+      content: { type: "docs", dir: "content", basePath: "/docs" },
+    });
+    await newPost(["Normal Page", "--section", "getting-started"]);
+    expect(
+      await exists(join(dir, "content/getting-started/normal-page.md")),
+    ).toBe(true);
+  });
 });
 
 describe("voxx init --add", () => {
@@ -256,7 +332,6 @@ describe("voxx init --add", () => {
         drafts: false,
       },
     ]);
-    // top-level key order: collections sits where content was
     expect(Object.keys(cfg)).toEqual([
       "$schema",
       "site",
@@ -265,13 +340,11 @@ describe("voxx init --add", () => {
       "seo",
     ]);
 
-    // new collection's routes + samples
     expect(await exists(join(dir, "app/docs/[[...slug]]/page.tsx"))).toBe(true);
     expect(await exists(join(dir, "content/docs/index.md"))).toBe(true);
     const data = await readFile(join(dir, "app/docs/_voxx/data.ts"), "utf8");
     expect(data).toContain('coreGetPosts({ collection: "docs" })');
 
-    // site-wide files untouched (still the blog-flavored originals)
     const sitemap = await readFile(join(dir, "app/sitemap.ts"), "utf8");
     expect(sitemap).toContain("./blog/_voxx/data");
   });
@@ -281,7 +354,6 @@ describe("voxx init --add", () => {
     await init(["--add", "changelog"]);
     expect(process.exitCode).not.toBe(1);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
-    // content-branch defaults (content/blog, /blog) survive the rewrite
     expect(cfg.collections[0]).toEqual({
       name: "docs",
       type: "docs",
@@ -327,18 +399,18 @@ describe("voxx init --add", () => {
   });
 
   it("errors on name, basePath, and dir collisions without writing", async () => {
-    await writeConfig(); // content: blog at content/, /blog
+    await writeConfig();
     const before = await readFile(join(dir, "voxx.json"), "utf8");
 
-    await init(["--add", "blog"]); // duplicate name (implicit "blog")
+    await init(["--add", "blog"]);
     expect(process.exitCode).toBe(1);
     process.exitCode = 0;
 
-    await init(["--add", "docs", "--base", "/blog"]); // duplicate basePath
+    await init(["--add", "docs", "--base", "/blog"]);
     expect(process.exitCode).toBe(1);
     process.exitCode = 0;
 
-    await init(["--add", "docs", "--dir", "content"]); // duplicate dir
+    await init(["--add", "docs", "--dir", "content"]);
     expect(process.exitCode).toBe(1);
 
     expect(await readFile(join(dir, "voxx.json"), "utf8")).toBe(before);
@@ -370,6 +442,13 @@ describe("voxx init (static, non-TTY)", () => {
     expect(await exists(join(dir, "content/hello-world.md"))).toBe(true);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.content.type).toBe("blog");
+  });
+
+  it("rejects a --dir that escapes the project", async () => {
+    await init(["blog", "--dir", "../outside"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "voxx.json"))).toBe(false);
+    expect(await exists(join(dir, "../outside"))).toBe(false);
   });
 
   it("scaffolds routes into a Next.js app", async () => {

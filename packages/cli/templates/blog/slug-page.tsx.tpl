@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { buildSeo } from "@voxx/core";
+import { buildSeo, serializeJsonLd } from "@voxx/core";
 import { getConfig, getPost, getPosts } from "../_voxx/data";
 import { PostPage } from "../_voxx/post-page";
 import { toMetadata } from "../_voxx/metadata";
@@ -31,7 +31,7 @@ export default async function PostRoute({ params }: Params) {
       {config.seo.jsonLd && seo.jsonLd ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(seo.jsonLd) }}
         />
       ) : null}
       <PostPage post={post} config={config} />

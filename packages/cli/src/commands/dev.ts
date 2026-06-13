@@ -37,7 +37,6 @@ export interface DevHandle {
 
 export async function serveFile(outDir: string, urlPath: string) {
   const decoded = decodeURIComponent(urlPath.split("?")[0] ?? "/");
-  // normalize() collapses any ../ so requests cannot escape outDir
   const safe = normalize(decoded).replace(/^(\.\.[\\/])+/, "");
   const candidates = safe.endsWith("/")
     ? [join(safe, "index.html")]
@@ -49,9 +48,7 @@ export async function serveFile(outDir: string, urlPath: string) {
       const body = await readFile(path);
       const type = MIME[extname(path).toLowerCase()] ?? "application/octet-stream";
       return { status: 200, type, body };
-    } catch {
-      // try the next candidate
-    }
+    } catch {}
   }
   return {
     status: 404,
@@ -84,7 +81,6 @@ export async function dev(argv: string[]): Promise<DevHandle | undefined> {
     return;
   }
 
-  // Drafts are visible in dev by default — that's the preview story.
   const includeDrafts = values.drafts ?? true;
   const outDir = await mkdtemp(join(tmpdir(), "voxx-dev-"));
 

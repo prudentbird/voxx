@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
@@ -11,6 +11,7 @@ import {
 import {
   c,
   exists,
+  isSafeRelPath,
   log,
   normalizeBase,
   readTemplate,
@@ -145,6 +146,35 @@ async function createNextApp(cwd: string): Promise<string | null> {
   return join(cwd, dir);
 }
 
+async function isolateCreatedApp(
+  cwd: string,
+  appDir: string,
+): Promise<boolean> {
+  const siteDir = join(cwd, appDir, "(site)");
+  const moved: string[] = [];
+  for (const file of [
+    "layout.tsx",
+    "layout.js",
+    "page.tsx",
+    "page.js",
+    "page.module.css",
+  ]) {
+    const from = join(cwd, appDir, file);
+    if (!(await exists(from))) continue;
+    await mkdir(siteDir, { recursive: true });
+    await rename(from, join(siteDir, file));
+    moved.push(file);
+  }
+  if (!moved.some((f) => f.startsWith("layout."))) return false;
+  for (const file of ["layout.tsx", "layout.js"]) {
+    const path = join(siteDir, file);
+    if (!(await exists(path))) continue;
+    const src = await readFile(path, "utf8");
+    await writeFile(path, src.replace('"./globals.css"', '"../globals.css"'));
+  }
+  return true;
+}
+
 const NEXT_CONFIG_FILES = [
   "next.config.ts",
   "next.config.mjs",
@@ -171,7 +201,6 @@ export default nextConfig;
 type CacheComponentsResult =
   | { kind: "enabled" | "created" | "already"; file: string }
   | { kind: "manual" | "unsupported" };
-
 
 async function enableCacheComponents(
   cwd: string,
@@ -224,12 +253,6 @@ type AddPlan =
     }
   | { ok: false; message: string };
 
-/**
- * Compute the `voxx.json` rewrite for `voxx init --add <preset>`: resolve the
- * existing collections through core's naming contract, reject collisions, and
- * migrate a single-collection `content` config to a `collections` array.
- * Pure — nothing is written until the plan succeeds.
- */
 function planAdd(
   raw: RawConfig,
   preset: Preset,
@@ -242,9 +265,6 @@ function planAdd(
     | CollectionInput
     | undefined;
 
-  // Existing entries resolved the way core resolves them (config.ts): the
-  // collections branch via resolveCollectionDefaults, the legacy `content`
-  // branch via DEFAULT_CONFIG fallbacks.
   const existing =
     rawCollections.length > 0
       ? rawCollections.map(resolveCollectionDefaults)
@@ -286,14 +306,9 @@ function planAdd(
     };
   }
 
-  // The new entry is written fully explicit, even where it equals core's
-  // defaults — that keeps the collision rules above reviewable in the diff.
   const next = { name, type: preset, dir, basePath, drafts: false };
 
   if (rawCollections.length > 0) {
-    // Already multi-collection: append. Existing entries (and any stray
-    // `content` key, which core ignores once `collections` is non-empty)
-    // stay untouched.
     return {
       ok: true,
       out: { ...raw, collections: [...rawCollections, next] },
@@ -303,12 +318,6 @@ function planAdd(
     };
   }
 
-  // Migrate `content` -> `collections`. Copy `content` verbatim plus an
-  // explicit `name` (core's `name ?? type` rule). Where `dir`/`basePath` were
-  // omitted and would re-resolve differently under the collections branch
-  // (`content/<name>` / `/<name>`) than they did under the `content` branch
-  // (DEFAULT_CONFIG), back-fill the old resolved value so migration never
-  // changes where the existing collection reads from or mounts.
   const migrated: Record<string, unknown> = {
     name: first.name,
     ...(rawContent ?? {}),
@@ -319,8 +328,6 @@ function planAdd(
     migrated["basePath"] = first.basePath;
   }
 
-  // Rebuild the object so `collections` lands in the slot `content` (or an
-  // empty `collections`) occupied, preserving top-level key order.
   const collections = [migrated, next];
   const out: RawConfig = {};
   let inserted = false;
@@ -378,6 +385,29 @@ export async function init(argv: string[]): Promise<void> {
     return;
   }
 
+  if (values.dir !== undefined && !isSafeRelPath(values.dir)) {
+    log.error(
+      `Invalid --dir "${values.dir}" — must stay within the project (no "..").`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (values.app !== undefined && !isSafeRelPath(values.app)) {
+    log.error(
+      `Invalid --app "${values.app}" — must stay within the project (no "..").`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (
+    values.base !== undefined &&
+    values.base.split(/[\\/]/).includes("..")
+  ) {
+    log.error(`Invalid --base "${values.base}" — must not contain "..".`);
+    process.exitCode = 1;
+    return;
+  }
+
   let cwd = process.cwd();
   let contentDir = values.dir ?? "content";
   let basePath = normalizeBase(values.base ?? `/${preset}`);
@@ -419,7 +449,10 @@ export async function init(argv: string[]): Promise<void> {
     contentDir = plan.dir;
     basePath = plan.basePath;
     await writeFile(cfgPath, `${JSON.stringify(plan.out, null, 2)}\n`);
-    results.push([`voxx.json (added collection "${collectionName}")`, "written"]);
+    results.push([
+      `voxx.json (added collection "${collectionName}")`,
+      "written",
+    ]);
   } else if (!hasNext) {
     const setup = await chooseSetup();
     if (setup === "next") {
@@ -496,6 +529,19 @@ export async function init(argv: string[]): Promise<void> {
     const hasTokens = await detectTokens(cwd);
     wroteGlobals = !hasTokens;
     const globalsImport = hasTokens ? "" : 'import "./_voxx/voxx-globals.css";';
+
+    const isolated =
+      preset === "docs" &&
+      !add &&
+      createdAppDir !== null &&
+      baseSegment !== "" &&
+      (await isolateCreatedApp(cwd, appDir));
+    if (isolated) {
+      results.push([
+        `${join(appDir, "(site)")}/ (app layout moved — docs has its own root layout)`,
+        "written",
+      ]);
+    }
     const dataFromAppRoot = baseSegment
       ? `./${baseSegment}/_voxx/data`
       : "./_voxx/data";
@@ -519,17 +565,38 @@ export async function init(argv: string[]): Promise<void> {
     }
 
     const templated: Array<
-      [tpl: string, target: string, vars?: Record<string, string>, siteWide?: boolean]
+      [
+        tpl: string,
+        target: string,
+        vars?: Record<string, string>,
+        siteWide?: boolean,
+      ]
     > = [
       [
-        "shared/layout.tsx.tpl",
+        preset === "docs"
+          ? isolated
+            ? "docs/layout-root.tsx.tpl"
+            : "docs/layout.tsx.tpl"
+          : `${preset}/layout.tsx.tpl`,
         join(blogDir, "layout.tsx"),
-        { GLOBALS_IMPORT: globalsImport },
+        {
+          GLOBALS_IMPORT:
+            isolated && hasTokens ? 'import "../globals.css";' : globalsImport,
+          BASE_PATH: basePath,
+          RSS_PATH: basePath === "/" ? "/rss.xml" : `${basePath}/rss.xml`,
+        },
       ],
       [
         "shared/data.ts.tpl",
         join(voxxDir, "data.ts"),
         { COLLECTION_ARG: `{ collection: ${JSON.stringify(collectionName)} }` },
+      ],
+      ["shared/content-version.ts.tpl", join(voxxDir, "content-version.ts")],
+      [
+        "shared/instrumentation.ts.tpl",
+        join(dirname(join(cwd, appDir)), "instrumentation.ts"),
+        undefined,
+        true,
       ],
     ];
 
@@ -566,7 +633,6 @@ export async function init(argv: string[]): Promise<void> {
       ],
     );
     if (preset !== "docs") {
-      // Served at <basePath>/rss.xml so the feed's <atom:link rel="self"> matches.
       templated.push([
         "shared/rss-route.ts.tpl",
         join(blogDir, "rss.xml", "route.ts"),
@@ -579,11 +645,14 @@ export async function init(argv: string[]): Promise<void> {
         ["docs/page.tsx.tpl", join(blogDir, "[[...slug]]", "page.tsx")],
         ["docs/doc-page.tsx.tpl", join(voxxDir, "doc-page.tsx")],
         ["docs/sidebar-nav.tsx.tpl", join(voxxDir, "sidebar-nav.tsx")],
+        ["docs/mobile-nav.tsx.tpl", join(voxxDir, "mobile-nav.tsx")],
+        ["shared/theme-toggle.tsx.tpl", join(voxxDir, "theme-toggle.tsx")],
       );
     } else if (preset === "changelog") {
       templated.push(
         ["changelog/page.tsx.tpl", join(blogDir, "page.tsx")],
         ["changelog/release-list.tsx.tpl", join(voxxDir, "release-list.tsx")],
+        ["shared/theme-toggle.tsx.tpl", join(voxxDir, "theme-toggle.tsx")],
       );
     } else {
       templated.push(
@@ -591,6 +660,7 @@ export async function init(argv: string[]): Promise<void> {
         ["blog/slug-page.tsx.tpl", join(blogDir, "[slug]", "page.tsx")],
         ["blog/post-page.tsx.tpl", join(voxxDir, "post-page.tsx")],
         ["blog/post-list.tsx.tpl", join(voxxDir, "post-list.tsx")],
+        ["shared/theme-toggle.tsx.tpl", join(voxxDir, "theme-toggle.tsx")],
       );
     }
 
@@ -695,6 +765,11 @@ export async function init(argv: string[]): Promise<void> {
     if (wroteGlobals) {
       log.info(
         `  ${c.dim("(No design tokens found — added voxx-globals.css so it looks good out of the box.)")}`,
+      );
+    }
+    if (preset === "docs" && !createdAppDir && appDir) {
+      log.info(
+        `  ${c.dim(`(Heads up: your root layout wraps ${basePath} — its navbar/footer will show there too. To isolate the docs, see https://voxx.prudentbird.com/docs/reference/layouts.)`)}`,
       );
     }
   }

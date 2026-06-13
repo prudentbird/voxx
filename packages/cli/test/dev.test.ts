@@ -102,7 +102,6 @@ describe("voxx dev", () => {
   async function startDev() {
     let handle = await dev(["--port", String(randomPort())]);
     if (!handle) {
-      // Retry once with a fresh port in case the random port collided.
       process.exitCode = 0;
       handle = await dev(["--port", String(randomPort())]);
     }
