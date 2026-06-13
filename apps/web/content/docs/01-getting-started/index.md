@@ -36,12 +36,12 @@ refresh, publish on deploy.
 
 Every preset accepts the same flags:
 
-| Flag | Default | What it does |
-| --- | --- | --- |
-| `--base /notes` | `/<preset>` | Mount path — scaffolded routes follow it |
-| `--dir content` | `content` | Where your markdown lives |
-| `--app src/app` | auto-detected | The Next.js app directory |
-| `--force` | off | Overwrite files that already exist |
+| Flag            | Default       | What it does                             |
+| --------------- | ------------- | ---------------------------------------- |
+| `--base /notes` | `/<preset>`   | Mount path — scaffolded routes follow it |
+| `--dir content` | `content`     | Where your markdown lives                |
+| `--app src/app` | auto-detected | The Next.js app directory                |
+| `--force`       | off           | Overwrite files that already exist       |
 
 ## Cache Components
 

@@ -55,7 +55,7 @@ guides and the link keeps working as new releases land above it.
 ## Body conventions
 
 The body is ordinary markdown. Grouping changes under `### Added`,
-`### Changed`, `### Fixed`, and `### Removed` (*à la*
+`### Changed`, `### Fixed`, and `### Removed` (_à la_
 [Keep a Changelog](https://keepachangelog.com)) reads well in the timeline,
 but Voxx doesn't enforce it — paragraphs, bullets, even images all render
 fine.

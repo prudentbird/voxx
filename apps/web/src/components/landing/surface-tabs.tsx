@@ -34,7 +34,9 @@ function Dir({ name, children }: { name: string; children: ReactNode }) {
 }
 
 function MiniLine({ width }: { width: string }) {
-  return <span className="block h-2 rounded-sm bg-secondary" style={{ width }} />;
+  return (
+    <span className="block h-2 rounded-sm bg-secondary" style={{ width }} />
+  );
 }
 
 function Panel({
@@ -52,7 +54,9 @@ function Panel({
     <div
       className={cn(
         "grid-cols-[1fr_56px_1.1fr] items-center rounded-2xl border bg-card p-10 px-11 max-lg:grid-cols-1 max-lg:gap-5 max-lg:p-7.5",
-        active ? "grid animate-in fade-in slide-in-from-bottom-2.5 duration-400" : "hidden",
+        active
+          ? "grid animate-in fade-in slide-in-from-bottom-2.5 duration-400"
+          : "hidden",
       )}
     >
       <div>
@@ -72,10 +76,18 @@ function Panel({
   );
 }
 
-function MiniPage({ kicker, children }: { kicker: string; children: ReactNode }) {
+function MiniPage({
+  kicker,
+  children,
+}: {
+  kicker: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-6 px-6.5 dark:bg-[#181613]">
-      <p className="font-mono text-[11.5px] text-muted-foreground/70">{kicker}</p>
+      <p className="font-mono text-[11.5px] text-muted-foreground/70">
+        {kicker}
+      </p>
       {children}
     </div>
   );
@@ -131,7 +143,9 @@ export function SurfaceTabs() {
               ["May 02", "Why files"],
             ].map(([date, title]) => (
               <div key={title} className="flex items-baseline gap-3.5">
-                <span className="min-w-[52px] font-mono text-[11.5px] text-muted-foreground/70">{date}</span>
+                <span className="min-w-[52px] font-mono text-[11.5px] text-muted-foreground/70">
+                  {date}
+                </span>
                 <span className="font-display text-base font-semibold tracking-tight">
                   {title}
                 </span>
@@ -145,7 +159,9 @@ export function SurfaceTabs() {
           note="Numeric prefixes pin sidebar order, then disappear from the URL."
           files={
             <>
-              <li className="mb-1 font-mono text-xs leading-normal text-muted-foreground/70">content/docs/</li>
+              <li className="mb-1 font-mono text-xs leading-normal text-muted-foreground/70">
+                content/docs/
+              </li>
               <Dir name="01-getting-started/">
                 <FileName>01-install.md</FileName>
                 <FileName>02-configure.md</FileName>
@@ -161,16 +177,26 @@ export function SurfaceTabs() {
               <p className="font-mono text-[10.5px] tracking-widest text-muted-foreground/70 uppercase">
                 Getting started
               </p>
-              <p className="text-[13.5px] font-semibold text-primary">Install</p>
-              <p className="text-[13.5px] font-medium text-muted-foreground">Configure</p>
+              <p className="text-[13.5px] font-semibold text-primary">
+                Install
+              </p>
+              <p className="text-[13.5px] font-medium text-muted-foreground">
+                Configure
+              </p>
               <p className="mt-1.5 font-mono text-[10.5px] tracking-widest text-muted-foreground/70 uppercase">
                 Writing
               </p>
-              <p className="text-[13.5px] font-medium text-muted-foreground">Frontmatter</p>
+              <p className="text-[13.5px] font-medium text-muted-foreground">
+                Frontmatter
+              </p>
             </div>
             <div className="flex flex-1 flex-col gap-2.5">
-              <p className="font-mono text-[11.5px] text-muted-foreground/70">/docs/getting-started/install</p>
-              <p className="font-display text-lg font-bold tracking-tight">Install</p>
+              <p className="font-mono text-[11.5px] text-muted-foreground/70">
+                /docs/getting-started/install
+              </p>
+              <p className="font-display text-lg font-bold tracking-tight">
+                Install
+              </p>
               <MiniLine width="80%" />
               <MiniLine width="60%" />
             </div>
@@ -193,13 +219,21 @@ export function SurfaceTabs() {
         >
           <MiniPage kicker="/changelog">
             <div className="flex items-baseline gap-3">
-              <span className="font-display text-[17px] font-bold tracking-tight">1.4.0</span>
-              <span className="font-mono text-[11.5px] text-primary">#1-4-0</span>
+              <span className="font-display text-[17px] font-bold tracking-tight">
+                1.4.0
+              </span>
+              <span className="font-mono text-[11.5px] text-primary">
+                #1-4-0
+              </span>
             </div>
             <MiniLine width="80%" />
             <div className="flex items-baseline gap-3">
-              <span className="font-display text-[17px] font-bold tracking-tight">1.3.2</span>
-              <span className="font-mono text-[11.5px] text-primary">#1-3-2</span>
+              <span className="font-display text-[17px] font-bold tracking-tight">
+                1.3.2
+              </span>
+              <span className="font-mono text-[11.5px] text-primary">
+                #1-3-2
+              </span>
             </div>
             <MiniLine width="60%" />
           </MiniPage>

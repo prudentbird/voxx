@@ -19,12 +19,12 @@ with files and [`@voxx/core`](/docs/reference/core-api).
 Scaffolds a surface. The preset (default `blog`) picks the sample content
 and routes; the flags place them:
 
-| Flag | Default | What it does |
-| --- | --- | --- |
-| `--base /notes` | `/<preset>` | Mount path — scaffolded routes follow it |
-| `--dir content` | `content` | Content folder written into `voxx.json` |
-| `--app src/app` | auto-detected | The Next.js app directory |
-| `--force` | off | Overwrite existing files (default: skip them) |
+| Flag            | Default       | What it does                                  |
+| --------------- | ------------- | --------------------------------------------- |
+| `--base /notes` | `/<preset>`   | Mount path — scaffolded routes follow it      |
+| `--dir content` | `content`     | Content folder written into `voxx.json`       |
+| `--app src/app` | auto-detected | The Next.js app directory                     |
+| `--force`       | off           | Overwrite existing files (default: skip them) |
 
 With a Next.js app detected, `init` writes the routes for the preset, the
 `_voxx/` data layer and components, `llms.txt` and `llms-full.txt` routes,
@@ -50,12 +50,12 @@ Adds a second (or third…) collection to a site that already has a
 `voxx.json` — `voxx init --add docs` on a blog gives you a
 [multi-collection](/docs/reference/collections) site:
 
-| Flag | Default | What it does |
-| --- | --- | --- |
-| `--name notes` | the preset name | The collection's name — what `voxx new --collection` and `getPosts({ collection })` use |
-| `--dir content/notes` | `content/<name>` | The new collection's content folder |
-| `--base /notes` | `/<name>` | Mount path for the new collection's routes |
-| `--app src/app` | auto-detected | The Next.js app directory |
+| Flag                  | Default          | What it does                                                                            |
+| --------------------- | ---------------- | --------------------------------------------------------------------------------------- |
+| `--name notes`        | the preset name  | The collection's name — what `voxx new --collection` and `getPosts({ collection })` use |
+| `--dir content/notes` | `content/<name>` | The new collection's content folder                                                     |
+| `--base /notes`       | `/<name>`        | Mount path for the new collection's routes                                              |
+| `--app src/app`       | auto-detected    | The Next.js app directory                                                               |
 
 It rewrites `voxx.json` (migrating a single-collection `content` config to a
 `collections` array — resolved behavior is preserved exactly), then scaffolds
@@ -68,7 +68,7 @@ and created only when missing.
 or `basePath` collides with an existing one. Pass `--name`, `--dir`, or
 `--base` to resolve a collision.
 
-Note that feature defaults (`rss`, `toc`, …) follow the *first* collection's
+Note that feature defaults (`rss`, `toc`, …) follow the _first_ collection's
 type — review `features` in `voxx.json` after adding a collection of a
 different type.
 
@@ -76,11 +76,11 @@ different type.
 
 Creates a content file, shaped by the collection type in `voxx.json`:
 
-| Type | `voxx new "X"` creates | Useful flags |
-| --- | --- | --- |
-| blog | `2026-06-11-x.md` | `--date`, `--slug`, `--flat` (no date prefix) |
-| docs | `x.md` | `--section guides`, `--order 3` → `guides/03-x.md` |
-| changelog | `X.md` with `version:` set | — (the title *is* the version) |
+| Type      | `voxx new "X"` creates     | Useful flags                                       |
+| --------- | -------------------------- | -------------------------------------------------- |
+| blog      | `2026-06-11-x.md`          | `--date`, `--slug`, `--flat` (no date prefix)      |
+| docs      | `x.md`                     | `--section guides`, `--order 3` → `guides/03-x.md` |
+| changelog | `X.md` with `version:` set | — (the title _is_ the version)                     |
 
 On a multi-collection site, `--collection <name>` picks which collection the
 file lands in — `voxx new "Install" --collection docs` writes a docs page even
@@ -97,10 +97,10 @@ images and other content assets, and the outputs your
 [feature flags](/docs/reference/configuration#features) ask for
 (`rss.xml`, `sitemap.xml`, `robots.txt`, `llms.txt`, `llms-full.txt`).
 
-| Flag | Default | What it does |
-| --- | --- | --- |
-| `--out public` | `dist` | Output directory |
-| `--drafts` | off | Include `draft: true` pages (a collection's `drafts: true` in `voxx.json` also works) |
+| Flag           | Default | What it does                                                                          |
+| -------------- | ------- | ------------------------------------------------------------------------------------- |
+| `--out public` | `dist`  | Output directory                                                                      |
+| `--drafts`     | off     | Include `draft: true` pages (a collection's `drafts: true` in `voxx.json` also works) |
 
 See [Static sites](/docs/getting-started/static-sites) for what each
 content type produces.
@@ -112,6 +112,6 @@ watches `voxx.json` and your content folders, rebuilds on change, and
 serves the result. Drafts are included by default — `voxx dev` is the
 draft-preview story.
 
-| Flag | Default | What it does |
-| --- | --- | --- |
-| `--port 8080` | `4321` | Port to listen on |
+| Flag          | Default | What it does      |
+| ------------- | ------- | ----------------- |
+| `--port 8080` | `4321`  | Port to listen on |

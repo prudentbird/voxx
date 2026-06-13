@@ -14,20 +14,32 @@ const VERBS = [
     body: "Search your writing like you search your code.",
   },
   { cmd: "git diff", body: "Every edit is a readable, reviewable change." },
-  { cmd: "git checkout -b rewrite", body: "Draft a whole new direction on a branch." },
+  {
+    cmd: "git checkout -b rewrite",
+    body: "Draft a whole new direction on a branch.",
+  },
   { cmd: "gh pr review", body: "Content ships through the same gate as code." },
 ];
 
 const BATTERIES = [
-  { cmd: "og: + json-ld", body: "Open Graph tags and structured data on every page." },
-  { cmd: "canonical", body: "Canonical URLs, handled. No duplicate-content debt." },
+  {
+    cmd: "og: + json-ld",
+    body: "Open Graph tags and structured data on every page.",
+  },
+  {
+    cmd: "canonical",
+    body: "Canonical URLs, handled. No duplicate-content debt.",
+  },
   { cmd: "rss.xml", body: "A real feed, generated from your posts." },
   { cmd: "sitemap.xml", body: "Always current. Never hand-edited." },
   { cmd: "robots.txt", body: "Sane defaults, easy overrides." },
   { cmd: "shiki", body: "Syntax highlighting, light and dark, at build time." },
   { cmd: "toc", body: "Table of contents from your headings." },
   { cmd: "~4 min read", body: "Reading time, computed for you." },
-  { cmd: "frontmatter ✓", body: "Validated at build. Typos fail loudly, not silently." },
+  {
+    cmd: "frontmatter ✓",
+    body: "Validated at build. Typos fail loudly, not silently.",
+  },
   { cmd: "voxx.json", body: "One config file, JSON-schema validated." },
 ];
 
@@ -86,8 +98,9 @@ export default function Home() {
             className="anim-up max-w-[620px] text-[19px] leading-[1.65] text-pretty text-muted-foreground"
             style={{ "--d": 2 } as CSSProperties}
           >
-            Voxx is a zero&#8209;friction CMS for you and your agents. A folder of markdown
-            becomes your blog, docs, or changelog — written like prose, shipped like code.
+            Voxx is a zero&#8209;friction CMS for you and your agents. A folder
+            of markdown becomes your blog, docs, or changelog — written like
+            prose, shipped like code.
           </p>
           <div className="anim-up" style={{ "--d": 3 } as CSSProperties}>
             <Ctas />
@@ -110,7 +123,9 @@ export default function Home() {
                 <code className="mb-2.5 block font-mono text-[13px] text-foreground">
                   {verb.cmd}
                 </code>
-                <p className="text-sm leading-relaxed text-muted-foreground">{verb.body}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {verb.body}
+                </p>
               </div>
             ))}
           </Reveal>
@@ -136,8 +151,8 @@ export default function Home() {
             as="p"
             className="mb-12 max-w-[560px] text-lg text-muted-foreground"
           >
-            Dates sort the blog. Folders order the sidebar. Versions cut the releases. No
-            config required — the convention does the work.
+            Dates sort the blog. Folders order the sidebar. Versions cut the
+            releases. No config required — the convention does the work.
           </Reveal>
           <Reveal>
             <SurfaceTabs />
@@ -165,16 +180,18 @@ export default function Home() {
               <code className="rounded-[5px] border border-[rgba(237,232,221,0.12)] bg-[#1f1c16] px-1.5 font-mono text-sm text-[#ede8dd]">
                 .md
               </code>{" "}
-              file in your repo. Agents read and write content with the same tools they use
-              for code — no API tokens, no SDK, no custom integration. And every change lands
-              as a diff a human can review.
+              file in your repo. Agents read and write content with the same
+              tools they use for code — no API tokens, no SDK, no custom
+              integration. And every change lands as a diff a human can review.
             </Reveal>
           </div>
 
           <Reveal className="overflow-hidden rounded-2xl border border-[rgba(237,232,221,0.12)] bg-[#1f1c16]">
             <div className="flex items-center gap-3.5 border-b border-[rgba(237,232,221,0.12)] bg-[rgba(237,232,221,0.04)] px-4 py-3">
               <Traffic />
-              <span className="font-mono text-xs text-[#a39c8d]">agent session</span>
+              <span className="font-mono text-xs text-[#a39c8d]">
+                agent session
+              </span>
             </div>
             <div className="flex flex-col gap-0.5 px-6 py-5.5 font-mono text-[13px] leading-[2.05]">
               <p className="mb-2 text-[#ede8dd]">
@@ -185,10 +202,8 @@ export default function Home() {
               </p>
               {AGENT_STEPS.map((step) => (
                 <p key={step.verb} className="text-[#a39c8d]">
-                  <span className="mr-1 text-primary">
-                    ⏺
-                  </span>{" "}
-                  {step.verb} <span className="text-[#ede8dd]">{step.path}</span>
+                  <span className="mr-1 text-primary">⏺</span> {step.verb}{" "}
+                  <span className="text-[#ede8dd]">{step.path}</span>
                 </p>
               ))}
               <p className="pl-6.5 text-[12.5px] text-[oklch(0.65_0.13_25)]">
@@ -198,15 +213,15 @@ export default function Home() {
                 + drafts no longer appear in the RSS feed
               </p>
               <p className="text-[#a39c8d]">
-                <span className="mr-1 text-primary">⏺</span>{" "}
-                Bash{" "}
+                <span className="mr-1 text-primary">⏺</span> Bash{" "}
                 <span className="text-[#ede8dd]">
                   git commit -m &quot;fix: typo in 1.4.0 notes&quot;
                 </span>
               </p>
               <p className="mt-2 text-[#ede8dd]">
-                <span className="mr-1 text-[oklch(0.72_0.12_150)]">✓</span> Done. Opened PR{" "}
-                <span className="text-[#ede8dd]">#412</span> for review.
+                <span className="mr-1 text-[oklch(0.72_0.12_150)]">✓</span>{" "}
+                Done. Opened PR <span className="text-[#ede8dd]">#412</span> for
+                review.
               </p>
             </div>
           </Reveal>
@@ -253,7 +268,9 @@ export default function Home() {
           </Reveal>
           <div className="mt-6.5 grid grid-cols-2 gap-6 max-sm:grid-cols-1">
             <Reveal className="flex flex-col gap-3.5 rounded-2xl border bg-card p-9 pb-8">
-              <p className="font-mono text-xs tracking-[0.12em] text-muted-foreground/70 uppercase">Next.js</p>
+              <p className="font-mono text-xs tracking-[0.12em] text-muted-foreground/70 uppercase">
+                Next.js
+              </p>
               <h3 className="font-display text-[23px] font-semibold tracking-tight">
                 Scaffolded into your app
               </h3>
@@ -261,11 +278,16 @@ export default function Home() {
                 <code className="rounded-[5px] border border-border/60 bg-secondary px-1 font-mono text-[13px] text-foreground">
                   npx voxx init
                 </code>{" "}
-                writes real route files into your project. You own them — restyle them, extend
-                them, delete what you don&rsquo;t need. No black box.
+                writes real route files into your project. You own them —
+                restyle them, extend them, delete what you don&rsquo;t need. No
+                black box.
               </p>
               <ul className="mt-2 border-t border-border/60 pt-3.5 font-mono text-[13px] leading-8 text-muted-foreground">
-                {["app/blog/page.tsx", "app/blog/[slug]/page.tsx", "app/blog/_voxx/data.ts"].map((f) => (
+                {[
+                  "app/blog/page.tsx",
+                  "app/blog/[slug]/page.tsx",
+                  "app/blog/_voxx/data.ts",
+                ].map((f) => (
                   <li key={f}>
                     <span className="text-muted-foreground/70">◇ </span>
                     {f}
@@ -279,24 +301,29 @@ export default function Home() {
               </p>
               <h3 className="font-display text-[23px] font-semibold tracking-tight">
                 Fully static with{" "}
-                <code className="font-mono text-xl text-primary">voxx build</code>
+                <code className="font-mono text-xl text-primary">
+                  voxx build
+                </code>
               </h3>
               <p className="text-[15px] leading-[1.65] text-muted-foreground">
-                No framework? One command renders the whole site to plain HTML in{" "}
+                No framework? One command renders the whole site to plain HTML
+                in{" "}
                 <code className="rounded-[5px] border border-border/60 bg-secondary px-1 font-mono text-[13px] text-foreground">
                   dist/
                 </code>
                 . Deploy it anywhere a folder can go.
               </p>
               <ul className="mt-2 border-t border-border/60 pt-3.5 font-mono text-[13px] leading-8 text-muted-foreground">
-                {["dist/blog/index.html", "dist/blog/hello-world/index.html", "dist/blog/rss.xml"].map(
-                  (f) => (
-                    <li key={f}>
-                      <span className="text-muted-foreground/70">◇ </span>
-                      {f}
-                    </li>
-                  ),
-                )}
+                {[
+                  "dist/blog/index.html",
+                  "dist/blog/hello-world/index.html",
+                  "dist/blog/rss.xml",
+                ].map((f) => (
+                  <li key={f}>
+                    <span className="text-muted-foreground/70">◇ </span>
+                    {f}
+                  </li>
+                ))}
               </ul>
             </Reveal>
           </div>

@@ -40,11 +40,11 @@ stripped of its JSX.
 
 Filenames carry meaning, and each surface reads them differently:
 
-| Surface | Filename | Meaning |
-| --- | --- | --- |
-| Blog | `2026-06-11-hello.md` | Date-stamps the post; slug is `hello` |
-| Docs | `01-install.md` | Pins sidebar order; slug is `install` |
-| Changelog | `1.4.0.md` | Names the release version |
+| Surface   | Filename              | Meaning                               |
+| --------- | --------------------- | ------------------------------------- |
+| Blog      | `2026-06-11-hello.md` | Date-stamps the post; slug is `hello` |
+| Docs      | `01-install.md`       | Pins sidebar order; slug is `install` |
+| Changelog | `1.4.0.md`            | Names the release version             |
 
 Frontmatter always wins over the filename — an explicit `date:`, `order:`,
 `slug:`, or `version:` overrides whatever the name implies.

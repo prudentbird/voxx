@@ -15,18 +15,18 @@ a default — and several defaults are [type-aware](#type-aware-defaults).
     "description": "Tools for people who ship.",
     "url": "https://acme.dev",
     "author": { "name": "Acme", "url": "https://acme.dev/about" },
-    "locale": "en-US"
+    "locale": "en-US",
   },
   "content": {
-    "type": "docs",            // "blog" | "docs" | "changelog"
+    "type": "docs", // "blog" | "docs" | "changelog"
     "dir": "content/docs",
     "basePath": "/docs",
-    "drafts": false
+    "drafts": false,
   },
   "theme": {
     "preset": "shadcn",
     "css": null,
-    "codeTheme": "github-light github-dark"
+    "codeTheme": "github-light github-dark",
   },
   "features": {
     "toc": true,
@@ -34,14 +34,14 @@ a default — and several defaults are [type-aware](#type-aware-defaults).
     "sitemap": true,
     "llmsTxt": true,
     "tags": true,
-    "readingTime": true
+    "readingTime": true,
   },
   "seo": {
     "openGraph": true,
     "twitter": "@acme",
     "jsonLd": true,
-    "defaultImage": "/og.png"
-  }
+    "defaultImage": "/og.png",
+  },
 }
 ```
 
@@ -51,25 +51,25 @@ the file at runtime, so the two can't drift.
 
 ## `site`
 
-| Key | Default | Notes |
-| --- | --- | --- |
-| `title` | — | **Required.** Site name in feeds, SEO, and JSON-LD |
-| `url` | — | **Required.** Origin for canonical URLs and absolute links |
-| `description` | `""` | Used in feeds, `llms.txt`, and index pages |
-| `author` | — | `{ name, url? }` — default author for SEO output |
-| `locale` | `"en-US"` | Open Graph locale and date formatting |
+| Key           | Default   | Notes                                                      |
+| ------------- | --------- | ---------------------------------------------------------- |
+| `title`       | —         | **Required.** Site name in feeds, SEO, and JSON-LD         |
+| `url`         | —         | **Required.** Origin for canonical URLs and absolute links |
+| `description` | `""`      | Used in feeds, `llms.txt`, and index pages                 |
+| `author`      | —         | `{ name, url? }` — default author for SEO output           |
+| `locale`      | `"en-US"` | Open Graph locale and date formatting                      |
 
 ## `content`
 
 The single-collection shorthand: one content type, one folder, one mount
 path.
 
-| Key | Default | Notes |
-| --- | --- | --- |
-| `type` | `"blog"` | `"blog"`, `"docs"`, or `"changelog"` |
-| `dir` | `"content/blog"` | Markdown folder, resolved relative to `voxx.json` |
-| `basePath` | `"/blog"` | URL prefix the collection is mounted at |
-| `drafts` | `false` | Include drafts by default |
+| Key        | Default          | Notes                                             |
+| ---------- | ---------------- | ------------------------------------------------- |
+| `type`     | `"blog"`         | `"blog"`, `"docs"`, or `"changelog"`              |
+| `dir`      | `"content/blog"` | Markdown folder, resolved relative to `voxx.json` |
+| `basePath` | `"/blog"`        | URL prefix the collection is mounted at           |
+| `drafts`   | `false`          | Include drafts by default                         |
 
 To mount more than one surface, use `collections` instead — it replaces
 `content` entirely. See [Collections](/docs/reference/collections).
@@ -91,17 +91,17 @@ or off.
 Defaults follow your content type, so each surface starts sensible without
 any flags:
 
-| Flag | blog | docs | changelog |
-| --- | --- | --- | --- |
-| `toc` | on | on | **off** |
-| `rss` | on | **off** | on |
-| `sitemap` | on | on | **off** |
-| `llmsTxt` | on | on | on |
-| `tags` | on | **off** | **off** |
-| `readingTime` | on | **off** | **off** |
+| Flag          | blog | docs    | changelog |
+| ------------- | ---- | ------- | --------- |
+| `toc`         | on   | on      | **off**   |
+| `rss`         | on   | **off** | on        |
+| `sitemap`     | on   | on      | **off**   |
+| `llmsTxt`     | on   | on      | on        |
+| `tags`        | on   | **off** | **off**   |
+| `readingTime` | on   | **off** | **off**   |
 
 An explicit value in `voxx.json` always wins. With multiple collections, the
-defaults follow the *first* collection's type.
+defaults follow the _first_ collection's type.
 
 ## `theme` and `seo`
 

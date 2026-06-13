@@ -13,8 +13,8 @@ with its own type, directory, and base path:
   "collections": [
     { "name": "blog" },
     { "name": "docs", "type": "docs" },
-    { "name": "releases", "type": "changelog", "basePath": "/changelog" }
-  ]
+    { "name": "releases", "type": "changelog", "basePath": "/changelog" },
+  ],
 }
 ```
 
@@ -24,13 +24,13 @@ When `collections` is present it replaces the `content` block entirely.
 
 Each entry fills itself in from its `name` and `type`:
 
-| Key | Default | Example above |
-| --- | --- | --- |
-| `name` | the `type` | `"releases"` |
-| `type` | `"blog"` | `"changelog"` |
-| `dir` | `content/<name>` | `content/releases` |
-| `basePath` | `/<name>` | overridden to `/changelog` |
-| `drafts` | `false` | — |
+| Key        | Default          | Example above              |
+| ---------- | ---------------- | -------------------------- |
+| `name`     | the `type`       | `"releases"`               |
+| `type`     | `"blog"`         | `"changelog"`              |
+| `dir`      | `content/<name>` | `content/releases`         |
+| `basePath` | `/<name>`        | overridden to `/changelog` |
+| `drafts`   | `false`          | —                          |
 
 So `{ "name": "docs", "type": "docs" }` reads `content/docs/` and mounts at
 `/docs` with zero further config.
@@ -45,8 +45,8 @@ its type. Reach the others by name:
 ```ts
 import { getPosts, getPost } from "@voxx/core";
 
-const posts = await getPosts();                        // first collection
-const docs = await getPosts({ collection: "docs" });   // by name
+const posts = await getPosts(); // first collection
+const docs = await getPosts({ collection: "docs" }); // by name
 const page = await getPost("guides/deploy", { collection: "docs" });
 ```
 

@@ -11,7 +11,9 @@ export function ManifestoHeading() {
     const h = ref.current;
     if (!h) return;
     const spans = Array.from(h.querySelectorAll<HTMLSpanElement>("span"));
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
 
     function onScroll() {
       if (!h) return;

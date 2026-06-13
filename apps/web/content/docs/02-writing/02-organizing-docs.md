@@ -4,7 +4,7 @@ description: Folders, ordering prefixes, and index.md — the whole system.
 ---
 
 A docs collection mirrors its folder. There's no separate navigation config
-to maintain: the tree on disk *is* the sidebar, the URL structure, and the
+to maintain: the tree on disk _is_ the sidebar, the URL structure, and the
 prev/next order.
 
 ```

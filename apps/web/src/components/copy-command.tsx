@@ -3,7 +3,11 @@ import { useRef, useState } from "react";
 import { Button } from "@voxx/ui/components/button";
 import { Copy, Check } from "lucide-react";
 
-export function CopyCommand({ command = "npx voxx init" }: { command?: string }) {
+export function CopyCommand({
+  command = "npx voxx init",
+}: {
+  command?: string;
+}) {
   const [copied, setCopied] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,7 +34,11 @@ export function CopyCommand({ command = "npx voxx init" }: { command?: string })
         $ npx <b className="font-medium text-primary">voxx</b> init
       </span>
       <span aria-hidden="true" className="inline-flex">
-        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+        {copied ? (
+          <Check className="size-3.5" />
+        ) : (
+          <Copy className="size-3.5" />
+        )}
       </span>
     </Button>
   );

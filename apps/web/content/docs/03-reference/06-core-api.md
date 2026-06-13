@@ -11,10 +11,10 @@ internally, but you never have to touch it.
 ```ts
 import { getPosts, getPost, buildNavTree, buildSeo } from "@voxx/core";
 
-const posts = await getPosts();                  // reads voxx.json
+const posts = await getPosts(); // reads voxx.json
 const post = await getPost("getting-started/blog");
-const nav = buildNavTree(posts);                 // docs sidebar tree
-const seo = buildSeo(post, await loadConfig());  // head-ready payload
+const nav = buildNavTree(posts); // docs sidebar tree
+const seo = buildSeo(post, await loadConfig()); // head-ready payload
 ```
 
 ## Content
@@ -47,12 +47,12 @@ the post list (cached, say) can resolve slugs without re-reading content.
 
 Everything is precomputed — no second pass needed:
 
-| Group | Fields |
-| --- | --- |
-| Identity | `slug`, `path[]`, `url` |
+| Group       | Fields                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------- |
+| Identity    | `slug`, `path[]`, `url`                                                                                       |
 | Frontmatter | `title`, `description`, `date`, `updated`, `tags`, `category`, `order`, `version`, `draft`, `image`, `author` |
-| Derived | `excerpt`, `readingTimeMinutes`, `toc[]` |
-| Body | `html` (rendered + highlighted), `content` (raw markdown) |
+| Derived     | `excerpt`, `readingTimeMinutes`, `toc[]`                                                                      |
+| Body        | `html` (rendered + highlighted), `content` (raw markdown)                                                     |
 
 ## Config
 
@@ -63,16 +63,16 @@ and returns `{ html, toc }`.
 
 ## Site outputs
 
-| Function | Returns |
-| --- | --- |
-| `buildNavTree(posts)` | Nested `NavNode[]` for a docs sidebar |
-| `buildSeo(post, config)` | Canonical + Open Graph + Twitter + JSON-LD |
-| `renderRss(posts, config, opts?)` | RSS 2.0 XML with `content:encoded`; `opts.path` sets the self-link (default `rssPath(config)` = `<basePath>/rss.xml`) |
-| `renderSitemap(posts, config, opts?)` | `sitemap.xml` XML; `opts.indexPaths` lists extra collection indexes |
-| `renderRobotsTxt(config)` | A `robots.txt` pointing at the sitemap |
-| `renderLlmsTxt(posts, config)` | An `llms.txt` index |
-| `renderLlmsTxtSections(sections, config)` | A multi-collection `llms.txt` (one heading per section) |
-| `renderLlmsFull(posts, config)` | Every page's full markdown, concatenated |
+| Function                                  | Returns                                                                                                               |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `buildNavTree(posts)`                     | Nested `NavNode[]` for a docs sidebar                                                                                 |
+| `buildSeo(post, config)`                  | Canonical + Open Graph + Twitter + JSON-LD                                                                            |
+| `renderRss(posts, config, opts?)`         | RSS 2.0 XML with `content:encoded`; `opts.path` sets the self-link (default `rssPath(config)` = `<basePath>/rss.xml`) |
+| `renderSitemap(posts, config, opts?)`     | `sitemap.xml` XML; `opts.indexPaths` lists extra collection indexes                                                   |
+| `renderRobotsTxt(config)`                 | A `robots.txt` pointing at the sitemap                                                                                |
+| `renderLlmsTxt(posts, config)`            | An `llms.txt` index                                                                                                   |
+| `renderLlmsTxtSections(sections, config)` | A multi-collection `llms.txt` (one heading per section)                                                               |
+| `renderLlmsFull(posts, config)`           | Every page's full markdown, concatenated                                                                              |
 
 All of them are pure functions over data you already have, so they slot
 into any route handler or build script.
@@ -100,7 +100,7 @@ runtime and outside development. Options:
 
 ## The Effect entry point
 
-If you *do* speak Effect, `@voxx/core/effect` exposes the raw programs —
+If you _do_ speak Effect, `@voxx/core/effect` exposes the raw programs —
 `getPostsEffect`, `loadConfigEffect`, `renderMarkdownEffect`,
 `parseFrontmatter` — alongside the `ConfigInput` and `Frontmatter` schemas
 and the tagged errors (`ConfigError`, `InvalidFrontmatter`, `PostNotFound`,

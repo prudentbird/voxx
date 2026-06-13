@@ -5,7 +5,7 @@ description: Voxx inherits your design tokens — and looks good without them.
 
 Voxx ships **element-only** styles: prose, code blocks, the TOC, the docs
 sidebar, the pager. It never styles your page chrome, and it never defines
-your design tokens — it *reads* them.
+your design tokens — it _reads_ them.
 
 ## Token inheritance
 

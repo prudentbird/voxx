@@ -8,9 +8,15 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://voxx.prudentbird.com"),
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className={`${fontClasses} h-full antialiased`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${fontClasses} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}

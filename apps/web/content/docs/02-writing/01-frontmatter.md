@@ -27,21 +27,21 @@ excerpt: A hand-written excerpt, if the derived one won't do.
 
 ## Field reference
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `title` | string | **Required.** The page heading and `<title>` |
-| `description` | string | Used for SEO and list excerpts |
-| `date` | date | Publish date — see [precedence](#how-dates-are-resolved) |
-| `updated` | date | Shown as modified time in SEO output and sitemaps |
-| `slug` | string | Overrides the filename-derived slug |
-| `tags` | string[] | Blog taxonomy; flows into RSS categories and SEO keywords |
-| `category` | string | Passthrough: exposed on `Post` for your own components; no built-in Voxx surface reads it |
-| `order` | number | Manual position in docs navigation |
-| `version` | string | Release version (changelog) — overrides the filename |
-| `draft` | boolean | Hidden everywhere until published (default `false`) |
-| `image` | string | Social/OG image; falls back to `seo.defaultImage` |
-| `author` | string | Overrides `site.author` for this page |
-| `excerpt` | string | Overrides the derived excerpt |
+| Field         | Type     | Notes                                                                                     |
+| ------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `title`       | string   | **Required.** The page heading and `<title>`                                              |
+| `description` | string   | Used for SEO and list excerpts                                                            |
+| `date`        | date     | Publish date — see [precedence](#how-dates-are-resolved)                                  |
+| `updated`     | date     | Shown as modified time in SEO output and sitemaps                                         |
+| `slug`        | string   | Overrides the filename-derived slug                                                       |
+| `tags`        | string[] | Blog taxonomy; flows into RSS categories and SEO keywords                                 |
+| `category`    | string   | Passthrough: exposed on `Post` for your own components; no built-in Voxx surface reads it |
+| `order`       | number   | Manual position in docs navigation                                                        |
+| `version`     | string   | Release version (changelog) — overrides the filename                                      |
+| `draft`       | boolean  | Hidden everywhere until published (default `false`)                                       |
+| `image`       | string   | Social/OG image; falls back to `seo.defaultImage`                                         |
+| `author`      | string   | Overrides `site.author` for this page                                                     |
+| `excerpt`     | string   | Overrides the derived excerpt                                                             |
 
 Unknown keys are ignored, not errors — annotate your files however you like.
 An empty value (`description:` with nothing after it) is treated as absent.

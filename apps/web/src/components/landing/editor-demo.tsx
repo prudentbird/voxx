@@ -29,7 +29,10 @@ function inline(s: string) {
   s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/(^|[^*\w])\*([^*\n]+)\*/g, "$1<em>$2</em>");
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="#" onclick="return false">$1</a>');
+  s = s.replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="#" onclick="return false">$1</a>',
+  );
   return s;
 }
 
@@ -50,7 +53,9 @@ function renderMD(body: string) {
   };
   const flushList = () => {
     if (list.length) {
-      html.push(`<ul>${list.map((li) => `<li>${inline(li)}</li>`).join("")}</ul>`);
+      html.push(
+        `<ul>${list.map((li) => `<li>${inline(li)}</li>`).join("")}</ul>`,
+      );
       list = [];
     }
   };
@@ -115,7 +120,8 @@ function renderMD(body: string) {
     flushQuote();
     para.push(ln.trim());
   }
-  if (inFence && fence.length) html.push(`<pre><code>${esc(fence.join("\n"))}</code></pre>`);
+  if (inFence && fence.length)
+    html.push(`<pre><code>${esc(fence.join("\n"))}</code></pre>`);
   flushAll();
   return html.join("");
 }
@@ -177,7 +183,10 @@ function highlight(src: string) {
       '<span class="tk-b"><span class="tk-mark">**</span>$1<span class="tk-mark">**</span></span>',
     );
     s = s.replace(/^(\s*)([-*])(\s)/, '$1<span class="tk-mark">$2</span>$3');
-    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span class="tk-code">[$1]($2)</span>');
+    s = s.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<span class="tk-code">[$1]($2)</span>',
+    );
     out.push(s);
   }
   return out.join("\n") + "\n";
@@ -186,7 +195,11 @@ function highlight(src: string) {
 function fmtDate(d?: string) {
   let dt = d ? new Date(d + "T12:00:00") : new Date();
   if (isNaN(dt.getTime())) dt = new Date();
-  return dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  return dt.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 function slugify(t?: string) {
@@ -250,7 +263,10 @@ export function EditorDemo() {
     .filter(Boolean);
 
   return (
-    <div className="anim-up mx-auto mt-20 w-full max-w-[1180px] px-8 max-sm:px-6" style={{ "--d": 4 } as CSSProperties}>
+    <div
+      className="anim-up mx-auto mt-20 w-full max-w-[1180px] px-8 max-sm:px-6"
+      style={{ "--d": 4 } as CSSProperties}
+    >
       <div className="grid items-stretch gap-0 lg:grid-cols-[1fr_56px_1fr] max-lg:grid-cols-1 max-lg:gap-4.5">
         <div className="flex flex-col overflow-hidden rounded-2xl border bg-card">
           <div className="flex items-center gap-3.5 border-b border-border/60 bg-background px-4 py-3">

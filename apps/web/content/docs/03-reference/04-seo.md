@@ -33,8 +33,8 @@ Toggle the pieces in `voxx.json`:
     "openGraph": true,
     "twitter": "@acme",
     "jsonLd": true,
-    "defaultImage": "/og.png"
-  }
+    "defaultImage": "/og.png",
+  },
 }
 ```
 

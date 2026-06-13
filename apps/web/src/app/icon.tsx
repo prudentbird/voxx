@@ -17,35 +17,44 @@ export default async function Icon() {
   const [regular, bold] = await Promise.all([loadFont(400), loadFont(800)]);
 
   return new ImageResponse(
-    (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        background: "white",
+        borderRadius: 40,
+        fontFamily: "Outfit",
+        letterSpacing: "-0.05em",
+      }}
+    >
       <div
         style={{
-          width: "100%",
-          height: "100%",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          background: "white",
-          borderRadius: 40,
-          fontFamily: "Outfit",
-          letterSpacing: "-0.05em",
+          marginTop: -40,
         }}
       >
-        <div
+        <span style={{ fontWeight: 400, fontSize: 160, lineHeight: 1 }}>
+          vo
+        </span>
+        <span
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginTop: -40,
+            fontWeight: 800,
+            fontSize: 160,
+            lineHeight: 1,
+            marginTop: -70,
           }}
         >
-          <span style={{ fontWeight: 400, fontSize: 160, lineHeight: 1 }}>vo</span>
-          <span style={{ fontWeight: 800, fontSize: 160, lineHeight: 1, marginTop: -70 }}>xx</span>
-        </div>
+          xx
+        </span>
       </div>
-    ),
+    </div>,
     {
       ...size,
       fonts: [

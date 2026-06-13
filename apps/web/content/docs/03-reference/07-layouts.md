@@ -31,12 +31,18 @@ The layout renders one grid — sidebar on the left, your page on the right:
 <div className="voxx voxx-docs">
   <aside className="voxx-docs__nav">
     <div className="voxx-docs__nav-inner">
-      <div className="voxx-docs__nav-header">  {/* logo / site title */}
+      <div className="voxx-docs__nav-header">
+        {" "}
+        {/* logo / site title */}
         <MobileNav items={tree} title={config.site.title} />
-        <Link href="/docs" className="voxx-docs__title">…</Link>
+        <Link href="/docs" className="voxx-docs__title">
+          …
+        </Link>
       </div>
-      <SidebarNav items={tree} />               {/* the page tree */}
-      <div className="voxx-docs__nav-footer">   {/* pinned to the bottom */}
+      <SidebarNav items={tree} /> {/* the page tree */}
+      <div className="voxx-docs__nav-footer">
+        {" "}
+        {/* pinned to the bottom */}
         <ThemeToggle />
       </div>
     </div>
@@ -64,8 +70,12 @@ app/blog/_voxx/theme-toggle.tsx  # light/dark, persisted to localStorage
 ```tsx
 <div className="voxx">
   <header className="voxx-header">
-    <Link href="/blog" className="voxx-header__title">…</Link>
-    <div className="voxx-header__actions">  {/* right-aligned controls */}
+    <Link href="/blog" className="voxx-header__title">
+      …
+    </Link>
+    <div className="voxx-header__actions">
+      {" "}
+      {/* right-aligned controls */}
       {/* RSS link, shown when features.rss is on */}
       <ThemeToggle />
     </div>
