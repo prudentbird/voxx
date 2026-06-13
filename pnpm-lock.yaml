@@ -35,7 +35,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@voxx/core':
+      '@prudentbird/voxx-core':
         specifier: workspace:*
         version: link:../../packages/core
       '@voxx/ui':
@@ -93,7 +93,7 @@ importers:
 
   examples/next-blog:
     dependencies:
-      '@voxx/core':
+      '@prudentbird/voxx-core':
         specifier: workspace:*
         version: link:../../packages/core
       next:
@@ -124,7 +124,7 @@ importers:
 
   examples/next-changelog:
     dependencies:
-      '@voxx/core':
+      '@prudentbird/voxx-core':
         specifier: workspace:*
         version: link:../../packages/core
       next:
@@ -155,7 +155,7 @@ importers:
 
   examples/next-docs:
     dependencies:
-      '@voxx/core':
+      '@prudentbird/voxx-core':
         specifier: workspace:*
         version: link:../../packages/core
       next:
@@ -186,34 +186,34 @@ importers:
 
   examples/static-blog:
     devDependencies:
-      '@voxx/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      voxx:
+      '@prudentbird/voxx':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@prudentbird/voxx-core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   examples/static-changelog:
     devDependencies:
-      '@voxx/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      voxx:
+      '@prudentbird/voxx':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@prudentbird/voxx-core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   examples/static-docs:
     devDependencies:
-      '@voxx/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      voxx:
+      '@prudentbird/voxx':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@prudentbird/voxx-core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   packages/cli:
     dependencies:
-      '@voxx/core':
+      '@prudentbird/voxx-core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
