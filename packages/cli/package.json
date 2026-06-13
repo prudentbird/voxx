@@ -25,6 +25,7 @@
     "scaffold"
   ],
   "publishConfig": {
+    "name": "@prudentbird/voxx",
     "access": "public"
   },
   "type": "module",

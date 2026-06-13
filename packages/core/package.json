@@ -26,6 +26,7 @@
     "effect"
   ],
   "publishConfig": {
+    "name": "@prudentbird/voxx-core",
     "access": "public"
   },
   "type": "module",
