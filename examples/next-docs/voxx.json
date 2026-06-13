@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/@voxx/core/voxx.schema.json",
+  "site": {
+    "title": "Acme Docs",
+    "description": "Documentation for Acme.",
+    "url": "https://example.com",
+    "locale": "en-US"
+  },
+  "content": {
+    "type": "docs",
+    "dir": "content",
+    "basePath": "/docs",
+    "drafts": false
+  },
+  "theme": {
+    "preset": "shadcn",
+    "css": null,
+    "codeTheme": "github-light github-dark"
+  },
+  "seo": {
+    "openGraph": true,
+    "twitter": null,
+    "jsonLd": true,
+    "defaultImage": null
+  }
+}

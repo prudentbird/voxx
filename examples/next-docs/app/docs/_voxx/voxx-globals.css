@@ -1,0 +1,61 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --ring: #18181b;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  --input: #27272a;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --ring: #d4d4d8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+    --border: #27272a;
+    --input: #27272a;
+    --primary: #fafafa;
+    --primary-foreground: #18181b;
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+    --ring: #d4d4d8;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}

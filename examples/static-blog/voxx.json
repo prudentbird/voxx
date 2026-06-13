@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/@voxx/core/voxx.schema.json",
+  "site": {
+    "title": "Acme Blog",
+    "description": "Engineering notes from the Acme team.",
+    "url": "https://example.com",
+    "locale": "en-US"
+  },
+  "content": {
+    "type": "blog",
+    "dir": "content",
+    "basePath": "/blog",
+    "drafts": false
+  },
+  "theme": {
+    "preset": "shadcn",
+    "css": null,
+    "codeTheme": "github-light github-dark"
+  },
+  "seo": {
+    "openGraph": true,
+    "twitter": null,
+    "jsonLd": true,
+    "defaultImage": null
+  }
+}

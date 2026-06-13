@@ -1,0 +1,13 @@
+{
+  "name": "@examples/static-blog",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "voxx dev",
+    "build": "voxx build"
+  },
+  "devDependencies": {
+    "@voxx/core": "workspace:*",
+    "voxx": "workspace:*"
+  }
+}
