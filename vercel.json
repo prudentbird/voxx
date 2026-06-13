@@ -1,5 +1,0 @@
-{
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm turbo run build --filter=@voxx/web",
-  "outputDirectory": "apps/web/.next"
-}
