@@ -90,6 +90,9 @@ function mergeConfig(input: VoxxConfigInput): VoxxConfig {
       title: input.site.title,
       description: input.site.description ?? d.site.description,
       url: input.site.url,
+      ...(input.site.titleHref !== undefined
+        ? { titleHref: input.site.titleHref }
+        : {}),
       author: input.site.author
         ? { name: input.site.author.name, url: input.site.author.url }
         : d.site.author,
