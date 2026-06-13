@@ -31,7 +31,7 @@ export function CopyCommand({
       className="h-auto gap-3 border-dashed border-primary bg-transparent px-[1.1rem] py-[0.7rem] font-mono text-[0.85rem] font-normal text-muted-foreground select-none hover:bg-primary/10 hover:text-foreground dark:border-primary dark:bg-transparent dark:hover:bg-primary/10"
     >
       <span>
-        $ npx <b className="font-medium text-primary">voxx</b> init
+        $ npx <b className="font-medium text-primary">@prudentbird/voxx</b> init
       </span>
       <span aria-hidden="true" className="inline-flex">
         {copied ? (
