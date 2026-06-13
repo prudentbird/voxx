@@ -1,1 +1,1 @@
-export const CONTENT_VERSION = 1781326625174;
+export const CONTENT_VERSION = 0;
