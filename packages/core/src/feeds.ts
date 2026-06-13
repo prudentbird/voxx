@@ -1,18 +1,33 @@
 import { absoluteUrl, escapeXml, isoDate, joinPath, rfc822 } from "./util";
 import type { Post, VoxxConfig } from "./types";
 
+/** Options for `renderRss`. */
 export interface RenderRssOptions {
-  /** URL path the feed is served from. Defaults to "rss.xml" under the collection's basePath. */
+  /** Override the default RSS feed path (`<basePath>/rss.xml`). */
   path?: string;
 }
 
 const cdata = (value: string) =>
   `<![CDATA[${value.replace(/\]\]>/g, "]]]]><![CDATA[>")}]]>`;
 
+/**
+ * Returns the default RSS feed path for the active content collection.
+ *
+ * @param config - Resolved Voxx config.
+ * @returns URL path string, e.g. `/blog/rss.xml`.
+ */
 export function rssPath(config: VoxxConfig): string {
   return joinPath(config.content.basePath, "rss.xml");
 }
 
+/**
+ * Renders a valid RSS 2.0 feed with `content:encoded` for all posts.
+ *
+ * @param posts - Ordered list of posts (most recent first).
+ * @param config - Resolved Voxx config.
+ * @param opts - Optional feed path override.
+ * @returns RSS XML string.
+ */
 export function renderRss(
   posts: Post[],
   config: VoxxConfig,
@@ -22,9 +37,11 @@ export function renderRss(
   const items = posts
     .map((p) => {
       const link = absoluteUrl(config.site.url, p.url);
-      const categories = p.tags
-        .map((t) => `      <category>${escapeXml(t)}</category>`)
-        .join("\n");
+      const categories = config.features.tags
+        ? p.tags
+            .map((t) => `      <category>${escapeXml(t)}</category>`)
+            .join("\n")
+        : "";
       return [
         "    <item>",
         `      <title>${escapeXml(p.title)}</title>`,
@@ -56,11 +73,20 @@ ${items}
 `;
 }
 
+/** Options for `renderSitemap`. */
 export interface RenderSitemapOptions {
-  /** Index page paths to list before the posts. Defaults to the active collection's basePath. */
+  /** Additional index paths to include before the post entries. */
   indexPaths?: string[];
 }
 
+/**
+ * Renders an XML sitemap for all posts.
+ *
+ * @param posts - List of posts to include.
+ * @param config - Resolved Voxx config.
+ * @param opts - Optional extra index paths.
+ * @returns Sitemap XML string.
+ */
 export function renderSitemap(
   posts: Post[],
   config: VoxxConfig,
@@ -98,6 +124,13 @@ ${body}
 `;
 }
 
+/**
+ * Renders a `robots.txt` that allows all crawlers and optionally
+ * references the sitemap when `features.sitemap` is enabled.
+ *
+ * @param config - Resolved Voxx config.
+ * @returns `robots.txt` content string.
+ */
 export function renderRobotsTxt(config: VoxxConfig): string {
   const lines = ["User-agent: *", "Allow: /"];
   if (config.features.sitemap) {

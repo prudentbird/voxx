@@ -4,6 +4,7 @@ import { parseFrontmatter } from "./frontmatter";
 import { renderMarkdownEffect } from "./render";
 import { ConfigError, ContentDirMissing, PostNotFound } from "./errors";
 import {
+  compareVersions,
   deriveExcerpt,
   joinPath,
   parseVersion,
@@ -14,12 +15,13 @@ import {
 } from "./util";
 import type { Post, VoxxConfig } from "./types";
 
-// .md only — there is no MDX compiler in the pipeline, so matching .mdx
-// would silently strip the JSX out of those files.
 const MD_RE = /\.md$/;
 
+/** Options for filtering posts returned by `getPostsEffect`. */
 export interface GetPostsEffectOptions {
+  /** When `true`, includes posts whose frontmatter sets `draft: true`. */
   includeDrafts?: boolean;
+  /** Restricts results to a named collection defined in `config.collections`. */
   collection?: string;
 }
 const orderKey = (order: number | undefined, slug: string) =>
@@ -103,8 +105,6 @@ const buildPost = (config: VoxxConfig, absPath: string, rel: string) =>
     let date = data.date ?? filenameDate;
     if (!date) {
       if (!isDocs) {
-        // Filesystem timestamps differ per checkout, so dates (and feed
-        // output) would churn on every CI build.
         yield* Effect.logWarning(
           `${rel}: no date in frontmatter or filename — falling back to the file's creation time, which is not stable across checkouts.`,
         );
@@ -140,6 +140,17 @@ const buildPost = (config: VoxxConfig, absPath: string, rel: string) =>
     return { post, sortKey } satisfies BuiltPost;
   });
 
+/**
+ * Reads all Markdown files from the configured content directory,
+ * renders them, and returns sorted posts.
+ *
+ * - **docs** — sorted by numeric directory/file order prefix.
+ * - **changelog** — sorted by date descending, then semver descending.
+ * - **blog** — sorted by date descending.
+ *
+ * @param config - Resolved Voxx config.
+ * @param opts - Optional collection filter and draft visibility.
+ */
 export const getPostsEffect = (
   config: VoxxConfig,
   opts: GetPostsEffectOptions = {},
@@ -201,13 +212,27 @@ export const getPostsEffect = (
         .map((b) => b.post);
     }
 
+    const isChangelog = config.content.type === "changelog";
+
     return visible
       .map((b) => b.post)
-      .sort(
-        (a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug),
-      );
+      .sort((a, b) => {
+        const byDate = b.date.localeCompare(a.date);
+        if (byDate !== 0) return byDate;
+        if (isChangelog && a.version && b.version) {
+          return compareVersions(b.version, a.version);
+        }
+        return a.slug.localeCompare(b.slug);
+      });
   });
 
+/**
+ * Finds a post in an already-loaded array by slug or path.
+ *
+ * @param posts - Array returned by `getPosts`.
+ * @param slug - Slash-separated path, e.g. `"getting-started/install"`.
+ * @returns The matching post, or `undefined` if not found.
+ */
 export function findPost(posts: Post[], slug: string): Post | undefined {
   const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
   return posts.find(
@@ -216,14 +241,16 @@ export function findPost(posts: Post[], slug: string): Post | undefined {
   );
 }
 
+/**
+ * Loads all posts and returns the one matching `slug`.
+ * Throws `PostNotFound` if no match exists.
+ */
 export const getPostEffect = (
   config: VoxxConfig,
   slug: string,
   opts: GetPostsEffectOptions = {},
 ) =>
   Effect.gen(function* () {
-    // Drafts follow the same visibility rules as getPostsEffect — a post
-    // hidden from lists must not be reachable by guessing its URL.
     const posts = yield* getPostsEffect(config, opts);
     const post = findPost(posts, slug);
     if (!post) return yield* new PostNotFound({ slug });

@@ -7,23 +7,30 @@ import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeStringify from "rehype-stringify";
-import rehypeShiki from "@shikijs/rehype";
+import rehypeShikiFromHighlighter from "@shikijs/rehype/core";
+import {
+  createHighlighter,
+  bundledLanguages,
+  type BundledLanguage,
+  type Highlighter,
+} from "shiki";
 import { visit } from "unist-util-visit";
 import { toString } from "hast-util-to-string";
 import type { Root } from "hast";
 import { RenderError } from "./errors";
 import type { TocItem, VoxxConfig } from "./types";
 
+/** Result returned by the Markdown renderer. */
 export interface RenderResult {
+  /** Rendered HTML string. */
   html: string;
+  /** Extracted `h2`/`h3` headings for the table of contents. */
   toc: TocItem[];
 }
 
+/** Options passed to the Markdown renderer. */
 export interface RenderOptions {
-  /**
-   * URL path of the directory the markdown file lives in (e.g. "/docs/01-guides").
-   * Relative asset references like `./diagram.png` are resolved against it.
-   */
+  /** URL prefix used to resolve relative `src` and `poster` attributes. */
   assetBase?: string;
 }
 
@@ -44,6 +51,7 @@ function rehypeCollectToc() {
   };
 }
 
+const EXTERNAL_RE = /^https?:\/\//i;
 const ABSOLUTE_RE = /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i;
 const ASSET_PROPS = ["src", "poster"] as const;
 
@@ -59,6 +67,18 @@ function resolveRelativePath(base: string, rel: string): string {
   return `/${out.join("/")}`;
 }
 
+function rehypeExternalLinks() {
+  return (tree: Root) => {
+    visit(tree, "element", (node) => {
+      if (node.tagName !== "a") return;
+      const href = node.properties?.["href"];
+      if (typeof href !== "string" || !EXTERNAL_RE.test(href)) return;
+      node.properties["target"] = "_blank";
+      node.properties["rel"] = "noreferrer";
+    });
+  };
+}
+
 function rehypeResolveAssets(base: string) {
   return (tree: Root) => {
     visit(tree, "element", (node) => {
@@ -72,7 +92,11 @@ function rehypeResolveAssets(base: string) {
   };
 }
 
-function shikiOptions(codeTheme: string) {
+type ShikiOptions =
+  | { themes: { light: string; dark: string }; defaultColor: false }
+  | { theme: string };
+
+function shikiOptions(codeTheme: string): ShikiOptions {
   const parts = codeTheme.split(/[,\s]+/).filter(Boolean);
   if (parts.length >= 2) {
     return {
@@ -83,6 +107,66 @@ function shikiOptions(codeTheme: string) {
   return { theme: parts[0] ?? "github-dark" };
 }
 
+const BASE_LANGS: BundledLanguage[] = [
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "json",
+  "bash",
+  "css",
+  "html",
+  "md",
+  "python",
+  "go",
+  "rust",
+];
+
+const highlighters = new Map<string, Promise<Highlighter>>();
+
+function getHighlighter(codeTheme: string): Promise<Highlighter> {
+  let cached = highlighters.get(codeTheme);
+  if (!cached) {
+    const opts = shikiOptions(codeTheme);
+    const themes = "themes" in opts
+      ? [opts.themes.light, opts.themes.dark]
+      : [(opts as { theme: string }).theme];
+    cached = createHighlighter({ themes, langs: BASE_LANGS });
+    highlighters.set(codeTheme, cached);
+  }
+  return cached;
+}
+
+const FENCE_LANG_RE = /^[ \t]*(?:`{3,}|~{3,})[ \t]*([A-Za-z0-9_+-]+)/gm;
+
+async function ensureLanguages(
+  highlighter: Highlighter,
+  markdown: string,
+): Promise<void> {
+  const loaded = new Set(highlighter.getLoadedLanguages());
+  const wanted = new Set<BundledLanguage>();
+  for (const match of markdown.matchAll(FENCE_LANG_RE)) {
+    const lang = match[1]!.toLowerCase();
+    if (!loaded.has(lang) && lang in bundledLanguages) {
+      wanted.add(lang as BundledLanguage);
+    }
+  }
+  for (const lang of wanted) {
+    try {
+      await highlighter.loadLanguage(lang);
+    } catch {
+    }
+  }
+}
+
+/**
+ * Converts Markdown to HTML with syntax highlighting, heading slugs,
+ * autolinked headings, and a collected table of contents.
+ *
+ * @param markdown - Raw Markdown source.
+ * @param config - Voxx config (used for `theme.codeTheme`).
+ * @param opts - Optional `assetBase` for resolving relative image paths.
+ */
 export const renderMarkdownEffect = (
   markdown: string,
   config: VoxxConfig,
@@ -90,6 +174,8 @@ export const renderMarkdownEffect = (
 ) =>
   Effect.tryPromise({
     try: async (): Promise<RenderResult> => {
+      const highlighter = await getHighlighter(config.theme.codeTheme);
+      await ensureLanguages(highlighter, markdown);
       const processor = unified()
         .use(remarkParse)
         .use(remarkGfm)
@@ -97,7 +183,12 @@ export const renderMarkdownEffect = (
         .use(rehypeRaw)
         .use(rehypeSlug)
         .use(rehypeAutolinkHeadings, { behavior: "wrap" })
-        .use(rehypeShiki, shikiOptions(config.theme.codeTheme));
+        .use(rehypeExternalLinks)
+        .use(
+          rehypeShikiFromHighlighter,
+          highlighter,
+          shikiOptions(config.theme.codeTheme),
+        );
       if (opts.assetBase) processor.use(rehypeResolveAssets, opts.assetBase);
       const file = await processor
         .use(rehypeCollectToc)

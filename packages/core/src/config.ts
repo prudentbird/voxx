@@ -9,8 +9,11 @@ import {
   type VoxxConfig,
 } from "./types";
 
+/** Options for locating the `voxx.json` config file. */
 export interface LoadConfigOptions {
+  /** Working directory to resolve relative paths from. Defaults to `process.cwd()`. */
   cwd?: string;
+  /** Explicit path to `voxx.json`. Overrides `cwd`. */
   path?: string;
 }
 
@@ -28,6 +31,7 @@ const TYPE_FEATURE_DEFAULTS: Record<
   },
 };
 
+/** Partial collection definition accepted in `voxx.json`. */
 export interface CollectionInput {
   readonly name?: string;
   readonly type?: ContentType;
@@ -37,10 +41,10 @@ export interface CollectionInput {
 }
 
 /**
- * The naming contract for `collections` entries: `name ?? type`,
- * `dir ?? content/<name>`, `basePath ?? /<name>`. This function is the single
- * owner of that defaulting — the CLI (`voxx new`, `voxx init --add`) imports
- * it instead of mirroring the rules. Pure and Effect-free by design.
+ * Fills in missing fields on a collection definition with type-appropriate defaults.
+ *
+ * @param c - Partial collection input from config.
+ * @returns A fully resolved `CollectionConfig`.
  */
 export function resolveCollectionDefaults(c: CollectionInput): CollectionConfig {
   const type = c.type ?? "blog";
@@ -118,6 +122,10 @@ function mergeConfig(input: VoxxConfigInput): VoxxConfig {
   };
 }
 
+/**
+ * Validates raw JSON data against the config schema and resolves all paths
+ * relative to `cwd`.
+ */
 export const resolveConfig = (data: unknown, cwd: string) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
@@ -143,6 +151,11 @@ export const resolveConfig = (data: unknown, cwd: string) =>
     } satisfies VoxxConfig;
   });
 
+/**
+ * Reads, parses, and validates `voxx.json` from disk.
+ *
+ * @param opts - Optional `cwd` or explicit `path` to the config file.
+ */
 export const loadConfigEffect = (opts: LoadConfigOptions = {}) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;

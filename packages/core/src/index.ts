@@ -15,15 +15,29 @@ type Services = FileSystem.FileSystem | Path.Path;
 const run = <A, E>(effect: Effect.Effect<A, E, Services>): Promise<A> =>
   Effect.runPromise(Effect.provide(effect, NodeContext.layer));
 
+/** Options accepted by `getPosts` and `getPost`. */
 export interface GetPostsOptions
   extends GetPostsEffectOptions, LoadConfigOptions {
+  /** Pre-loaded config — skips reading `voxx.json` when provided. */
   config?: VoxxConfig;
 }
 
+/**
+ * Reads and validates `voxx.json` from disk.
+ *
+ * @param opts - Optional `cwd` or explicit config file `path`.
+ * @returns Fully resolved `VoxxConfig`.
+ */
 export function loadConfig(opts?: LoadConfigOptions): Promise<VoxxConfig> {
   return run(loadConfigEffect(opts));
 }
 
+/**
+ * Returns all published posts for the active collection, sorted by the
+ * collection type's natural order (date, semver, or manual order prefix).
+ *
+ * @param opts - Collection filter, draft visibility, and optional pre-loaded config.
+ */
 export function getPosts(opts: GetPostsOptions = {}): Promise<Post[]> {
   return run(
     Effect.gen(function* () {
@@ -33,6 +47,13 @@ export function getPosts(opts: GetPostsOptions = {}): Promise<Post[]> {
   );
 }
 
+/**
+ * Returns a single post by slug.
+ *
+ * @param slug - Slash-separated path, e.g. `"getting-started/install"`.
+ * @param opts - Collection filter, draft visibility, and optional pre-loaded config.
+ * @throws `PostNotFound` if no matching post exists.
+ */
 export function getPost(
   slug: string,
   opts: GetPostsOptions = {},
@@ -45,6 +66,12 @@ export function getPost(
   );
 }
 
+/**
+ * Converts a Markdown string to HTML with syntax highlighting and TOC extraction.
+ *
+ * @param markdown - Raw Markdown source.
+ * @param config - Voxx config (controls code theme). Defaults to `DEFAULT_CONFIG`.
+ */
 export function renderMarkdown(
   markdown: string,
   config: VoxxConfig = DEFAULT_CONFIG,
@@ -63,6 +90,8 @@ export {
 } from "./llms";
 export type { LlmsSection } from "./llms";
 export { findPost } from "./content";
+export { registerContentWatcher } from "./dev";
+export type { ContentWatcherOptions } from "./dev";
 export { buildNavTree } from "./nav";
 export { DEFAULT_CONFIG } from "./types";
 export {
@@ -76,7 +105,9 @@ export {
   humanize,
   formatDate,
   parseVersion,
+  compareVersions,
   escapeXml,
+  serializeJsonLd,
 } from "./util";
 
 export type {

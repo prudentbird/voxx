@@ -1,6 +1,15 @@
 import type { NavNode, Post } from "./types";
 import { humanize } from "./util";
 
+/**
+ * Builds a sidebar navigation tree from an ordered list of docs posts.
+ *
+ * Directory segments become category nodes; index files promote their
+ * title and URL onto the parent node.
+ *
+ * @param posts - Posts sorted by `getPostsEffect` (order-prefix aware).
+ * @returns Top-level `NavNode` array suitable for a sidebar component.
+ */
 export function buildNavTree(posts: Post[]): NavNode[] {
   const root: NavNode = { title: "", children: [] };
   const nodes = new Map<string, NavNode>();

@@ -17,7 +17,9 @@ import {
   readingTimeMinutes,
   renderLlmsTxt,
   renderLlmsTxtSections,
+  renderLlmsFull,
   renderMarkdown,
+  serializeJsonLd,
   renderRobotsTxt,
   renderRss,
   renderSitemap,
@@ -138,6 +140,19 @@ describe("render", () => {
 
   it("highlights code blocks via shiki", async () => {
     const { html } = await renderMarkdown("```js\nconst a = 1\n```\n", config);
+    expect(html).toContain("shiki");
+  });
+
+  it("renders an unknown language fence without throwing", async () => {
+    const { html } = await renderMarkdown(
+      "```nonsense\nweird stuff\n```\n",
+      config,
+    );
+    expect(html).toContain("weird stuff");
+  });
+
+  it("highlights an on-demand language not in the base set", async () => {
+    const { html } = await renderMarkdown("```ruby\nputs 1\n```\n", config);
     expect(html).toContain("shiki");
   });
 
@@ -474,6 +489,45 @@ describe("seo", () => {
     expect(seo.jsonLd?.["@type"]).toBe("BlogPosting");
     expect(seo.jsonLd?.["headline"]).toBe("Hello & Welcome");
   });
+
+  it("emits tags in og and json-ld by default but suppresses them when features.tags is false", () => {
+    const on = buildSeo(samplePost, config);
+    expect(on.openGraph?.tags).toEqual(["intro", "css"]);
+    expect(on.jsonLd?.["keywords"]).toBe("intro, css");
+
+    const offConfig: VoxxConfig = {
+      ...config,
+      features: { ...config.features, tags: false },
+    };
+    const off = buildSeo(samplePost, offConfig);
+    expect(off.openGraph?.tags).toEqual([]);
+    expect(off.jsonLd && "keywords" in off.jsonLd).toBe(false);
+  });
+});
+
+describe("serializeJsonLd", () => {
+  it("leaves plain data unchanged and round-trips", () => {
+    expect(serializeJsonLd({ a: 1 })).toBe('{"a":1}');
+    const obj = { headline: "Hello & Welcome", n: 2 };
+    expect(JSON.parse(serializeJsonLd(obj))).toEqual(obj);
+  });
+
+  it("escapes script-breakout characters but parses back to the original", () => {
+    const value = { headline: "x</script><img src=y onerror=alert(1)>" };
+    const out = serializeJsonLd(value);
+    expect(out).not.toContain("</script>");
+    expect(out).not.toContain("<");
+    expect(out).toContain("\\u003c");
+    expect(JSON.parse(out)).toEqual(value);
+  });
+
+  it("escapes ampersands and round-trips", () => {
+    const value = { headline: "Tom & Jerry" };
+    const out = serializeJsonLd(value);
+    expect(out).toContain("\\u0026");
+    expect(out).not.toContain("&");
+    expect(JSON.parse(out)).toEqual(value);
+  });
 });
 
 describe("feeds + llms", () => {
@@ -494,6 +548,42 @@ describe("feeds + llms", () => {
     expect(rss).toContain("<content:encoded><![CDATA[<p>hi</p>]]>");
     const custom = renderRss([samplePost], config, { path: "/feed.xml" });
     expect(custom).toContain('href="https://example.com/feed.xml"');
+  });
+
+  it("emits rss categories by default but drops them when features.tags is false", () => {
+    const on = renderRss([samplePost], config);
+    expect(on).toContain("<category>intro</category>");
+    expect(on).toContain("<category>css</category>");
+
+    const offConfig: VoxxConfig = {
+      ...config,
+      features: { ...config.features, tags: false },
+    };
+    const off = renderRss([samplePost], offConfig);
+    expect(off).not.toContain("<category>");
+  });
+
+  it("escapes markdown-breaking title chars in llms.txt and collapses newlines", () => {
+    const post: Post = {
+      ...samplePost,
+      title: "Arrays[0] and [links]",
+      description: "Line one\nLine two",
+    };
+    const txt = renderLlmsTxt([post], config);
+    expect(txt).toContain("- [Arrays\\[0\\] and \\[links\\]]");
+    expect(txt).toContain("(https://example.com/blog/hello): Line one Line two");
+  });
+
+  it("keeps the post body verbatim in llms-full.txt", () => {
+    const post: Post = {
+      ...samplePost,
+      title: "Line one\nLine two",
+      content: "Body with [brackets] kept raw.",
+    };
+    const full = renderLlmsFull([post], config);
+    expect(full).toContain("# Line one Line two");
+    expect(full).not.toContain("# Line one\nLine two");
+    expect(full).toContain("Body with [brackets] kept raw.");
   });
 
   it("renders robots.txt pointing at the sitemap", () => {

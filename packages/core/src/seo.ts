@@ -7,6 +7,14 @@ const JSON_LD_TYPE: Record<ContentType, string> = {
   changelog: "Article",
 };
 
+/**
+ * Builds the full SEO payload for a post — canonical URL, Open Graph,
+ * Twitter card, and JSON-LD — based on the active config flags.
+ *
+ * @param post - The rendered post to generate metadata for.
+ * @param config - Resolved Voxx config.
+ * @returns `SeoData` ready to be spread into `<head>` metadata.
+ */
 export function buildSeo(post: Post, config: VoxxConfig): SeoData {
   const canonical = absoluteUrl(config.site.url, post.url);
   const description = post.description ?? post.excerpt;
@@ -17,6 +25,8 @@ export function buildSeo(post: Post, config: VoxxConfig): SeoData {
     : config.site.author
       ? [config.site.author.name]
       : [];
+
+  const tags = config.features.tags ? post.tags : [];
 
   const seo: SeoData = { title: post.title, description, canonical };
 
@@ -32,7 +42,7 @@ export function buildSeo(post: Post, config: VoxxConfig): SeoData {
       publishedTime: post.date,
       modifiedTime: post.updated,
       authors,
-      tags: post.tags,
+      tags,
     };
   }
 
@@ -61,7 +71,7 @@ export function buildSeo(post: Post, config: VoxxConfig): SeoData {
         name: authors[0] ?? config.site.title,
         ...(config.site.author?.url ? { url: config.site.author.url } : {}),
       },
-      ...(post.tags.length ? { keywords: post.tags.join(", ") } : {}),
+      ...(tags.length ? { keywords: tags.join(", ") } : {}),
       mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
       ...(config.site.title
         ? { publisher: { "@type": "Organization", name: config.site.title } }
