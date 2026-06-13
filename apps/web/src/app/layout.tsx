@@ -2,10 +2,82 @@ import "@voxx/ui/globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { fontClasses } from "./fonts";
 
+const baseUrl = "https://voxx.prudentbird.com";
+const siteName = "Voxx";
+const siteDescription =
+  "A zero-friction CMS for Next.js. Write markdown, Voxx handles routing, SEO, RSS, and llms.txt — for you and your agents.";
+const keywords = [
+  "Voxx",
+  "CMS",
+  "markdown",
+  "Next.js",
+  "blog",
+  "docs",
+  "changelog",
+  "static site generator",
+  "SEO",
+  "RSS",
+  "llms.txt",
+  "AI agents",
+  "content management",
+  "TypeScript",
+];
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://voxx.prudentbird.com"),
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: siteName,
+    template: `%s · ${siteName}`,
+  },
+  description: siteDescription,
+  keywords,
+  authors: [{ name: "Prudent Bird", url: "https://prudentbird.com" }],
+  creator: "Prudent Bird",
+  publisher: "Prudent Bird",
+  referrer: "origin",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: baseUrl,
+    siteName,
+    title: siteName,
+    description: siteDescription,
+    images: [
+      {
+        url: `${baseUrl}/opengraph-image.png`,
+        width: 1200,
+        height: 630,
+        alt: siteName,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@prudentbird",
+    creator: "@prudentbird",
+    title: siteName,
+    description: siteDescription,
+    images: [`${baseUrl}/twitter-image.png`],
+  },
+  alternates: {
+    canonical: baseUrl,
+  },
+  category: "technology",
 };
 
 export default function RootLayout({
@@ -21,6 +93,8 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
