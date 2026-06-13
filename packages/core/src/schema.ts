@@ -1,6 +1,5 @@
 import { Schema } from "effect";
 
-
 const DateLike = Schema.transform(
   Schema.Union(Schema.String, Schema.DateFromSelf),
   Schema.String,

@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Post, VoxxConfig } from "@voxx/core";
 import { OnThisPage } from "./on-this-page";
 
-
 export function DocPage({
   post,
   config,

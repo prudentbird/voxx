@@ -53,8 +53,7 @@ async function existingSlugs(dir: string): Promise<Set<string>> {
       const { rest } = splitDatePrefix(entry.replace(MD_RE, ""));
       slugs.add(slugify(splitOrderPrefix(rest).rest));
     }
-  } catch {
-  }
+  } catch {}
   return slugs;
 }
 
@@ -156,7 +155,9 @@ export async function newPost(argv: string[]): Promise<void> {
       version.includes("/") ||
       version.includes("\\")
     ) {
-      log.error(`Invalid changelog name "${title}" — use a version like "1.2.0".`);
+      log.error(
+        `Invalid changelog name "${title}" — use a version like "1.2.0".`,
+      );
       process.exitCode = 1;
       return;
     }

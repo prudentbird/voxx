@@ -18,9 +18,13 @@ export function ReleaseList({
         <section key={post.slug} id={post.slug} className="voxx-release">
           <header className="voxx-release__header">
             <h2 className="voxx-release__version">
-              <a href={`#${post.slug}`}>{post.version ? `v${post.version}` : post.title}</a>
+              <a href={`#${post.slug}`}>
+                {post.version ? `v${post.version}` : post.title}
+              </a>
             </h2>
-            <time dateTime={post.date}>{formatDate(post.date, config.site.locale)}</time>
+            <time dateTime={post.date}>
+              {formatDate(post.date, config.site.locale)}
+            </time>
           </header>
           <div
             className="voxx-prose"

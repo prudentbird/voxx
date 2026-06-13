@@ -46,7 +46,9 @@ export interface CollectionInput {
  * @param c - Partial collection input from config.
  * @returns A fully resolved `CollectionConfig`.
  */
-export function resolveCollectionDefaults(c: CollectionInput): CollectionConfig {
+export function resolveCollectionDefaults(
+  c: CollectionInput,
+): CollectionConfig {
   const type = c.type ?? "blog";
   const name = c.name ?? type;
   return {
@@ -163,17 +165,15 @@ export const loadConfigEffect = (opts: LoadConfigOptions = {}) =>
     const cwd = opts.cwd ?? process.cwd();
     const configPath = opts.path ?? path.join(cwd, "voxx.json");
 
-    const exists = yield* fs
-      .exists(configPath)
-      .pipe(
-        Effect.mapError(
-          (cause) =>
-            new ConfigError({
-              message: `Could not access ${configPath}`,
-              cause,
-            }),
-        ),
-      );
+    const exists = yield* fs.exists(configPath).pipe(
+      Effect.mapError(
+        (cause) =>
+          new ConfigError({
+            message: `Could not access ${configPath}`,
+            cause,
+          }),
+      ),
+    );
     if (!exists) {
       return yield* new ConfigError({
         message: `No voxx.json found at ${configPath}. Run \`voxx init\` to create one.`,

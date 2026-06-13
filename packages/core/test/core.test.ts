@@ -57,7 +57,10 @@ async function makeContentDir() {
     join(dir, "draft.md"),
     "---\ntitle: Draft Post\ndate: 2026-03-01\ndraft: true\n---\n\nDraft body.\n",
   );
-  return { ...config, content: { ...config.content, dir } } satisfies VoxxConfig;
+  return {
+    ...config,
+    content: { ...config.content, dir },
+  } satisfies VoxxConfig;
 }
 
 describe("util", () => {
@@ -415,15 +418,15 @@ describe("multi-collection config", () => {
       basePath: "/docs",
       drafts: false,
     });
-    expect(
-      resolveCollectionDefaults({ name: "guides", type: "docs" }),
-    ).toEqual({
-      name: "guides",
-      type: "docs",
-      dir: "content/guides",
-      basePath: "/guides",
-      drafts: false,
-    });
+    expect(resolveCollectionDefaults({ name: "guides", type: "docs" })).toEqual(
+      {
+        name: "guides",
+        type: "docs",
+        dir: "content/guides",
+        basePath: "/guides",
+        drafts: false,
+      },
+    );
   });
 
   it("reads a named collection and rejects unknown names", async () => {
@@ -571,7 +574,9 @@ describe("feeds + llms", () => {
     };
     const txt = renderLlmsTxt([post], config);
     expect(txt).toContain("- [Arrays\\[0\\] and \\[links\\]]");
-    expect(txt).toContain("(https://example.com/blog/hello): Line one Line two");
+    expect(txt).toContain(
+      "(https://example.com/blog/hello): Line one Line two",
+    );
   });
 
   it("keeps the post body verbatim in llms-full.txt", () => {

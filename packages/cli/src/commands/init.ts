@@ -399,10 +399,7 @@ export async function init(argv: string[]): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  if (
-    values.base !== undefined &&
-    values.base.split(/[\\/]/).includes("..")
-  ) {
+  if (values.base !== undefined && values.base.split(/[\\/]/).includes("..")) {
     log.error(`Invalid --base "${values.base}" — must not contain "..".`);
     process.exitCode = 1;
     return;

@@ -154,7 +154,9 @@ describe("changelog build output structure", () => {
     expect(releases).toHaveLength(2);
     for (const r of releases) {
       expect(r.getAttribute("id")).toBeTruthy();
-      expect(r.querySelector(".voxx-release__version")?.text.trim()).toBeTruthy();
+      expect(
+        r.querySelector(".voxx-release__version")?.text.trim(),
+      ).toBeTruthy();
     }
   });
 });

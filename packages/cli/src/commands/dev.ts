@@ -46,7 +46,8 @@ export async function serveFile(outDir: string, urlPath: string) {
     if (!path.startsWith(outDir)) continue;
     try {
       const body = await readFile(path);
-      const type = MIME[extname(path).toLowerCase()] ?? "application/octet-stream";
+      const type =
+        MIME[extname(path).toLowerCase()] ?? "application/octet-stream";
       return { status: 200, type, body };
     } catch {}
   }
@@ -91,7 +92,9 @@ export async function dev(argv: string[]): Promise<DevHandle | undefined> {
       try {
         const started = Date.now();
         const result = await buildSite({ cwd, outDir, includeDrafts });
-        log.success(`${label} — ${result.pageCount} pages in ${Date.now() - started}ms`);
+        log.success(
+          `${label} — ${result.pageCount} pages in ${Date.now() - started}ms`,
+        );
       } catch (err) {
         log.error(err instanceof Error ? err.message : String(err));
       }

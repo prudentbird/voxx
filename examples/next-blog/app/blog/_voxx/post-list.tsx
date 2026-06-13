@@ -20,7 +20,9 @@ export function PostList({
           <Link href={post.url} className="voxx-postcard__link">
             <h2 className="voxx-postcard__title">{post.title}</h2>
             <p className="voxx-postcard__meta">
-              <time dateTime={post.date}>{formatDate(post.date, config.site.locale)}</time>
+              <time dateTime={post.date}>
+                {formatDate(post.date, config.site.locale)}
+              </time>
               {config.features.readingTime ? (
                 <span>{` · ${post.readingTimeMinutes} min read`}</span>
               ) : null}

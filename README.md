@@ -15,13 +15,13 @@ npx voxx dev             # no framework? preview a static site locally
 - **Three content types** — `blog` (flat, newest-first), `docs` (folder tree → nested URLs with sidebar), `changelog` (versioned releases).
 - **SEO that's just on** — canonical/Open Graph/Twitter/JSON-LD tags, `rss.xml`, `sitemap.xml`, `robots.txt`, `llms.txt`/`llms-full.txt`.
 - **Two ways to ship** — scaffolded routes inside your Next.js app, or a fully static HTML build via `voxx build` (with `voxx dev` for local preview).
-- **One config file** — `voxx.json`, JSON-schema validated, with multi-collection support for sites that need a blog *and* docs *and* a changelog.
+- **One config file** — `voxx.json`, JSON-schema validated, with multi-collection support for sites that need a blog _and_ docs _and_ a changelog.
 
 ## Packages
 
-| Package | What it is |
-| --- | --- |
-| [`voxx`](packages/cli) | The CLI: `init`, `new`, `build`, `dev`. |
+| Package                       | What it is                                                                 |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| [`voxx`](packages/cli)        | The CLI: `init`, `new`, `build`, `dev`.                                    |
 | [`@voxx/core`](packages/core) | The portable content engine — use it directly to bring your own framework. |
 
 This repo also dogfoods itself: [`apps/web`](apps/web) is the Voxx docs site, built with Voxx.

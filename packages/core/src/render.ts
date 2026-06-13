@@ -128,9 +128,10 @@ function getHighlighter(codeTheme: string): Promise<Highlighter> {
   let cached = highlighters.get(codeTheme);
   if (!cached) {
     const opts = shikiOptions(codeTheme);
-    const themes = "themes" in opts
-      ? [opts.themes.light, opts.themes.dark]
-      : [(opts as { theme: string }).theme];
+    const themes =
+      "themes" in opts
+        ? [opts.themes.light, opts.themes.dark]
+        : [(opts as { theme: string }).theme];
     cached = createHighlighter({ themes, langs: BASE_LANGS });
     highlighters.set(codeTheme, cached);
   }
@@ -154,8 +155,7 @@ async function ensureLanguages(
   for (const lang of wanted) {
     try {
       await highlighter.loadLanguage(lang);
-    } catch {
-    }
+    } catch {}
   }
 }
 

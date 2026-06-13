@@ -290,7 +290,11 @@ ${posts
  * root, a subpath, or opened directly from the filesystem. Protocol-relative
  * (`//host`) and external URLs are left untouched.
  */
-function relativizeLinks(html: string, fromDir: string, outDir: string): string {
+function relativizeLinks(
+  html: string,
+  fromDir: string,
+  outDir: string,
+): string {
   const prefix = relative(fromDir, outDir).split(sep).join("/") || ".";
   return html.replace(/\b(href|src)="\/(?!\/)([^"]*)"/g, `$1="${prefix}/$2"`);
 }
@@ -316,7 +320,10 @@ async function copyContentAssets(
   let copied = 0;
   let entries: Dirent[];
   try {
-    entries = await readdir(contentDir, { recursive: true, withFileTypes: true });
+    entries = await readdir(contentDir, {
+      recursive: true,
+      withFileTypes: true,
+    });
   } catch {
     return 0;
   }

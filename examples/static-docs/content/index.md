@@ -3,7 +3,7 @@ title: Welcome
 description: What this documentation covers and how it's organized.
 ---
 
-These docs are plain markdown files. The folder structure *is* the navigation:
+These docs are plain markdown files. The folder structure _is_ the navigation:
 
 - Folders become sidebar sections, files become pages.
 - A numeric prefix (`01-install.md`) controls ordering without leaking into the URL.

@@ -102,7 +102,12 @@ describe("voxx build", () => {
     expect(await exists(join(dir, "dist2/blog/wip/index.html"))).toBe(true);
 
     await writeConfig({
-      content: { type: "blog", dir: "content", basePath: "/blog", drafts: true },
+      content: {
+        type: "blog",
+        dir: "content",
+        basePath: "/blog",
+        drafts: true,
+      },
     });
     await build(["--out", "dist3"]);
     expect(await exists(join(dir, "dist3/blog/wip/index.html"))).toBe(true);
@@ -271,7 +276,12 @@ describe("voxx new", () => {
     await writeConfig({
       content: { type: "docs", dir: "content", basePath: "/docs" },
     });
-    await newPost(["Getting Started", "--section", "getting-started", "--index"]);
+    await newPost([
+      "Getting Started",
+      "--section",
+      "getting-started",
+      "--index",
+    ]);
     const file = join(dir, "content/getting-started/index.md");
     expect(await exists(file)).toBe(true);
     expect(await readFile(file, "utf8")).toContain("title: Getting Started");

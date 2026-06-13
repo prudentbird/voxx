@@ -117,7 +117,9 @@ describe("voxx dev", () => {
       const page = await fetch(`http://127.0.0.1:${handle!.port}/blog/hello/`);
       expect(page.status).toBe(200);
       expect(await page.text()).toContain("Hi there");
-      const missing = await fetch(`http://127.0.0.1:${handle!.port}/blog/nope/`);
+      const missing = await fetch(
+        `http://127.0.0.1:${handle!.port}/blog/nope/`,
+      );
       expect(missing.status).toBe(404);
     } finally {
       await handle!.close();

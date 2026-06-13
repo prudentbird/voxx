@@ -99,9 +99,7 @@ export function OnThisPage({ toc }: { toc: TocItem[] }) {
     let top = Number.MAX_VALUE;
     let bottom = 0;
     for (const id of active) {
-      const el = container.querySelector<HTMLAnchorElement>(
-        `a[href="#${id}"]`,
-      );
+      const el = container.querySelector<HTMLAnchorElement>(`a[href="#${id}"]`);
       if (!el) continue;
       const styles = getComputedStyle(el);
       top = Math.min(top, el.offsetTop + parseFloat(styles.paddingTop));
