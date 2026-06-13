@@ -1,10 +1,10 @@
 import "@voxx/ui/globals.css";
 import type { Metadata } from "next";
+import { fontClasses } from "./fonts";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { fontClasses } from "./fonts";
 
 const baseUrl = "https://voxx.prudentbird.com";
 const siteName = "Voxx";
