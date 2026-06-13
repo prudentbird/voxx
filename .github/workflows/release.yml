@@ -34,9 +34,6 @@ jobs:
       - name: Build
         run: pnpm turbo run build --filter=@prudentbird/voxx-core --filter=@prudentbird/voxx
 
-      # Versions are bumped locally via `pnpm version-packages` (changeset version)
-      # and committed before triggering this workflow. `changeset publish` only
-      # publishes packages whose version is not yet on npm and creates their git tags.
       - name: Publish
         run: pnpm changeset publish
         env:
