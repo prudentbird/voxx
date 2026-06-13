@@ -11,6 +11,9 @@
     "@voxx/web",
     "@voxx/ui",
     "@voxx/eslint-config",
-    "@voxx/typescript-config"
+    "@voxx/typescript-config",
+    "@examples/next-blog",
+    "@examples/next-changelog",
+    "@examples/next-docs"
   ]
 }
