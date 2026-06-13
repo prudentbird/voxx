@@ -6,9 +6,9 @@ description: Scaffold your first Voxx surface in a couple of minutes.
 Every Voxx setup starts the same way — pick a surface, run one command:
 
 ```bash
-npx voxx init            # a blog
-npx voxx init docs       # a docs site
-npx voxx init changelog  # a release-notes page
+npx @prudentbird/voxx init            # a blog
+npx @prudentbird/voxx init docs       # a docs site
+npx @prudentbird/voxx init changelog  # a release-notes page
 ```
 
 `voxx init` looks at the directory you run it in and does the right thing:

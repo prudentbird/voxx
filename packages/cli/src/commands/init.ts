@@ -728,7 +728,7 @@ export async function init(argv: string[]): Promise<void> {
   } else if (!hasNext) {
     log.warn("No Next.js detected — wrote voxx.json + sample content only.");
     log.info(`  Install the engine:  ${c.cyan("npm i @prudentbird/voxx-core")}`);
-    log.info(`  Or build static HTML: ${c.cyan("npx voxx build")}`);
+    log.info(`  Or build static HTML: ${c.cyan("npx @prudentbird/voxx build")}`);
   } else if (!appDir) {
     log.warn(
       "Next.js found but no app/ directory — pass --app <dir> to scaffold routes.",

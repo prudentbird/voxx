@@ -7,8 +7,8 @@ Voxx doesn't require Next.js — or any framework. `voxx build` renders your
 whole collection to plain HTML and CSS:
 
 ```bash
-npx voxx init          # choose "static site" when asked
-npx voxx build         # -> dist/
+npx @prudentbird/voxx init          # choose "static site" when asked
+npx @prudentbird/voxx build         # -> dist/
 ```
 
 The output depends on your content type:
@@ -27,15 +27,15 @@ references like `![diagram](./diagram.png)` are resolved to where they
 land. Multi-collection configs build every collection in one pass.
 
 ```bash
-npx voxx build --out public    # somewhere other than ./dist
-npx voxx build --drafts        # include draft pages
+npx @prudentbird/voxx build --out public    # somewhere other than ./dist
+npx @prudentbird/voxx build --drafts        # include draft pages
 ```
 
 Preview locally with the built-in dev server — it rebuilds on change and
 includes drafts by default:
 
 ```bash
-npx voxx dev                   # http://localhost:4321
+npx @prudentbird/voxx dev                   # http://localhost:4321
 ```
 
 Or serve the built folder with anything that can serve files:

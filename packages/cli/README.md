@@ -3,9 +3,9 @@
 A zero-friction CMS for you and your agents. Write markdown the way you ship code, and Voxx handles the rest.
 
 ```bash
-npx voxx init            # scaffold a blog into your Next.js app
-npx voxx init docs       # or a docs site
-npx voxx init changelog  # or a release-notes page
+npx @prudentbird/voxx init            # scaffold a blog into your Next.js app
+npx @prudentbird/voxx init docs       # or a docs site
+npx @prudentbird/voxx init changelog  # or a release-notes page
 ```
 
 ## Commands

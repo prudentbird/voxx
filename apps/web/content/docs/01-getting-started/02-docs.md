@@ -6,7 +6,7 @@ description: Folders become the sidebar; ordering is a filename prefix.
 From the root of your Next.js app:
 
 ```bash
-npx voxx init docs
+npx @prudentbird/voxx init docs
 npm i @prudentbird/voxx-core
 ```
 
@@ -52,7 +52,7 @@ The full details — ordering precedence, slugs, nesting — live in
 ## Add a page
 
 ```bash
-npx voxx new "Deploying" --section guides --order 3
+npx @prudentbird/voxx new "Deploying" --section guides --order 3
 ```
 
 creates `content/guides/03-deploying.md`. Or just create the file — the CLI

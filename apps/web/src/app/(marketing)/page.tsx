@@ -276,7 +276,7 @@ export default function Home() {
               </h3>
               <p className="text-[15px] leading-[1.65] text-muted-foreground">
                 <code className="rounded-[5px] border border-border/60 bg-secondary px-1 font-mono text-[13px] text-foreground">
-                  npx voxx init
+                  npx @prudentbird/voxx init
                 </code>{" "}
                 writes real route files into your project. You own them —
                 restyle them, extend them, delete what you don&rsquo;t need. No

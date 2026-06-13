@@ -4,7 +4,7 @@ import { Button } from "@voxx/ui/components/button";
 import { Copy, Check } from "lucide-react";
 
 export function CopyCommand({
-  command = "npx voxx init",
+  command = "npx @prudentbird/voxx init",
 }: {
   command?: string;
 }) {
