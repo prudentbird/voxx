@@ -61,7 +61,7 @@ function Eyebrow({ children }: { children: string }) {
 
 function Ctas() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4">
+    <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-4">
       <CopyCommand />
       <Button
         asChild

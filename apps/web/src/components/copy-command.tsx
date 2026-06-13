@@ -28,7 +28,7 @@ export function CopyCommand({
       onClick={copy}
       aria-label={copied ? "Copied" : `Copy command: ${command}`}
       title={copied ? "Copied" : "Copy command"}
-      className="h-auto gap-3 border-dashed border-primary bg-transparent px-[1.1rem] py-[0.7rem] font-mono text-[0.85rem] font-normal text-muted-foreground select-none hover:bg-primary/10 hover:text-foreground dark:border-primary dark:bg-transparent dark:hover:bg-primary/10"
+      className="h-auto gap-3 border-dashed border-primary bg-transparent px-[1.1rem] py-[0.7rem] font-mono text-[0.75rem] sm:text-[0.85rem] font-normal text-muted-foreground whitespace-nowrap select-none hover:bg-primary/10 hover:text-foreground dark:border-primary dark:bg-transparent dark:hover:bg-primary/10"
     >
       <span>
         $ npx <b className="font-medium text-primary">@prudentbird/voxx</b> init
