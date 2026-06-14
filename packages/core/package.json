@@ -59,6 +59,16 @@
         "default": "./dist/effect.cjs"
       }
     },
+    "./next": {
+      "import": {
+        "types": "./dist/next.d.mts",
+        "default": "./dist/next.mjs"
+      },
+      "require": {
+        "types": "./dist/next.d.cts",
+        "default": "./dist/next.cjs"
+      }
+    },
     "./theme/voxx.css": "./theme/voxx.css",
     "./theme/demo-globals.css": "./theme/demo-globals.css",
     "./voxx.schema.json": "./voxx.schema.json",

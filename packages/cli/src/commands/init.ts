@@ -189,23 +189,47 @@ function nextMajor(pkg: Pkg): number | null {
   return m ? Number(m[1]) : null;
 }
 
+const CORE_NEXT_IMPORT = "@prudentbird/voxx-core/next";
+
 const MINIMAL_NEXT_CONFIG = `import type { NextConfig } from "next";
+import { withVoxx } from "${CORE_NEXT_IMPORT}";
 
-const nextConfig: NextConfig = {
-  cacheComponents: true,
-};
+const nextConfig: NextConfig = {};
 
-export default nextConfig;
+export default withVoxx(nextConfig);
 `;
 
-type CacheComponentsResult =
-  | { kind: "enabled" | "created" | "already"; file: string }
+type ConfigResult =
+  | { kind: "wrapped" | "created" | "already"; file: string }
   | { kind: "manual" | "unsupported" };
 
-async function enableCacheComponents(
+/**
+ * Wraps the default export of an existing next.config with `withVoxx`, adding
+ * the matching import. Returns `null` when no recognizable export is found.
+ */
+function wrapNextConfig(source: string): string | null {
+  const esm = source.lastIndexOf("export default ");
+  if (esm !== -1) {
+    const before = source.slice(0, esm);
+    const expr = source
+      .slice(esm + "export default ".length)
+      .replace(/;?\s*$/, "");
+    return `import { withVoxx } from "${CORE_NEXT_IMPORT}";\n${before}export default withVoxx(${expr});\n`;
+  }
+  const cjs = /module\.exports\s*=\s*/.exec(source);
+  if (cjs) {
+    const start = cjs.index + cjs[0].length;
+    const before = source.slice(0, start);
+    const expr = source.slice(start).replace(/;?\s*$/, "");
+    return `const { withVoxx } = require("${CORE_NEXT_IMPORT}");\n${before}withVoxx(${expr});\n`;
+  }
+  return null;
+}
+
+async function configureNextConfig(
   cwd: string,
   pkg: Pkg,
-): Promise<CacheComponentsResult> {
+): Promise<ConfigResult> {
   const major = nextMajor(pkg);
   if (major !== null && major < 16) return { kind: "unsupported" };
 
@@ -224,21 +248,12 @@ async function enableCacheComponents(
   }
 
   const source = await readFile(join(cwd, file), "utf8");
-  if (/\bcacheComponents\b/.test(source)) return { kind: "already", file };
+  if (/\bwithVoxx\b/.test(source)) return { kind: "already", file };
 
-  const m =
-    /(const\s+nextConfig\s*(?::\s*[\w.]+)?\s*=\s*|export\s+default\s+|module\.exports\s*=\s*)\{/.exec(
-      source,
-    );
-  if (!m) return { kind: "manual" };
-
-  const at = m.index + m[0].length;
-  const rest = source.slice(at);
-  const insert = rest.trimStart().startsWith("}")
-    ? "\n  cacheComponents: true,\n"
-    : "\n  cacheComponents: true,";
-  await writeFile(join(cwd, file), source.slice(0, at) + insert + rest);
-  return { kind: "enabled", file };
+  const wrapped = wrapNextConfig(source);
+  if (wrapped === null) return { kind: "manual" };
+  await writeFile(join(cwd, file), wrapped);
+  return { kind: "wrapped", file };
 }
 
 type RawConfig = Record<string, unknown>;
@@ -519,7 +534,7 @@ export async function init(argv: string[]): Promise<void> {
   }
 
   let wroteGlobals = false;
-  let cache: CacheComponentsResult | null = null;
+  let cache: ConfigResult | null = null;
   if (hasNext && appDir) {
     const blogDir = join(cwd, appDir, baseSegment);
     const voxxDir = join(blogDir, "_voxx");
@@ -670,9 +685,9 @@ export async function init(argv: string[]): Promise<void> {
       ]);
     }
 
-    cache = await enableCacheComponents(cwd, pkg);
-    if (cache.kind === "enabled" || cache.kind === "created") {
-      results.push([`${cache.file} (cacheComponents: true)`, "written"]);
+    cache = await configureNextConfig(cwd, pkg);
+    if (cache.kind === "wrapped" || cache.kind === "created") {
+      results.push([`${cache.file} (wrapped with withVoxx)`, "written"]);
     }
   }
 
@@ -743,11 +758,11 @@ export async function init(argv: string[]): Promise<void> {
     log.info(`  ${step++}. Install the engine:  ${c.cyan("npm i @prudentbird/voxx-core")}`);
     if (cache?.kind === "manual") {
       log.info(
-        `  ${step++}. Enable Cache Components — add ${c.cyan("cacheComponents: true")} to next.config.`,
+        `  ${step++}. Wrap your config — ${c.cyan("export default withVoxx(nextConfig)")} from ${c.cyan(CORE_NEXT_IMPORT)}.`,
       );
     } else if (cache?.kind === "unsupported") {
       log.info(
-        `  ${step++}. Upgrade to Next 16+ and add ${c.cyan("cacheComponents: true")} to next.config.`,
+        `  ${step++}. Upgrade to Next 16+, then wrap your config with ${c.cyan("withVoxx")} from ${c.cyan(CORE_NEXT_IMPORT)}.`,
       );
     }
     log.info(
@@ -756,7 +771,7 @@ export async function init(argv: string[]): Promise<void> {
     log.info(`  ${step}. Run your dev server and open ${c.cyan(basePath)}.`);
     if (cache?.kind === "already") {
       log.info(
-        `  ${c.dim(`(Cache Components already enabled in ${cache.file}.)`)}`,
+        `  ${c.dim(`(next.config already wrapped with withVoxx in ${cache.file}.)`)}`,
       );
     }
     if (wroteGlobals) {

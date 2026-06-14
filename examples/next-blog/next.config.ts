@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
+import { withVoxx } from "@prudentbird/voxx-core/next";
 
-const nextConfig: NextConfig = {
-  cacheComponents: true,
-};
+const nextConfig: NextConfig = {};
 
-export default nextConfig;
+export default withVoxx(nextConfig);

@@ -14,7 +14,7 @@ npx @prudentbird/voxx init changelog  # or a release-notes page
 
 Scaffolds a surface into your app:
 
-- **Next.js detected** — writes routes under `app/<basePath>/` (private `_voxx/` folder for the data layer and components — all yours to restyle), `rss.xml`/`llms.txt`/`llms-full.txt` routes plus a sitemap and `robots.ts` where the type calls for them, and enables `cacheComponents` in your next.config when it's safe to (Next 16+, recognizable config shape).
+- **Next.js detected** — writes routes under `app/<basePath>/` (private `_voxx/` folder for the data layer and components — all yours to restyle), `rss.xml`/`llms.txt`/`llms-full.txt` routes plus a sitemap and `robots.ts` where the type calls for them, and wraps your next.config with `withVoxx` when it's safe to (Next 16+, recognizable config shape).
 - **No Next.js** — asks whether you want a static site (`voxx build`) or a fresh app via `create-next-app`, then scaffolds into it.
 
 Flags: `--base /notes` (mount path — routes follow it), `--dir content`, `--app src/app`, `--force`.

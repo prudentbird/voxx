@@ -1,4 +1,5 @@
 import "server-only";
+import { cacheLife } from "next/cache";
 import {
   findPost,
   getPosts as coreGetPosts,
@@ -10,6 +11,7 @@ import { CONTENT_VERSION } from "./content-version";
 
 async function getPostsCached(version: number): Promise<Post[]> {
   "use cache";
+  cacheLife("max");
   void version;
   return coreGetPosts({ collection: "blog" });
 }
@@ -20,6 +22,7 @@ export async function getPosts(): Promise<Post[]> {
 
 async function getConfigCached(version: number): Promise<VoxxConfig> {
   "use cache";
+  cacheLife("max");
   void version;
   return coreLoadConfig();
 }

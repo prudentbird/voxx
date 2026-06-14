@@ -7,6 +7,8 @@ import { toMetadata } from "../_voxx/metadata";
 
 type Params = { params: Promise<{ slug: string }> };
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   const posts = await getPosts();
   return posts.map((post) => ({ slug: post.slug }));

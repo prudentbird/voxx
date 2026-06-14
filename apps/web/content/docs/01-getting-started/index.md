@@ -14,10 +14,10 @@ npx @prudentbird/voxx init changelog  # a release-notes page
 `voxx init` looks at the directory you run it in and does the right thing:
 
 - **Next.js app detected** — it scaffolds routes under `app/` (or `src/app/`),
-  writes a `voxx.json` and sample content, and turns on
-  [Cache Components](#cache-components) in your `next.config` when it can do
-  so safely. The generated components live in a `_voxx/` folder inside the
-  mounted route — they're plain files you own and restyle.
+  writes a `voxx.json` and sample content, and wraps your `next.config` with
+  [`withVoxx`](#cache-components) when it can do so safely. The generated
+  components live in a `_voxx/` folder inside the mounted route — they're plain
+  files you own and restyle.
 - **No Next.js** — it asks whether you want a static site (rendered with
   `voxx build`) or a fresh app via `create-next-app`, then scaffolds into
   your choice.
@@ -46,23 +46,25 @@ Every preset accepts the same flags:
 ## Cache Components
 
 The scaffolded data layer uses Next's `"use cache"` directive, so your pages
-prerender statically and content reads cost nothing at request time. On
-Next 16+, `voxx init` adds `cacheComponents: true` to your `next.config`
-automatically when the config has a recognizable shape; otherwise it prints
-the one-liner to add yourself:
+prerender statically and content reads cost nothing at request time. The
+`withVoxx` helper sets everything that makes this work — Cache Components
+enabled, `@prudentbird/voxx-core` kept external, and `voxx.json` plus your
+content directories traced into the serverless bundle so runtime reads resolve:
 
 ```ts
 import type { NextConfig } from "next";
+import { withVoxx } from "@prudentbird/voxx-core/next";
 
-const nextConfig: NextConfig = {
-  cacheComponents: true,
-};
+const nextConfig: NextConfig = {};
 
-export default nextConfig;
+export default withVoxx(nextConfig);
 ```
 
-Content only changes on deploy, so a build-time cache is exactly right —
-rebuild to publish.
+On Next 16+, `voxx init` wraps your config for you when it has a recognizable
+shape; otherwise it prints the snippet to add yourself.
+
+Content only changes on deploy, so the cached data uses the `max` lifetime and
+refreshes only when you rebuild — no needless revalidation at runtime.
 
 ## Pick your surface
 
