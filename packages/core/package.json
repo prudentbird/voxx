@@ -30,7 +30,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "files": [
     "dist",
@@ -99,7 +99,6 @@
     "@voxx/eslint-config": "workspace:*",
     "@voxx/typescript-config": "workspace:*",
     "eslint": "^10.0.2",
-    "jiti": "^2.7.0",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
