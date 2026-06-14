@@ -50,7 +50,6 @@ export default async function OgImage() {
           display: "flex",
           flexDirection: "column",
           gap: 24,
-          zIndex: 1,
           maxWidth: 900,
         }}
       >
@@ -88,7 +87,6 @@ export default async function OgImage() {
           display: "flex",
           alignItems: "center",
           gap: 16,
-          zIndex: 1,
         }}
       >
         <span style={{ fontSize: 40, letterSpacing: "-0.05em", lineHeight: 1, marginTop: -6 }}>
