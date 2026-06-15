@@ -1,5 +1,12 @@
 # voxx
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [bef7f6b]
+  - @prudentbird/voxx-core@1.2.1
+
 ## 1.2.0
 
 ### Minor Changes
