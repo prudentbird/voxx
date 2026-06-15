@@ -1,10 +1,25 @@
 import "@voxx/ui/globals.css";
 import type { Metadata } from "next";
-import { fontClasses } from "./fonts";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+});
 
 const baseUrl = "https://voxx.prudentbird.com";
 const siteName = "Voxx";
@@ -77,8 +92,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fontClasses} h-full antialiased`}
       suppressHydrationWarning
+      className={`${outfit.variable} ${jakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
