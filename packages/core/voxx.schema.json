@@ -6,6 +6,9 @@
     "site"
   ],
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "site": {
       "type": "object",
       "required": [

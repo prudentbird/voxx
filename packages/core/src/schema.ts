@@ -37,6 +37,7 @@ export const Frontmatter = Schema.Struct({
 export type FrontmatterData = typeof Frontmatter.Type;
 
 export const ConfigInput = Schema.Struct({
+  $schema: Schema.optional(Schema.String),
   site: Schema.Struct({
     title: Schema.String,
     description: Schema.optional(Schema.String),
