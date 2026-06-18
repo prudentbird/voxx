@@ -12,6 +12,15 @@ const DateLike = Schema.transform(
 
 const optionalString = Schema.optionalWith(Schema.String, { nullable: true });
 
+const AuthorEntry = Schema.Union(
+  Schema.String,
+  Schema.Struct({ name: Schema.String, url: Schema.optional(Schema.String) }),
+);
+
+const Drafts = Schema.optional(
+  Schema.Union(Schema.Boolean, Schema.Literal("unlisted")),
+);
+
 export const Frontmatter = Schema.Struct({
   title: Schema.String,
   description: optionalString,
@@ -30,7 +39,10 @@ export const Frontmatter = Schema.Struct({
     nullable: true,
   }),
   image: optionalString,
-  author: optionalString,
+  author: Schema.optionalWith(
+    Schema.Union(AuthorEntry, Schema.Array(AuthorEntry)),
+    { nullable: true },
+  ),
   excerpt: optionalString,
 });
 

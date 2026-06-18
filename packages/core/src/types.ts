@@ -94,7 +94,8 @@ export interface Post {
   version?: string;
   draft: boolean;
   image?: string;
-  author?: string;
+  /** Resolved authors — empty when none are declared. */
+  authors: VoxxAuthor[];
   /** Plain-text excerpt derived from the first 180 characters of content. */
   excerpt: string;
   readingTimeMinutes: number;

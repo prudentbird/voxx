@@ -108,6 +108,7 @@ export {
   compareVersions,
   escapeXml,
   serializeJsonLd,
+  normalizeAuthors,
 } from "./util";
 
 export type {

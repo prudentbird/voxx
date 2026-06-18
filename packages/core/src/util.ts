@@ -1,3 +1,34 @@
+import type { VoxxAuthor } from "./types";
+
+type AuthorEntryInput =
+  | string
+  | { readonly name: string; readonly url?: string };
+type AuthorInput =
+  | AuthorEntryInput
+  | ReadonlyArray<AuthorEntryInput>
+  | null
+  | undefined;
+
+/**
+ * Normalizes the frontmatter `author` field into a `VoxxAuthor[]`.
+ *
+ * Accepts a scalar name, an object, or an array of either. String entries
+ * become `{ name }`; objects pass through. Returns an empty array when unset.
+ */
+export function normalizeAuthors(input: AuthorInput): VoxxAuthor[] {
+  if (input == null) return [];
+  const entries: ReadonlyArray<AuthorEntryInput> = Array.isArray(input)
+    ? input
+    : [input as AuthorEntryInput];
+  return entries.map((entry) =>
+    typeof entry === "string"
+      ? { name: entry }
+      : entry.url !== undefined
+        ? { name: entry.name, url: entry.url }
+        : { name: entry.name },
+  );
+}
+
 /**
  * Converts a string to a URL-safe slug.
  *

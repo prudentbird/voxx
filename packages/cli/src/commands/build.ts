@@ -105,6 +105,18 @@ function metaLine(post: Post, config: VoxxConfig): string {
   return `<time datetime="${esc(post.date)}">${esc(formatDate(post.date, config.site.locale))}</time>${esc(rt)}`;
 }
 
+function authorsLine(post: Post): string {
+  if (post.authors.length === 0) return "";
+  const names = post.authors
+    .map((a) =>
+      a.url
+        ? `<a class="voxx-article__author" href="${esc(a.url)}">${esc(a.name)}</a>`
+        : esc(a.name),
+    )
+    .join(", ");
+  return `<p class="voxx-article__authors">By ${names}</p>`;
+}
+
 function tocAside(post: Post): string {
   if (post.toc.length === 0) return "";
   const items = post.toc
@@ -170,6 +182,7 @@ function postBody(post: Post, config: VoxxConfig): string {
         <header class="voxx-article__header">
           <h1>${esc(post.title)}</h1>
           <p class="voxx-article__meta">${metaLine(post, config)}</p>
+          ${authorsLine(post)}
         </header>
         <div class="voxx-prose">${post.html}</div>
       </article>

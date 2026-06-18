@@ -476,6 +476,7 @@ const samplePost: Post = {
   date: "2026-01-01T00:00:00.000Z",
   tags: ["intro", "css"],
   draft: false,
+  authors: [],
   excerpt: "An intro post",
   readingTimeMinutes: 1,
   html: "<p>hi</p>",
@@ -505,6 +506,24 @@ describe("seo", () => {
     const off = buildSeo(samplePost, offConfig);
     expect(off.openGraph?.tags).toEqual([]);
     expect(off.jsonLd && "keywords" in off.jsonLd).toBe(false);
+  });
+
+  it("sources authors from the post, preferring per-author urls", () => {
+    const multi: Post = {
+      ...samplePost,
+      authors: [{ name: "Jane Doe", url: "https://jane.example" }, { name: "Sam" }],
+    };
+    const seo = buildSeo(multi, config);
+    expect(seo.openGraph?.authors).toEqual(["Jane Doe", "Sam"]);
+    expect(seo.jsonLd?.["author"]).toEqual([
+      { "@type": "Person", name: "Jane Doe", url: "https://jane.example" },
+      { "@type": "Person", name: "Sam" },
+    ]);
+  });
+
+  it("uses a single Person object when there is one author", () => {
+    const one = buildSeo({ ...samplePost, authors: [{ name: "Solo" }] }, config);
+    expect(one.jsonLd?.["author"]).toEqual({ "@type": "Person", name: "Solo" });
   });
 });
 

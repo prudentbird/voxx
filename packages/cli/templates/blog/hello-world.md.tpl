@@ -4,6 +4,7 @@ description: Your very first Voxx post — edit or delete me.
 date: {{DATE}}
 tags: [getting-started]
 category: General
+author: { name: "Your Name", url: "https://example.com" }
 ---
 
 Welcome to your new blog. This file is just markdown with a little YAML
