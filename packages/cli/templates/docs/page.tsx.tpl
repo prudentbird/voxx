@@ -34,7 +34,21 @@ export default async function DocRoute({ params }: Params) {
     getPosts(),
     getConfig(),
   ]);
-  if (!post) notFound();
+  if (!post) {
+    if (slug.length === 0 && posts.length === 0) {
+      return (
+        <div className="voxx-layout">
+          <article className="voxx-article">
+            <div className="voxx-empty">
+              <p>No pages yet.</p>
+              <p>Add a Markdown file to your content folder to start your docs.</p>
+            </div>
+          </article>
+        </div>
+      );
+    }
+    notFound();
+  }
 
   const index = posts.findIndex((p) => p.url === post.url);
   const prev = index > 0 ? posts[index - 1] : null;

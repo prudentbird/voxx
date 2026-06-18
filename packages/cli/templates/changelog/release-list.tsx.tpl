@@ -9,7 +9,15 @@ export function ReleaseList({
   config: VoxxConfig;
 }) {
   if (posts.length === 0) {
-    return <p className="voxx-empty">No releases yet.</p>;
+    return (
+      <div className="voxx-empty">
+        <p>No releases yet.</p>
+        <p>
+          Add a Markdown file named for the version (e.g. <code>1.0.0.md</code>)
+          to your content folder.
+        </p>
+      </div>
+    );
   }
 
   return (

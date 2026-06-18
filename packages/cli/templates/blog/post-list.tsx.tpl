@@ -10,7 +10,15 @@ export function PostList({
   config: VoxxConfig;
 }) {
   if (posts.length === 0) {
-    return <p className="voxx-empty">No posts yet.</p>;
+    return (
+      <div className="voxx-empty">
+        <p>No posts yet.</p>
+        <p>
+          Add a Markdown file to your content folder, or run{" "}
+          <code>voxx new &quot;My post&quot;</code> to scaffold one.
+        </p>
+      </div>
+    );
   }
 
   return (

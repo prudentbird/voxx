@@ -130,7 +130,6 @@ export type {
   ConfigError,
   InvalidFrontmatter,
   PostNotFound,
-  ContentDirMissing,
   RenderError,
   VoxxError,
 } from "./errors";

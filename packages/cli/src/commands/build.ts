@@ -138,7 +138,10 @@ ${items}
 function indexBody(posts: Post[], config: VoxxConfig): string {
   const cards =
     posts.length === 0
-      ? `<p class="voxx-empty">No posts yet.</p>`
+      ? `<div class="voxx-empty">
+        <p>No posts yet.</p>
+        <p>Add a Markdown file to your content folder, or run <code>voxx new "My post"</code> to scaffold one.</p>
+      </div>`
       : `<ul class="voxx-postlist">
 ${posts
   .map((post) => {
@@ -260,6 +263,13 @@ ${aside}
 }
 
 function docsIndexBody(nav: NavNode[], config: VoxxConfig): string {
+  const body =
+    nav.length === 0
+      ? `<div class="voxx-empty">
+            <p>No pages yet.</p>
+            <p>Add a Markdown file to your content folder to start your docs.</p>
+          </div>`
+      : navHtml(nav, "");
   return `    <div class="voxx voxx-docs">
       ${docsSidebar(nav, "", config)}
       <main class="voxx-layout">
@@ -268,7 +278,7 @@ function docsIndexBody(nav: NavNode[], config: VoxxConfig): string {
             <h1>${esc(config.site.title)}</h1>
             ${config.site.description ? `<p class="voxx-article__meta">${esc(config.site.description)}</p>` : ""}
           </header>
-          <div class="voxx-prose">${navHtml(nav, "")}</div>
+          <div class="voxx-prose">${body}</div>
         </article>
       </main>
     </div>`;
@@ -277,7 +287,10 @@ function docsIndexBody(nav: NavNode[], config: VoxxConfig): string {
 function changelogBody(posts: Post[], config: VoxxConfig): string {
   const releases =
     posts.length === 0
-      ? `<p class="voxx-empty">No releases yet.</p>`
+      ? `<div class="voxx-empty">
+        <p>No releases yet.</p>
+        <p>Add a Markdown file named for the version (e.g. <code>1.0.0.md</code>) to your content folder.</p>
+      </div>`
       : `<div class="voxx-releases">
 ${posts
   .map(

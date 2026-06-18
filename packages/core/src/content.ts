@@ -2,7 +2,7 @@ import { Effect, Option } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { parseFrontmatter } from "./frontmatter";
 import { renderMarkdownEffect } from "./render";
-import { ConfigError, ContentDirMissing, PostNotFound } from "./errors";
+import { ConfigError, PostNotFound } from "./errors";
 import {
   compareVersions,
   deriveExcerpt,
@@ -186,7 +186,12 @@ export const getPostsEffect = (
     const exists = yield* fs
       .exists(dir)
       .pipe(Effect.orElseSucceed(() => false));
-    if (!exists) return yield* new ContentDirMissing({ dir });
+    if (!exists) {
+      yield* Effect.logWarning(
+        `Content directory "${dir}" does not exist — treating it as empty.`,
+      );
+      return [];
+    }
 
     const entries = yield* fs.readDirectory(dir, { recursive: true });
     const files = entries.filter((f) => MD_RE.test(f));
