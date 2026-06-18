@@ -449,7 +449,10 @@ describe("voxx init (static, non-TTY)", () => {
   it("writes voxx.json and sample content", async () => {
     await init(["blog"]);
     expect(await exists(join(dir, "voxx.json"))).toBe(true);
-    expect(await exists(join(dir, "content/hello-world.md"))).toBe(true);
+    const today = new Date().toISOString().slice(0, 10);
+    expect(
+      await exists(join(dir, `content/${today}-hello-world.md`)),
+    ).toBe(true);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.content.type).toBe("blog");
   });

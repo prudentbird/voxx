@@ -2,11 +2,12 @@ import { Effect, Option } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { parseFrontmatter } from "./frontmatter";
 import { renderMarkdownEffect } from "./render";
-import { ConfigError, ContentDirMissing, PostNotFound } from "./errors";
+import { ConfigError, PostNotFound } from "./errors";
 import {
   compareVersions,
   deriveExcerpt,
   joinPath,
+  normalizeAuthors,
   parseVersion,
   readingTimeMinutes,
   slugify,
@@ -19,8 +20,14 @@ const MD_RE = /\.md$/;
 
 /** Options for filtering posts returned by `getPostsEffect`. */
 export interface GetPostsEffectOptions {
-  /** When `true`, includes posts whose frontmatter sets `draft: true`. */
+  /** When `true`, includes posts whose frontmatter sets `draft: true`, regardless of the `drafts` config. */
   includeDrafts?: boolean;
+  /**
+   * When `true`, returns the *reachable* set — every post that has its own page,
+   * including unlisted drafts (`drafts: "unlisted"`). When unset, returns the
+   * *listed* set used for indexes and feeds.
+   */
+  reachable?: boolean;
   /** Restricts results to a named collection defined in `config.collections`. */
   collection?: string;
 }
@@ -130,7 +137,7 @@ const buildPost = (config: VoxxConfig, absPath: string, rel: string) =>
       version,
       draft: data.draft,
       image: data.image,
-      author: data.author,
+      authors: normalizeAuthors(data.author),
       excerpt: data.excerpt ?? deriveExcerpt(content),
       readingTimeMinutes: readingTimeMinutes(content),
       html,
@@ -179,11 +186,22 @@ export const getPostsEffect = (
     const exists = yield* fs
       .exists(dir)
       .pipe(Effect.orElseSucceed(() => false));
-    if (!exists) return yield* new ContentDirMissing({ dir });
+    if (!exists) {
+      yield* Effect.logWarning(
+        `Content directory "${dir}" does not exist — treating it as empty.`,
+      );
+      return [];
+    }
 
     const entries = yield* fs.readDirectory(dir, { recursive: true });
     const files = entries.filter((f) => MD_RE.test(f));
-    const includeDrafts = opts.includeDrafts ?? config.content.drafts;
+    const mode = config.content.drafts;
+    const includeDrafts =
+      opts.includeDrafts !== undefined
+        ? opts.includeDrafts
+        : opts.reachable
+          ? mode !== false
+          : mode === true;
 
     const built = yield* Effect.forEach(
       files,
@@ -251,7 +269,10 @@ export const getPostEffect = (
   opts: GetPostsEffectOptions = {},
 ) =>
   Effect.gen(function* () {
-    const posts = yield* getPostsEffect(config, opts);
+    const posts = yield* getPostsEffect(config, {
+      ...opts,
+      reachable: opts.reachable ?? true,
+    });
     const post = findPost(posts, slug);
     if (!post) return yield* new PostNotFound({ slug });
     return post;

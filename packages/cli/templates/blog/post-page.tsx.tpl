@@ -35,6 +35,23 @@ export function PostPage({
               <span>{` · ${post.readingTimeMinutes} min read`}</span>
             ) : null}
           </p>
+          {post.authors.length > 0 ? (
+            <p className="voxx-article__authors">
+              By{" "}
+              {post.authors.map((author, i) => (
+                <span key={author.name}>
+                  {i > 0 ? ", " : ""}
+                  {author.url ? (
+                    <a className="voxx-article__author" href={author.url}>
+                      {author.name}
+                    </a>
+                  ) : (
+                    author.name
+                  )}
+                </span>
+              ))}
+            </p>
+          ) : null}
         </header>
         <div
           className="voxx-prose"

@@ -413,6 +413,22 @@
   color: var(--muted-foreground, var(--voxx-muted-fg));
 }
 
+.voxx-article__authors {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted-foreground, var(--voxx-muted-fg));
+}
+
+.voxx-article__author {
+  color: var(--foreground, var(--voxx-fg));
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.voxx-article__author:hover {
+  text-decoration: underline;
+}
+
 .voxx-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

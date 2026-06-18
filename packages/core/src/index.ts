@@ -108,6 +108,7 @@ export {
   compareVersions,
   escapeXml,
   serializeJsonLd,
+  normalizeAuthors,
 } from "./util";
 
 export type {
@@ -129,7 +130,6 @@ export type {
   ConfigError,
   InvalidFrontmatter,
   PostNotFound,
-  ContentDirMissing,
   RenderError,
   VoxxError,
 } from "./errors";

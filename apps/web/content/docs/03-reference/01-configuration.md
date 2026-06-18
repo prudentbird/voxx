@@ -69,7 +69,15 @@ path.
 | `type`     | `"blog"`         | `"blog"`, `"docs"`, or `"changelog"`              |
 | `dir`      | `"content/blog"` | Markdown folder, resolved relative to `voxx.json` |
 | `basePath` | `"/blog"`        | URL prefix the collection is mounted at           |
-| `drafts`   | `false`          | Include drafts by default                         |
+| `drafts`   | `false`          | Draft visibility — see below                      |
+
+`drafts` is tri-state:
+
+- `false` (default) — drafts are excluded everywhere.
+- `true` — drafts are built and listed like published posts. Useful while
+  developing, but a footgun in production; `voxx build` warns when it's set.
+- `"unlisted"` — drafts are built and reachable by URL (for sharing a
+  preview link), but hidden from listings, RSS, sitemap, and `llms.txt`.
 
 To mount more than one surface, use `collections` instead — it replaces
 `content` entirely. See [Collections](/docs/reference/collections).

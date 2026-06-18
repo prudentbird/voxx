@@ -68,7 +68,17 @@
           "type": "string"
         },
         "drafts": {
-          "type": "boolean"
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "unlisted"
+              ]
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -97,7 +107,17 @@
             "type": "string"
           },
           "drafts": {
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "unlisted"
+                ]
+              }
+            ]
           }
         },
         "additionalProperties": false

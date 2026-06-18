@@ -18,11 +18,6 @@ export class PostNotFound extends Data.TaggedError("PostNotFound")<{
   readonly slug: string;
 }> {}
 
-/** Thrown when the configured content directory does not exist. */
-export class ContentDirMissing extends Data.TaggedError("ContentDirMissing")<{
-  readonly dir: string;
-}> {}
-
 /** Thrown when the Markdown-to-HTML pipeline fails. */
 export class RenderError extends Data.TaggedError("RenderError")<{
   readonly message: string;
@@ -34,5 +29,4 @@ export type VoxxError =
   | ConfigError
   | InvalidFrontmatter
   | PostNotFound
-  | ContentDirMissing
   | RenderError;
