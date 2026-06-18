@@ -32,6 +32,11 @@ Each entry fills itself in from its `name` and `type`:
 | `basePath` | `/<name>`        | overridden to `/changelog` |
 | `drafts`   | `false`          | —                          |
 
+`drafts` is per-collection and tri-state — `false`, `true`, or `"unlisted"`
+(built and reachable by URL but hidden from listings and feeds). See
+[`content.drafts`](/docs/reference/configuration#content) for the full
+breakdown.
+
 So `{ "name": "docs", "type": "docs" }` reads `content/docs/` and mounts at
 `/docs` with zero further config.
 

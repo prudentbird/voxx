@@ -20,7 +20,7 @@ order: 2
 version: "1.4.0"
 draft: false
 image: /og/hello.png
-author: Jane Doe
+author: { name: Jane Doe, url: https://jane.example }
 excerpt: A hand-written excerpt, if the derived one won't do.
 ---
 ```
@@ -40,7 +40,7 @@ excerpt: A hand-written excerpt, if the derived one won't do.
 | `version`     | string   | Release version (changelog) — overrides the filename                                      |
 | `draft`       | boolean  | Hidden everywhere until published (default `false`)                                       |
 | `image`       | string   | Social/OG image; falls back to `seo.defaultImage`                                         |
-| `author`      | string   | Overrides `site.author` for this page                                                     |
+| `author`      | author   | One or more authors — see [Authors](#authors). Overrides `site.author` for this page      |
 | `excerpt`     | string   | Overrides the derived excerpt                                                             |
 
 Unknown keys are ignored, not errors — annotate your files however you like.
@@ -58,6 +58,25 @@ Voxx tries three sources, in order:
 So a blog can be nothing but date-prefixed files with `title:` — Voxx fills
 in the rest.
 
+## Authors
+
+`author` accepts a bare name, an object with an optional `url`, or a list
+mixing both:
+
+```yaml
+author: Jane Doe
+# or
+author: { name: Jane Doe, url: https://jane.example }
+# or several
+author:
+  - { name: Jane Doe, url: https://jane.example }
+  - Sam Rivera
+```
+
+Each author renders as a byline on the post (names with a `url` become
+links) and flows into Open Graph and JSON-LD metadata. When a post sets no
+`author`, Voxx falls back to `site.author` from `voxx.json`.
+
 ## Drafts
 
 `draft: true` keeps a page out of everything — lists, feeds, sitemaps,
@@ -66,6 +85,10 @@ To preview drafts, use [`voxx dev`](/docs/reference/cli#voxx-dev) (which
 includes them by default), pass `--drafts` to
 [`voxx build`](/docs/reference/cli#voxx-build), or set
 `content.drafts: true` while developing.
+
+To publish a draft's page for sharing while keeping it out of lists and
+feeds, set the collection's [`drafts: "unlisted"`](/docs/reference/configuration#content)
+instead — the page builds and is reachable by URL, but stays hidden.
 
 ## Derived values
 
