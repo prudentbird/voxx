@@ -414,7 +414,9 @@ async function buildCollection(
         outDir,
       );
     }
-    if (!listed.some((p) => p.path.length === 0)) {
+    const hasRootPage = (posts: Post[]) =>
+      posts.some((p) => p.path.length === 0);
+    if (!hasRootPage(listed) && !hasRootPage(reachable)) {
       await writePage(
         indexPath,
         shell({
