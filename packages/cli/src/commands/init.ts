@@ -521,7 +521,13 @@ export async function init(argv: string[]): Promise<void> {
         ]
       : preset === "changelog"
         ? [["changelog/release.md.tpl", "0.1.0.md", { DATE: today }]]
-        : [["blog/hello-world.md.tpl", "hello-world.md", { DATE: today }]];
+        : [
+            [
+              "blog/hello-world.md.tpl",
+              `${today}-hello-world.md`,
+              { DATE: today },
+            ],
+          ];
   for (const [tpl, rel, vars] of samples) {
     results.push([
       join(contentDir, rel),

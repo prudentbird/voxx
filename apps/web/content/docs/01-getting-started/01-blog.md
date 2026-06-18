@@ -13,17 +13,17 @@ npm i @prudentbird/voxx-core
 This writes:
 
 ```
-voxx.json                        # config (autocompleted via JSON schema)
-content/hello-world.md           # a sample post
-app/blog/page.tsx                # the /blog index — lists all posts
-app/blog/[slug]/page.tsx         # one post (+ metadata + static params)
-app/blog/layout.tsx              # imports the Voxx stylesheet
-app/blog/_voxx/*                 # data layer + components, yours to edit
-app/sitemap.ts                   # sitemap.xml
-app/robots.ts                    # robots.txt
-app/blog/rss.xml/route.ts        # /blog/rss.xml
-app/llms.txt/route.ts            # /llms.txt
-app/llms-full.txt/route.ts       # /llms-full.txt
+voxx.json                          # config (autocompleted via JSON schema)
+content/2026-01-15-hello-world.md  # a sample post (date prefix orders files; the URL uses the slug)
+app/blog/page.tsx                  # the /blog index — lists all posts
+app/blog/[slug]/page.tsx           # one post (+ metadata + static params)
+app/blog/layout.tsx                # imports the Voxx stylesheet
+app/blog/_voxx/*                   # data layer + components, yours to edit
+app/sitemap.ts                     # sitemap.xml
+app/robots.ts                      # robots.txt
+app/blog/rss.xml/route.ts          # /blog/rss.xml
+app/llms.txt/route.ts              # /llms.txt
+app/llms-full.txt/route.ts         # /llms-full.txt
 ```
 
 Set `site.url` in `voxx.json`, run your dev server, and open `/blog`.
