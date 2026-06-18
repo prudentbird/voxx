@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { buildSeo, serializeJsonLd } from "@prudentbird/voxx-core";
-import { getConfig, getPost, getPosts } from "../_voxx/data";
+import {
+  getConfig,
+  getPost,
+  getPosts,
+  getReachablePosts,
+} from "../_voxx/data";
 import { toMetadata } from "../_voxx/metadata";
 import { DocPage } from "../_voxx/doc-page";
 
 type Params = { params: Promise<{ slug?: string[] }> };
 
 export async function generateStaticParams() {
-  const posts = await getPosts();
+  const posts = await getReachablePosts();
   return posts.map((post) => ({ slug: post.path }));
 }
 

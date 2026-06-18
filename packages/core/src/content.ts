@@ -20,8 +20,14 @@ const MD_RE = /\.md$/;
 
 /** Options for filtering posts returned by `getPostsEffect`. */
 export interface GetPostsEffectOptions {
-  /** When `true`, includes posts whose frontmatter sets `draft: true`. */
+  /** When `true`, includes posts whose frontmatter sets `draft: true`, regardless of the `drafts` config. */
   includeDrafts?: boolean;
+  /**
+   * When `true`, returns the *reachable* set — every post that has its own page,
+   * including unlisted drafts (`drafts: "unlisted"`). When unset, returns the
+   * *listed* set used for indexes and feeds.
+   */
+  reachable?: boolean;
   /** Restricts results to a named collection defined in `config.collections`. */
   collection?: string;
 }
@@ -184,7 +190,13 @@ export const getPostsEffect = (
 
     const entries = yield* fs.readDirectory(dir, { recursive: true });
     const files = entries.filter((f) => MD_RE.test(f));
-    const includeDrafts = opts.includeDrafts ?? config.content.drafts;
+    const mode = config.content.drafts;
+    const includeDrafts =
+      opts.includeDrafts !== undefined
+        ? opts.includeDrafts
+        : opts.reachable
+          ? mode !== false
+          : mode === true;
 
     const built = yield* Effect.forEach(
       files,
@@ -252,7 +264,10 @@ export const getPostEffect = (
   opts: GetPostsEffectOptions = {},
 ) =>
   Effect.gen(function* () {
-    const posts = yield* getPostsEffect(config, opts);
+    const posts = yield* getPostsEffect(config, {
+      ...opts,
+      reachable: opts.reachable ?? true,
+    });
     const post = findPost(posts, slug);
     if (!post) return yield* new PostNotFound({ slug });
     return post;

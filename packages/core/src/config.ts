@@ -37,7 +37,7 @@ export interface CollectionInput {
   readonly type?: ContentType;
   readonly dir?: string;
   readonly basePath?: string;
-  readonly drafts?: boolean;
+  readonly drafts?: boolean | "unlisted";
 }
 
 /**

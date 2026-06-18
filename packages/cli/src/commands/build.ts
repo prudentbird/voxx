@@ -233,13 +233,11 @@ function docsSidebar(
 
 function docBody(
   post: Post,
-  posts: Post[],
-  index: number,
+  prev: Post | undefined,
+  next: Post | undefined,
   nav: NavNode[],
   config: VoxxConfig,
 ): string {
-  const prev = index > 0 ? posts[index - 1] : undefined;
-  const next = posts[index + 1];
   const aside = config.features.toc ? tocAside(post) : "";
   const desc = post.description
     ? `<p class="voxx-article__meta">${esc(post.description)}</p>`
@@ -363,7 +361,8 @@ async function copyContentAssets(
 
 async function buildCollection(
   config: VoxxConfig,
-  posts: Post[],
+  reachable: Post[],
+  listed: Post[],
   outDir: string,
 ): Promise<void> {
   const type = config.content.type;
@@ -380,14 +379,16 @@ async function buildCollection(
         title: config.site.title,
         lang: config.site.locale,
         head: `<meta name="description" content="${esc(config.site.description)}">`,
-        body: `${siteHeader(config)}\n${changelogBody(posts, config)}`,
+        body: `${siteHeader(config)}\n${changelogBody(listed, config)}`,
       }),
       outDir,
     );
   } else if (type === "docs") {
-    const nav = buildNavTree(posts);
-    for (let i = 0; i < posts.length; i++) {
-      const post = posts[i]!;
+    const nav = buildNavTree(listed);
+    for (const post of reachable) {
+      const i = listed.findIndex((p) => p.url === post.url);
+      const prev = i > 0 ? listed[i - 1] : undefined;
+      const next = i >= 0 ? listed[i + 1] : undefined;
       const seo = buildSeo(post, config);
       await writePage(
         join(outDir, stripLead(post.url), "index.html"),
@@ -395,12 +396,12 @@ async function buildCollection(
           title: `${post.title} — ${config.site.title}`,
           lang: config.site.locale,
           head: headTags(seo, config),
-          body: docBody(post, posts, i, nav, config),
+          body: docBody(post, prev, next, nav, config),
         }),
         outDir,
       );
     }
-    if (!posts.some((p) => p.path.length === 0)) {
+    if (!listed.some((p) => p.path.length === 0)) {
       await writePage(
         indexPath,
         shell({
@@ -419,12 +420,12 @@ async function buildCollection(
         title: config.site.title,
         lang: config.site.locale,
         head: `<meta name="description" content="${esc(config.site.description)}">`,
-        body: `${siteHeader(config)}\n${indexBody(posts, config)}`,
+        body: `${siteHeader(config)}\n${indexBody(listed, config)}`,
       }),
       outDir,
     );
 
-    for (const post of posts) {
+    for (const post of reachable) {
       const seo = buildSeo(post, config);
       await writePage(
         join(outDir, stripLead(post.url), "index.html"),
@@ -478,18 +479,22 @@ export async function buildSite(
 
   for (const collection of collections) {
     const view: VoxxConfig = { ...config, content: { ...collection } };
-    const posts = await getPosts({
+    const reachable = await getPosts({
       config: view,
+      reachable: true,
       includeDrafts: opts.includeDrafts,
     });
-    await buildCollection(view, posts, outDir);
+    const listed = opts.includeDrafts
+      ? reachable
+      : reachable.filter((p) => !p.draft || view.content.drafts === true);
+    await buildCollection(view, reachable, listed, outDir);
     const assetTarget = join(outDir, stripLead(collection.basePath));
     await copyContentAssets(collection.dir, assetTarget);
 
     if (config.features.rss && isFeedType(collection)) {
       await writePage(
         join(outDir, stripLead(rssPath(view))),
-        renderRss(posts, view),
+        renderRss(listed, view),
         outDir,
       );
     }
@@ -498,10 +503,10 @@ export async function buildSite(
       heading: multi
         ? humanize(collection.name)
         : sectionHeading(collection.type),
-      posts,
+      posts: listed,
     });
-    allPosts.push(...posts);
-    pageCount += posts.length;
+    allPosts.push(...listed);
+    pageCount += reachable.length;
   }
 
   if (config.features.sitemap) {
@@ -578,6 +583,17 @@ export async function build(argv: string[]): Promise<void> {
     log.warn(
       `The title link defaults to "/", but nothing is generated there (no collection uses basePath "/"). Set site.titleHref in voxx.json — e.g. "${config.collections[0]!.basePath}" to point at the index, or your parent site's home if this is embedded under a larger site.`,
     );
+  }
+
+  if (!values.drafts) {
+    const publishing = config.collections.filter((col) => col.drafts === true);
+    if (publishing.length > 0) {
+      log.warn(
+        `drafts: true on ${publishing
+          .map((col) => `"${col.name}"`)
+          .join(", ")} — draft posts are published as normal, listed posts. Use drafts: "unlisted" to build them as reachable-by-URL previews that stay hidden from listings and feeds.`,
+      );
+    }
   }
 
   const type = config.content.type;

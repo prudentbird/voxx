@@ -68,7 +68,7 @@ export const ConfigInput = Schema.Struct({
       type: Schema.optional(Schema.Literal("blog", "docs", "changelog")),
       dir: Schema.optional(Schema.String),
       basePath: Schema.optional(Schema.String),
-      drafts: Schema.optional(Schema.Boolean),
+      drafts: Drafts,
     }),
   ),
 
@@ -79,7 +79,7 @@ export const ConfigInput = Schema.Struct({
         type: Schema.optional(Schema.Literal("blog", "docs", "changelog")),
         dir: Schema.optional(Schema.String),
         basePath: Schema.optional(Schema.String),
-        drafts: Schema.optional(Schema.Boolean),
+        drafts: Drafts,
       }),
     ),
   ),
