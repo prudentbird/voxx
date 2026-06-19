@@ -23,8 +23,9 @@ const jetbrainsMono = JetBrains_Mono({
 
 const baseUrl = "https://voxx.prudentbird.com";
 const siteName = "Voxx";
+const siteTitle = "Voxx — A zero-friction CMS for you and your agents";
 const siteDescription =
-  "A zero-friction CMS for you and your AI agents. Write markdown and voxx handles the routing, SEO, RSS, llms.txt, and more.";
+  "A zero-friction CMS for you and your agents. Point Voxx at a folder of markdown and ship a blog, docs, or changelog.";
 const keywords = [
   "Voxx",
   "CMS",
@@ -45,7 +46,7 @@ const keywords = [
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: siteName,
+    default: siteTitle,
     template: `%s · ${siteName}`,
   },
   description: siteDescription,
@@ -70,14 +71,14 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: baseUrl,
     siteName,
-    title: siteName,
+    title: siteTitle,
     description: siteDescription,
   },
   twitter: {
     card: "summary_large_image",
     site: "@prudentbird",
     creator: "@prudentbird",
-    title: siteName,
+    title: siteTitle,
     description: siteDescription,
   },
   alternates: {

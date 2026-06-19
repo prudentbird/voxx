@@ -1,19 +1,9 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { ThemeSwitcher } from "~/components/theme-switcher";
-import { SiteHeader } from "~/components/site-header";
 import { Wordmark } from "~/components/wordmark";
-
-export const metadata: Metadata = {
-  title: {
-    default: "Voxx — publishing is a side effect of writing",
-    template: "%s · Voxx",
-  },
-  description:
-    "A zero-friction CMS for you and your agents. Point Voxx at a folder of markdown and ship a blog, a docs site, or a changelog — no database, no admin UI, no lock-in.",
-};
+import { SiteHeader } from "~/components/site-header";
+import { ThemeSwitcher } from "~/components/theme-switcher";
 
 export default function MarketingLayout({
   children,

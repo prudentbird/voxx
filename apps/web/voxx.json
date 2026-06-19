@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@prudentbird/voxx-core/voxx.schema.json",
   "site": {
     "title": "Voxx",
-    "description": "A zero-friction, file-based CMS for blogs, docs, and changelogs.",
+    "description": "A zero-friction CMS for you and your agents.",
     "url": "https://voxx.prudentbird.com",
     "author": { "name": "Voxx" },
     "locale": "en-US"
