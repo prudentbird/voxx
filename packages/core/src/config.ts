@@ -26,10 +26,21 @@ const TYPE_FEATURE_DEFAULTS: Record<
   changelog: {
     toc: false,
     sitemap: false,
+    robots: false,
     readingTime: false,
     tags: false,
   },
 };
+
+/**
+ * Returns the resolved feature defaults for a content type, applying the
+ * type-specific overrides on top of the base defaults.
+ *
+ * @param type - Content type to resolve defaults for.
+ */
+export function defaultFeatures(type: ContentType): VoxxConfig["features"] {
+  return { ...DEFAULT_CONFIG.features, ...TYPE_FEATURE_DEFAULTS[type] };
+}
 
 /** Partial collection definition accepted in `voxx.json`. */
 export interface CollectionInput {
@@ -114,6 +125,7 @@ function mergeConfig(input: VoxxConfigInput): VoxxConfig {
       toc: input.features?.toc ?? featureDefaults.toc,
       rss: input.features?.rss ?? featureDefaults.rss,
       sitemap: input.features?.sitemap ?? featureDefaults.sitemap,
+      robots: input.features?.robots ?? featureDefaults.robots,
       llmsTxt: input.features?.llmsTxt ?? featureDefaults.llmsTxt,
       tags: input.features?.tags ?? featureDefaults.tags,
       readingTime: input.features?.readingTime ?? featureDefaults.readingTime,

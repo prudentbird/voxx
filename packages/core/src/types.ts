@@ -54,6 +54,7 @@ export interface VoxxConfig {
     toc: boolean;
     rss: boolean;
     sitemap: boolean;
+    robots: boolean;
     llmsTxt: boolean;
     tags: boolean;
     readingTime: boolean;
@@ -184,6 +185,7 @@ export const DEFAULT_CONFIG: VoxxConfig = {
     toc: true,
     rss: true,
     sitemap: true,
+    robots: true,
     llmsTxt: true,
     tags: true,
     readingTime: true,

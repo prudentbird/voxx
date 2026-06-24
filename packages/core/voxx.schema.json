@@ -162,6 +162,9 @@
         "sitemap": {
           "type": "boolean"
         },
+        "robots": {
+          "type": "boolean"
+        },
         "llmsTxt": {
           "type": "boolean"
         },

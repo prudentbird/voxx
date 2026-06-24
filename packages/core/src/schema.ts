@@ -95,6 +95,7 @@ export const ConfigInput = Schema.Struct({
       toc: Schema.optional(Schema.Boolean),
       rss: Schema.optional(Schema.Boolean),
       sitemap: Schema.optional(Schema.Boolean),
+      robots: Schema.optional(Schema.Boolean),
       llmsTxt: Schema.optional(Schema.Boolean),
       tags: Schema.optional(Schema.Boolean),
       readingTime: Schema.optional(Schema.Boolean),

@@ -124,7 +124,7 @@ export type {
   TwitterData,
 } from "./types";
 export type { RenderResult } from "./render";
-export { resolveCollectionDefaults } from "./config";
+export { resolveCollectionDefaults, defaultFeatures } from "./config";
 export type { CollectionInput, LoadConfigOptions } from "./config";
 export type {
   ConfigError,

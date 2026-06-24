@@ -531,6 +531,8 @@ export async function buildSite(
         indexPaths: collections.map((col) => col.basePath),
       }),
     );
+  }
+  if (config.features.robots) {
     await writeFile(join(outDir, "robots.txt"), renderRobotsTxt(config));
   }
   if (config.features.llmsTxt) {
