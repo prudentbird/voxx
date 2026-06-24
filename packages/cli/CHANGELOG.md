@@ -1,5 +1,11 @@
 # voxx
 
+## 1.3.1
+
+### Patch Changes
+
+- 68ef697: Fix CLI color output emitting literal ANSI escape codes (e.g. `[32m`) instead of applying color, by including the leading ESC byte in all color sequences.
+
 ## 1.3.0
 
 ### Minor Changes
