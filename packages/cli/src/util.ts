@@ -1,6 +1,13 @@
 import { createRequire } from "node:module";
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import {
+  access,
+  copyFile,
+  mkdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
@@ -89,6 +96,95 @@ export async function writeFileSafe(
  */
 export function resolveCoreAsset(subpath: string): string {
   return require.resolve(`@prudentbird/voxx-core/${subpath}`);
+}
+
+/** A single file the CLI intends to write during a command. */
+export interface WriteOp {
+  /** Absolute destination path. */
+  readonly path: string;
+  /** Display label, relative to the project root. */
+  readonly label: string;
+  /** Inline text content to write. Mutually exclusive with {@link WriteOp.copyFrom}. */
+  readonly content?: string;
+  /** Source path to copy from (used for binary assets). */
+  readonly copyFrom?: string;
+  /** Marks a file shared across collections, written once per project. */
+  readonly siteWide?: boolean;
+}
+
+/** Outcome of a planned write or delete. */
+export type WriteStatusEx = "written" | "overwritten" | "skipped";
+
+/** A {@link WriteOp} paired with its resolved status after execution. */
+export type WriteOutcome = readonly [
+  label: string,
+  status: WriteStatusEx,
+  siteWide?: boolean,
+];
+
+/**
+ * Returns the subset of write ops whose destination already exists. Callers
+ * use this to warn before overwriting.
+ *
+ * @param ops - Planned write operations.
+ */
+export async function collisions(
+  ops: readonly WriteOp[],
+): Promise<WriteOp[]> {
+  const found: WriteOp[] = [];
+  for (const op of ops) {
+    if (await exists(op.path)) found.push(op);
+  }
+  return found;
+}
+
+/**
+ * Executes write ops. Existing files are overwritten only when their path is
+ * present in `overwrite`; otherwise they are skipped.
+ *
+ * @param ops - Planned write operations.
+ * @param overwrite - Set of absolute paths approved for overwrite.
+ */
+export async function executeWrites(
+  ops: readonly WriteOp[],
+  overwrite: ReadonlySet<string> = new Set(),
+): Promise<WriteOutcome[]> {
+  const results: WriteOutcome[] = [];
+  for (const op of ops) {
+    const present = await exists(op.path);
+    if (present && !overwrite.has(op.path)) {
+      results.push([op.label, "skipped", op.siteWide]);
+      continue;
+    }
+    await mkdir(dirname(op.path), { recursive: true });
+    if (op.copyFrom !== undefined) {
+      await copyFile(op.copyFrom, op.path);
+    } else {
+      await writeFile(op.path, op.content ?? "");
+    }
+    results.push([op.label, present ? "overwritten" : "written", op.siteWide]);
+  }
+  return results;
+}
+
+/**
+ * Deletes files, reporting which existed. Used by `voxx remove` to tear down a
+ * disabled feature's route files.
+ *
+ * @param paths - Absolute paths to delete.
+ * @param root - Project root for producing relative labels.
+ */
+export async function deleteFiles(
+  paths: readonly string[],
+  root: string,
+): Promise<WriteOutcome[]> {
+  const results: WriteOutcome[] = [];
+  for (const path of paths) {
+    const present = await exists(path);
+    if (present) await rm(path, { recursive: true, force: true });
+    results.push([relative(root, path), present ? "written" : "skipped"]);
+  }
+  return results;
 }
 
 /**

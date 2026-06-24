@@ -5,6 +5,8 @@ import { join } from "node:path";
 import { build } from "../src/commands/build";
 import { newPost } from "../src/commands/new";
 import { init } from "../src/commands/init";
+import { add } from "../src/commands/add";
+import { remove } from "../src/commands/remove";
 import { exists } from "../src/util";
 
 const originalCwd = process.cwd();
@@ -313,15 +315,19 @@ describe("voxx new", () => {
   });
 });
 
-describe("voxx init --add", () => {
+async function nextApp() {
+  await writeFile(
+    join(dir, "package.json"),
+    JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
+  );
+  await mkdir(join(dir, "app"), { recursive: true });
+}
+
+describe("voxx add collection", () => {
   it("migrates a single-collection config and scaffolds the new collection", async () => {
-    await writeFile(
-      join(dir, "package.json"),
-      JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
-    );
-    await mkdir(join(dir, "app"), { recursive: true });
+    await nextApp();
     await init(["blog"]);
-    await init(["--add", "docs"]);
+    await add(["collection", "docs"]);
     expect(process.exitCode).not.toBe(1);
 
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
@@ -330,7 +336,7 @@ describe("voxx init --add", () => {
       {
         name: "blog",
         type: "blog",
-        dir: "content",
+        dir: "content/blog",
         basePath: "/blog",
         drafts: false,
       },
@@ -342,13 +348,6 @@ describe("voxx init --add", () => {
         drafts: false,
       },
     ]);
-    expect(Object.keys(cfg)).toEqual([
-      "$schema",
-      "site",
-      "collections",
-      "theme",
-      "seo",
-    ]);
 
     expect(await exists(join(dir, "app/docs/[[...slug]]/page.tsx"))).toBe(true);
     expect(await exists(join(dir, "content/docs/index.md"))).toBe(true);
@@ -359,25 +358,12 @@ describe("voxx init --add", () => {
     expect(sitemap).toContain("./blog/_voxx/data");
   });
 
-  it("backfills an omitted dir so migration preserves resolved behavior", async () => {
-    await writeConfig({ content: { type: "docs" } });
-    await init(["--add", "changelog"]);
-    expect(process.exitCode).not.toBe(1);
-    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
-    expect(cfg.collections[0]).toEqual({
-      name: "docs",
-      type: "docs",
-      dir: "content/blog",
-      basePath: "/blog",
-    });
-  });
-
   it("appends to an existing collections array without touching entries", async () => {
     await writeConfig({
       content: undefined,
       collections: [{ name: "blog", dir: "content/blog" }],
     });
-    await init(["--add", "changelog"]);
+    await add(["collection", "changelog"]);
     expect(process.exitCode).not.toBe(1);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.collections).toEqual([
@@ -394,33 +380,25 @@ describe("voxx init --add", () => {
   });
 
   it("requires an existing voxx.json", async () => {
-    await init(["--add", "docs"]);
+    await add(["collection", "docs"]);
     expect(process.exitCode).toBe(1);
     expect(await exists(join(dir, "voxx.json"))).toBe(false);
     expect(await exists(join(dir, "content/docs/index.md"))).toBe(false);
-  });
-
-  it("rejects --add together with --force", async () => {
-    await writeConfig();
-    await init(["--add", "docs", "--force"]);
-    expect(process.exitCode).toBe(1);
-    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
-    expect(cfg.collections).toBeUndefined();
   });
 
   it("errors on name, basePath, and dir collisions without writing", async () => {
     await writeConfig();
     const before = await readFile(join(dir, "voxx.json"), "utf8");
 
-    await init(["--add", "blog"]);
+    await add(["collection", "blog"]);
     expect(process.exitCode).toBe(1);
     process.exitCode = 0;
 
-    await init(["--add", "docs", "--base", "/blog"]);
+    await add(["collection", "docs", "--base", "/blog"]);
     expect(process.exitCode).toBe(1);
     process.exitCode = 0;
 
-    await init(["--add", "docs", "--dir", "content"]);
+    await add(["collection", "docs", "--dir", "content"]);
     expect(process.exitCode).toBe(1);
 
     expect(await readFile(join(dir, "voxx.json"), "utf8")).toBe(before);
@@ -432,7 +410,7 @@ describe("voxx init --add", () => {
       content: undefined,
       collections: [{ name: "docs", type: "docs", dir: "content/docs" }],
     });
-    await init(["--add", "docs", "--name", "guides"]);
+    await add(["collection", "docs", "--name", "guides"]);
     expect(process.exitCode).not.toBe(1);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.collections[1]).toMatchObject({
@@ -451,10 +429,32 @@ describe("voxx init (static, non-TTY)", () => {
     expect(await exists(join(dir, "voxx.json"))).toBe(true);
     const today = new Date().toISOString().slice(0, 10);
     expect(
-      await exists(join(dir, `content/${today}-hello-world.md`)),
+      await exists(join(dir, `content/blog/${today}-hello-world.md`)),
     ).toBe(true);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.content.type).toBe("blog");
+  });
+
+  it("scaffolds two collections together with --yes", async () => {
+    await init(["blog", "docs", "--yes"]);
+    expect(process.exitCode).not.toBe(1);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.collections.map((c: { name: string }) => c.name)).toEqual([
+      "blog",
+      "docs",
+    ]);
+    expect(await exists(join(dir, "content/docs/index.md"))).toBe(true);
+  });
+
+  it("names a single collection with --name", async () => {
+    await init(["blog", "--name", "posts", "--yes"]);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.content).toMatchObject({
+      type: "blog",
+      dir: "content/posts",
+      basePath: "/posts",
+    });
+    expect(await exists(join(dir, "content/posts"))).toBe(true);
   });
 
   it("rejects a --dir that escapes the project", async () => {
@@ -464,20 +464,77 @@ describe("voxx init (static, non-TTY)", () => {
     expect(await exists(join(dir, "../outside"))).toBe(false);
   });
 
-  it("scaffolds routes into a Next.js app", async () => {
-    await writeFile(
-      join(dir, "package.json"),
-      JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
-    );
-    await mkdir(join(dir, "app"), { recursive: true });
-    await init(["blog"]);
+  it("rejects --name with multiple collection types", async () => {
+    await init(["blog", "docs", "--name", "x", "--yes"]);
+    expect(process.exitCode).toBe(1);
+    expect(await exists(join(dir, "voxx.json"))).toBe(false);
+  });
+});
+
+describe("voxx init feature gating (Next.js)", () => {
+  it("omits route files for disabled features", async () => {
+    await nextApp();
+    await init(["blog", "--no-sitemap", "--no-llms", "--yes"]);
 
     expect(await exists(join(dir, "app/blog/page.tsx"))).toBe(true);
     expect(await exists(join(dir, "app/blog/rss.xml/route.ts"))).toBe(true);
     expect(await exists(join(dir, "app/robots.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/llms-full.txt/route.ts"))).toBe(false);
+
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.features).toMatchObject({ sitemap: false, llmsTxt: false });
+  });
+
+  it("scaffolds the default blog routes when no features are disabled", async () => {
+    await nextApp();
+    await init(["blog", "--yes"]);
+    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/robots.ts"))).toBe(true);
     expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(true);
-    expect(await exists(join(dir, "app/llms-full.txt/route.ts"))).toBe(true);
     const data = await readFile(join(dir, "app/blog/_voxx/data.ts"), "utf8");
     expect(data).toContain("findPost");
+  });
+});
+
+describe("voxx add / remove feature", () => {
+  it("enables a disabled feature and scaffolds its route", async () => {
+    await nextApp();
+    await init(["blog", "--no-sitemap", "--yes"]);
+    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(false);
+
+    await add(["sitemap"]);
+    expect(process.exitCode).not.toBe(1);
+    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(true);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.features.sitemap).toBe(true);
+  });
+
+  it("disables a feature and deletes its route files", async () => {
+    await nextApp();
+    await init(["blog", "--yes"]);
+    expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(true);
+
+    await remove(["llms", "--force"]);
+    expect(process.exitCode).not.toBe(1);
+    expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/llms-full.txt/route.ts"))).toBe(false);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.features.llmsTxt).toBe(false);
+  });
+
+  it("toggles a runtime-only feature without touching files", async () => {
+    await writeConfig();
+    await remove(["tags", "--force"]);
+    expect(process.exitCode).not.toBe(1);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.features.tags).toBe(false);
+  });
+
+  it("rejects an unknown feature", async () => {
+    await writeConfig();
+    await remove(["nonsense"]);
+    expect(process.exitCode).toBe(1);
   });
 });

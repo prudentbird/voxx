@@ -3,21 +3,33 @@
 A zero-friction CMS for you and your agents. Write markdown the way you ship code, and Voxx handles the rest.
 
 ```bash
-npx @prudentbird/voxx init            # scaffold a blog into your Next.js app
-npx @prudentbird/voxx init docs       # or a docs site
-npx @prudentbird/voxx init changelog  # or a release-notes page
+npx @prudentbird/voxx init            # interactive wizard (type, name, features)
+npx @prudentbird/voxx init blog docs  # scaffold several collections at once
+npx @prudentbird/voxx init changelog --yes  # headless, accept defaults
 ```
 
 ## Commands
 
-### `voxx init [blog|docs|changelog]`
+### `voxx init [blog|docs|changelog ...]`
 
-Scaffolds a surface into your app:
+An interactive, shadcn-style wizard. It detects your setup and asks only for what it needs:
 
-- **Next.js detected** — writes routes under `app/<basePath>/` (private `_voxx/` folder for the data layer and components — all yours to restyle), `rss.xml`/`llms.txt`/`llms-full.txt` routes plus a sitemap and `robots.ts` where the type calls for them, and wraps your next.config with `withVoxx` when it's safe to (Next 16+, recognizable config shape).
-- **No Next.js** — asks whether you want a static site (`voxx build`) or a fresh app via `create-next-app`, then scaffolds into it.
+- **Target** — when there's no Next.js app, choose a static site (`voxx build`) or a fresh app via `create-next-app`, then scaffold into it.
+- **Collections** — pick one or more types and name each (a blog can live at `/posts`).
+- **Site details** — title, description, URL (each defaulted; press Enter to accept).
+- **Features** — multiselect which features to enable, pre-checked to the recommended defaults for the chosen types.
 
-Flags: `--base /notes` (mount path — routes follow it), `--dir content`, `--app src/app`, `--force`.
+It then writes routes under `app/<basePath>/` (private `_voxx/` folder for the data layer and components — all yours to restyle), the `rss.xml`/`llms.txt`/`llms-full.txt`/`sitemap`/`robots` routes for the **enabled** features, and wraps your next.config with `withVoxx` when it's safe to (Next 16+, recognizable config shape). Existing files are never overwritten without confirmation.
+
+Flags: `--name posts`, `--base /notes`, `--dir content`, `--app src/app`, `--target my-app`, `--static`/`--next`, `--no-<feature>` (e.g. `--no-sitemap`, `--no-llms`), `--yes`, `--force`. `--name`/`--dir`/`--base` apply when scaffolding a single type.
+
+### `voxx add collection <blog|docs|changelog>`
+
+Appends a collection to an existing project — migrates `voxx.json` to the `collections` array and scaffolds its routes. Flags: `--name`, `--dir`, `--base`, `--force`.
+
+### `voxx add <feature>` / `voxx remove <feature>`
+
+Toggle a feature after the fact. `add sitemap` flips `features.sitemap` on and scaffolds its route; `remove llms` flips it off and deletes the generated routes (with a confirmation). Features: `rss`, `sitemap`, `robots`, `llms`, `toc`, `tags`, `reading-time`.
 
 ### `voxx new "Title"`
 

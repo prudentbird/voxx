@@ -50,6 +50,7 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
+    "@clack/prompts": "^1.6.0",
     "@prudentbird/voxx-core": "workspace:*"
   },
   "devDependencies": {
