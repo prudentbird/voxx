@@ -1,9 +1,9 @@
-import "./_voxx/voxx.css";
+import "../_voxx/voxx.css";
 {{GLOBALS_IMPORT}}
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { getConfig } from "./_voxx/data";
-import { ThemeToggle } from "./_voxx/theme-toggle";
+import { getConfig } from "./_data";
+import { ThemeToggle } from "./_theme-toggle";
 
 export default async function ChangelogLayout({
   children,

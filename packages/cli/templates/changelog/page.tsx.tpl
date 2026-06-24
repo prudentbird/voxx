@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getConfig, getPosts } from "./_voxx/data";
-import { ReleaseList } from "./_voxx/release-list";
+import { getConfig, getPosts } from "./_data";
+import { ReleaseList } from "./_release-list";
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getConfig();

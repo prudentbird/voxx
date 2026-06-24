@@ -6,9 +6,9 @@ import {
   getPost,
   getPosts,
   getReachablePosts,
-} from "../_voxx/data";
-import { toMetadata } from "../_voxx/metadata";
-import { DocPage } from "../_voxx/doc-page";
+} from "../_data";
+import { toMetadata } from "../_metadata";
+import { DocPage } from "../_doc-page";
 
 type Params = { params: Promise<{ slug?: string[] }> };
 

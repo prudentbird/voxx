@@ -1,4 +1,4 @@
-import { relative } from "node:path";
+import { join, relative } from "node:path";
 import { parseArgs } from "node:util";
 import { type ContentType } from "@prudentbird/voxx-core";
 import {
@@ -22,6 +22,7 @@ import {
   collectionOps,
   featureAddOps,
   sampleContentOps,
+  VOXX_GROUP,
   type ScaffoldContext,
 } from "../scaffold";
 import {
@@ -128,10 +129,15 @@ async function addCollection(
     return;
   }
 
+  const name = values.name ?? type;
+  const defaultDir =
+    project.hasNext && project.appDir
+      ? join(project.appDir, VOXX_GROUP, name, "_content")
+      : undefined;
   const plan = planAddCollection(project.raw, {
     type: type as ContentType,
     name: values.name,
-    dir: values.dir,
+    dir: values.dir ?? defaultDir,
     base: values.base ? normalizeBase(values.base) : undefined,
   });
   if (!plan.ok) {
@@ -156,7 +162,7 @@ async function addCollection(
       collections: [...project.collections, plan.collection],
       flags: featuresFromConfig(project),
       hasTokens: await detectTokens(project.cwd),
-      isolated: false,
+      split: true,
     };
     ops.push(...(await collectionOps(ctx, plan.collection)));
   }
@@ -204,7 +210,7 @@ async function addFeature(
       collections: project.collections,
       flags: featuresFromConfig(project),
       hasTokens: await detectTokens(project.cwd),
-      isolated: false,
+      split: true,
     };
     const ops = await featureAddOps(ctx, key);
     const interactive = canPrompt();

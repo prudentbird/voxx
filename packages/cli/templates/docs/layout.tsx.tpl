@@ -1,12 +1,12 @@
-import "./_voxx/voxx.css";
+import "../_voxx/voxx.css";
 {{GLOBALS_IMPORT}}
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { buildNavTree } from "@prudentbird/voxx-core";
-import { getConfig, getPosts } from "./_voxx/data";
-import { SidebarNav } from "./_voxx/sidebar-nav";
-import { MobileNav } from "./_voxx/mobile-nav";
-import { ThemeToggle } from "./_voxx/theme-toggle";
+import { getConfig, getPosts } from "./_data";
+import { SidebarNav } from "./_sidebar-nav";
+import { MobileNav } from "./_mobile-nav";
+import { ThemeToggle } from "./_theme-toggle";
 
 export default async function DocsLayout({
   children,

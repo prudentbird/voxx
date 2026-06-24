@@ -7,7 +7,7 @@ import {
   type Post,
   type VoxxConfig,
 } from "@prudentbird/voxx-core";
-import { CONTENT_VERSION } from "./content-version";
+import { CONTENT_VERSION } from "./_content-version";
 
 async function getPostsCached(version: number): Promise<Post[]> {
   "use cache";

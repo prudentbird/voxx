@@ -34,6 +34,7 @@ import {
 import {
   nextScaffoldOps,
   sampleContentOps,
+  VOXX_GROUP,
   type ScaffoldContext,
 } from "../scaffold";
 import {
@@ -83,7 +84,29 @@ async function createNextApp(cwd: string, dir: string): Promise<string | null> {
   return join(cwd, dir);
 }
 
-async function isolateCreatedApp(
+const ROOT_LAYOUT_FILES = ["layout.tsx", "layout.js"];
+
+/** Returns the existing root layout filename in `appDir`, or `null`. */
+async function findRootLayout(
+  cwd: string,
+  appDir: string,
+): Promise<string | null> {
+  for (const file of ROOT_LAYOUT_FILES) {
+    if (await exists(join(cwd, appDir, file))) return file;
+  }
+  return null;
+}
+
+/**
+ * Moves an app's existing root layout, page, and page styles into a `(site)`
+ * route group so Voxx can own its own root layout under `(voxx)`. Rewrites the
+ * moved layout's `./globals.css` import to the new depth. Returns `true` when a
+ * layout was moved.
+ *
+ * @param cwd - Project root.
+ * @param appDir - App router directory relative to `cwd`.
+ */
+async function splitRootLayout(
   cwd: string,
   appDir: string,
 ): Promise<boolean> {
@@ -103,7 +126,7 @@ async function isolateCreatedApp(
     moved.push(file);
   }
   if (!moved.some((f) => f.startsWith("layout."))) return false;
-  for (const file of ["layout.tsx", "layout.js"]) {
+  for (const file of ROOT_LAYOUT_FILES) {
     const path = join(siteDir, file);
     if (!(await exists(path))) continue;
     const src = await readFile(path, "utf8");
@@ -201,9 +224,26 @@ interface InitFlags {
   target?: string;
   static?: boolean;
   next?: boolean;
+  isolate?: boolean;
   force?: boolean;
   yes?: boolean;
   features: Partial<FeatureFlags>;
+}
+
+/**
+ * Resolves a collection's content directory. Next.js projects keep content in a
+ * private `_content` folder beside the collection's routes; static sites use a
+ * top-level `content/` tree.
+ */
+function collectionDir(
+  mode: "static" | "next",
+  appDir: string | null,
+  name: string,
+): string {
+  if (mode === "next" && appDir) {
+    return join(appDir, VOXX_GROUP, name, "_content");
+  }
+  return `content/${name}`;
 }
 
 const FEATURE_FLAG_NAMES: Record<string, FeatureKey> = {
@@ -337,12 +377,14 @@ async function resolveInteractive(
           required: true,
         });
 
+  const appDir =
+    mode === "next" ? (flags.app ?? (await detectAppDir(cwd))) : null;
+
   const collections: PlannedCollection[] = [];
   const single = types.length === 1;
   for (const type of types) {
-    const defaultName = single ? (flags.name ?? type) : type;
     const name = single
-      ? defaultName
+      ? (flags.name ?? type)
       : await promptText({
           message: `Name for the ${titleCase(type)} collection`,
           placeholder: type,
@@ -353,12 +395,12 @@ async function resolveInteractive(
               : "Use lowercase letters, numbers, and dashes.",
         });
     const base = single && flags.base ? normalizeBase(flags.base) : undefined;
-    const dir = single && flags.dir ? flags.dir : undefined;
+    const dir = single && flags.dir ? flags.dir : collectionDir(mode, appDir, name);
     const collection = defaultCollection(type, name);
     collections.push({
       ...collection,
+      dir,
       ...(base ? { basePath: base } : {}),
-      ...(dir ? { dir } : {}),
     });
   }
 
@@ -367,6 +409,11 @@ async function resolveInteractive(
     log.error(
       `Two collections share the same ${conflict.field} "${conflict.value}" — give them distinct names.`,
     );
+    return null;
+  }
+  const segmentError = nextSegmentError(mode, collections);
+  if (segmentError) {
+    log.error(segmentError);
     return null;
   }
 
@@ -405,11 +452,27 @@ async function resolveInteractive(
     mode,
     cwd,
     createdAppDir,
-    appDir: flags.app ?? null,
+    appDir,
     collections,
     site: { title, description, url, locale: defaults.locale },
     flags: chosenFlags,
   };
+}
+
+/**
+ * Returns an error message when a Next.js collection would mount at the app
+ * root, which collides with the Voxx root layout, or `null` when all segments
+ * are non-empty.
+ */
+function nextSegmentError(
+  mode: "static" | "next",
+  collections: readonly PlannedCollection[],
+): string | null {
+  if (mode !== "next") return null;
+  if (collections.some((c) => c.basePath === "/")) {
+    return "A Next.js collection cannot mount at the root path — give it a base like /blog.";
+  }
+  return null;
 }
 
 /**
@@ -439,18 +502,19 @@ async function resolveHeadless(
     }
   }
 
+  const appDir =
+    mode === "next" ? (flags.app ?? (await detectAppDir(projectCwd))) : null;
+
   const single = types.length === 1;
   const collections = types.map((type) => {
-    const collection = defaultCollection(
-      type,
-      single ? (flags.name ?? type) : type,
-    );
+    const name = single ? (flags.name ?? type) : type;
+    const collection = defaultCollection(type, name);
     return {
       ...collection,
+      dir: single && flags.dir ? flags.dir : collectionDir(mode, appDir, name),
       ...(single && flags.base
         ? { basePath: normalizeBase(flags.base) }
         : {}),
-      ...(single && flags.dir ? { dir: flags.dir } : {}),
     };
   });
 
@@ -461,12 +525,17 @@ async function resolveHeadless(
     );
     return null;
   }
+  const segmentError = nextSegmentError(mode, collections);
+  if (segmentError) {
+    log.error(segmentError);
+    return null;
+  }
 
   return {
     mode,
     cwd: projectCwd,
     createdAppDir,
-    appDir: flags.app ?? null,
+    appDir,
     collections,
     site: siteMeta(pkg, types[0] as Preset),
     flags: resolveFlags(types, flags.features),
@@ -510,6 +579,8 @@ export async function init(argv: string[]): Promise<void> {
       target: { type: "string" },
       static: { type: "boolean" },
       next: { type: "boolean" },
+      isolate: { type: "boolean" },
+      "no-isolate": { type: "boolean" },
       force: { type: "boolean" },
       yes: { type: "boolean", short: "y" },
       toc: { type: "boolean" },
@@ -580,6 +651,7 @@ export async function init(argv: string[]): Promise<void> {
     target: values.target,
     static: values.static,
     next: values.next,
+    isolate: values.isolate ? true : values["no-isolate"] ? false : undefined,
     force: values.force,
     yes: values.yes,
     features: parseFeatureFlags(values),
@@ -607,7 +679,86 @@ export async function init(argv: string[]): Promise<void> {
     return;
   }
 
-  await scaffoldPlan(startCwd, plan, Boolean(flags.force), interactive);
+  try {
+    await scaffoldPlan(
+      startCwd,
+      plan,
+      Boolean(flags.force),
+      interactive,
+      flags.isolate,
+    );
+  } catch (err) {
+    if (err instanceof PromptCancelled) {
+      process.exitCode = 1;
+      return;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Decides whether Voxx owns its own root layout, performing the `(site)` split
+ * when appropriate. New apps always split; existing apps are split only when
+ * the user opts in (prompt or `--isolate`), otherwise Voxx nests under the
+ * existing root and a chrome-bleed warning is printed.
+ */
+async function resolveSplit(
+  cwd: string,
+  appDir: string,
+  plan: ResolvedPlan,
+  isolate: boolean | undefined,
+  interactive: boolean,
+): Promise<{ split: boolean; moved: boolean }> {
+  if (plan.createdAppDir) {
+    return { split: true, moved: await splitRootLayout(cwd, appDir) };
+  }
+
+  const existing = await findRootLayout(cwd, appDir);
+  if (!existing) return { split: true, moved: false };
+
+  const warn = () => {
+    const base = plan.collections[0]!.basePath;
+    log.warn(
+      `This app already has a root layout at ${c.cyan(`${appDir}/${existing}`)} — it will wrap Voxx routes, so its navbar/footer will show inside ${c.cyan(base)}.`,
+    );
+    log.info(
+      `  ${c.dim(`Re-run with ${"--isolate"} to move it into a (site) group and give Voxx its own root layout.`)}`,
+    );
+  };
+
+  if (isolate === true) {
+    return { split: true, moved: await splitRootLayout(cwd, appDir) };
+  }
+  if (isolate === false) {
+    warn();
+    return { split: false, moved: false };
+  }
+  if (interactive) {
+    const choice = await promptSelect<"fix" | "ignore">({
+      message: `An existing root layout (${appDir}/${existing}) will wrap Voxx routes. How should Voxx set up its root?`,
+      options: [
+        {
+          value: "fix",
+          label: "Fix — move my layout into a (site) group",
+          hint: "Voxx gets its own root layout; your routes are unchanged",
+        },
+        {
+          value: "ignore",
+          label: "Ignore — nest under my existing layout",
+          hint: "your navbar/footer will show inside Voxx routes",
+        },
+      ],
+      initialValue: "fix",
+    });
+    if (choice === "fix") {
+      return { split: true, moved: await splitRootLayout(cwd, appDir) };
+    }
+    warn();
+    return { split: false, moved: false };
+  }
+
+  warn();
+  return { split: false, moved: false };
 }
 
 /**
@@ -619,6 +770,7 @@ async function scaffoldPlan(
   plan: ResolvedPlan,
   force: boolean,
   interactive: boolean,
+  isolate: boolean | undefined,
 ): Promise<void> {
   const { cwd, collections, site, flags } = plan;
   const firstType = collections[0]!.type;
@@ -641,13 +793,12 @@ async function scaffoldPlan(
   let resolvedAppDir: string | null = null;
   let configResult: ConfigResult | null = null;
   let wroteGlobals = false;
-  let isolatedNote = false;
+  let movedToSite = false;
 
   if (plan.mode === "next") {
     resolvedAppDir = plan.appDir ?? (await detectAppDir(cwd));
     if (!resolvedAppDir) {
-      const baseOps = ops;
-      const results = await runWrites(baseOps, force, interactive, startCwd);
+      const results = await runWrites(ops, force, interactive, startCwd);
       printSummary("voxx init", results, prefixFor(startCwd, cwd, plan));
       log.warn(
         "Next.js found but no app/ directory — pass --app <dir> to scaffold routes.",
@@ -659,14 +810,14 @@ async function scaffoldPlan(
     const hasTokens = await detectTokens(cwd);
     wroteGlobals = !hasTokens;
 
-    const single = collections.length === 1;
-    const isolated =
-      single &&
-      firstType === "docs" &&
-      plan.createdAppDir !== null &&
-      collections[0]!.basePath.slice(1) !== "" &&
-      (await isolateCreatedApp(cwd, resolvedAppDir));
-    isolatedNote = isolated;
+    const { split, moved } = await resolveSplit(
+      cwd,
+      resolvedAppDir,
+      plan,
+      isolate,
+      interactive,
+    );
+    movedToSite = moved;
 
     const ctx: ScaffoldContext = {
       cwd,
@@ -674,15 +825,15 @@ async function scaffoldPlan(
       collections,
       flags,
       hasTokens,
-      isolated,
+      split,
     };
     ops.push(...(await nextScaffoldOps(ctx)));
   }
 
   const results = await runWrites(ops, force, interactive, startCwd);
-  if (isolatedNote && resolvedAppDir) {
+  if (movedToSite && resolvedAppDir) {
     results.push([
-      `${join(resolvedAppDir, "(site)")}/ (app layout moved — docs owns the root layout)`,
+      `${join(resolvedAppDir, "(site)")}/ (your root layout moved here)`,
       "written",
       true,
     ]);
@@ -700,7 +851,6 @@ async function scaffoldPlan(
     appDir: resolvedAppDir,
     configResult,
     wroteGlobals,
-    isolatedNote,
     startCwd,
   });
 }
@@ -751,7 +901,6 @@ function printNextSteps(
     appDir: string | null;
     configResult: ConfigResult | null;
     wroteGlobals: boolean;
-    isolatedNote: boolean;
     startCwd: string;
   },
 ): void {
@@ -812,11 +961,6 @@ function printNextSteps(
   if (ctx.wroteGlobals) {
     log.info(
       `  ${c.dim("(No design tokens found — added voxx-globals.css so it looks good out of the box.)")}`,
-    );
-  }
-  if (firstType === "docs" && !plan.createdAppDir) {
-    log.info(
-      `  ${c.dim(`(Heads up: your root layout wraps ${firstBase} — its navbar/footer will show there too. See https://voxx.prudentbird.com/docs/reference/layouts.)`)}`,
     );
   }
   log.info("");

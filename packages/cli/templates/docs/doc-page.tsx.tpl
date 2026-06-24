@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Post, VoxxConfig } from "@prudentbird/voxx-core";
-import { OnThisPage } from "./on-this-page";
+import { OnThisPage } from "./_on-this-page";
 
 export function DocPage({
   post,

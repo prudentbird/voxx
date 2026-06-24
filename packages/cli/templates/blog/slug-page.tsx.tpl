@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { buildSeo, serializeJsonLd } from "@prudentbird/voxx-core";
-import { getConfig, getPost, getReachablePosts } from "../_voxx/data";
-import { PostPage } from "../_voxx/post-page";
-import { toMetadata } from "../_voxx/metadata";
+import { getConfig, getPost, getReachablePosts } from "../_data";
+import { PostPage } from "../_post-page";
+import { toMetadata } from "../_metadata";
 
 type Params = { params: Promise<{ slug: string }> };
 

@@ -19,9 +19,26 @@ An interactive, shadcn-style wizard. It detects your setup and asks only for wha
 - **Site details** — title, description, URL (each defaulted; press Enter to accept).
 - **Features** — multiselect which features to enable, pre-checked to the recommended defaults for the chosen types.
 
-It then writes routes under `app/<basePath>/` (private `_voxx/` folder for the data layer and components — all yours to restyle), the `rss.xml`/`llms.txt`/`llms-full.txt`/`sitemap`/`robots` routes for the **enabled** features, and wraps your next.config with `withVoxx` when it's safe to (Next 16+, recognizable config shape). Existing files are never overwritten without confirmation.
+Everything Voxx generates lives in an `app/(voxx)/` route group, with each collection self-contained:
 
-Flags: `--name posts`, `--base /notes`, `--dir content`, `--app src/app`, `--target my-app`, `--static`/`--next`, `--no-<feature>` (e.g. `--no-sitemap`, `--no-llms`), `--yes`, `--force`. `--name`/`--dir`/`--base` apply when scaffolding a single type.
+```
+app/
+  (site)/        ← your own pages and root layout
+  (voxx)/
+    layout.tsx               voxx's <html>/<body> root shell
+    _voxx/                   shared theme CSS
+    sitemap.ts robots.ts llms.txt/ llms-full.txt/   (enabled features)
+    blog/
+      layout.tsx page.tsx [slug]/page.tsx rss.xml/route.ts
+      _data.ts _post-list.tsx _theme-toggle.tsx …    private (underscore-prefixed)
+      _content/…md                                   the collection's markdown
+```
+
+**Root layout.** Voxx routes need their own `<html>`/`<body>`. For a new app, Voxx splits the root into `(site)/layout.tsx` (yours) and `(voxx)/layout.tsx` (Voxx's). For an **existing** app it warns that your layout will wrap Voxx routes and offers to **fix** it (move your layout into `(site)/`) or **ignore** it (nest under your layout, chrome and all). Non-interactively the default is ignore + warn — Voxx never moves your files silently. Force the choice with `--isolate` / `--no-isolate`.
+
+Voxx writes the `rss.xml`/`llms.txt`/`llms-full.txt`/`sitemap`/`robots` routes for the **enabled** features only, and wraps your next.config with `withVoxx` when it's safe to (Next 16+, recognizable config shape). Existing files are never overwritten without confirmation.
+
+Flags: `--name posts`, `--base /notes`, `--dir <path>`, `--app src/app`, `--target my-app`, `--static`/`--next`, `--isolate`/`--no-isolate`, `--no-<feature>` (e.g. `--no-sitemap`, `--no-llms`), `--yes`, `--force`. `--name`/`--dir`/`--base` apply when scaffolding a single type.
 
 ### `voxx add collection <blog|docs|changelog>`
 
