@@ -6,8 +6,8 @@ description: Version-named files become a release timeline with stable anchors.
 From the root of your Next.js app:
 
 ```bash
-npx voxx init changelog
-npm i @voxx/core
+npx @prudentbird/voxx init changelog
+npm i @prudentbird/voxx-core
 ```
 
 This writes:
@@ -29,7 +29,7 @@ stable anchor link you can share (`/changelog#1-4-0`).
 ## Cut a release
 
 ```bash
-npx voxx new "1.4.0"
+npx @prudentbird/voxx new "1.4.0"
 ```
 
 creates `content/1.4.0.md`, pre-dated today:

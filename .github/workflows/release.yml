@@ -32,7 +32,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm turbo run build --filter=@voxx/core --filter=voxx
+        run: pnpm turbo run build --filter=@prudentbird/voxx-core --filter=@prudentbird/voxx
 
       - name: Publish
         run: pnpm changeset publish

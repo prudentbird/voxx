@@ -15,7 +15,7 @@
     "typecheck": "SKIP_ENV_VALIDATION=1 next typegen && tsgo --pretty --noEmit && echo Type Checks successfuly completed!"
   },
   "dependencies": {
-    "@voxx/core": "workspace:*",
+    "@prudentbird/voxx-core": "workspace:*",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "@voxx/ui": "workspace:*",

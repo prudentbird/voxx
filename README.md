@@ -3,10 +3,10 @@
 A zero-friction, file-based CMS for you and your agents. Write markdown the way you ship code — in your repo, reviewed in PRs — and Voxx turns it into an SEO-ready blog, docs site, or changelog.
 
 ```bash
-npx voxx init            # scaffold a blog into your Next.js app
-npx voxx init docs       # or a docs site
-npx voxx init changelog  # or a release-notes page
-npx voxx dev             # no framework? preview a static site locally
+npx @prudentbird/voxx init            # scaffold a blog into your Next.js app
+npx @prudentbird/voxx init docs       # or a docs site
+npx @prudentbird/voxx init changelog  # or a release-notes page
+npx @prudentbird/voxx dev             # no framework? preview a static site locally
 ```
 
 ## What you get
@@ -22,7 +22,7 @@ npx voxx dev             # no framework? preview a static site locally
 | Package                       | What it is                                                                 |
 | ----------------------------- | -------------------------------------------------------------------------- |
 | [`voxx`](packages/cli)        | The CLI: `init`, `new`, `build`, `dev`.                                    |
-| [`@voxx/core`](packages/core) | The portable content engine — use it directly to bring your own framework. |
+| [`@prudentbird/voxx-core`](packages/core) | The portable content engine — use it directly to bring your own framework. |
 
 This repo also dogfoods itself: [`apps/web`](apps/web) is the Voxx docs site, built with Voxx.
 

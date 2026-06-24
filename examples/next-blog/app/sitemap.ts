@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl } from "@voxx/core";
+import { absoluteUrl } from "@prudentbird/voxx-core";
 import { getConfig, getPosts } from "./blog/_voxx/data";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

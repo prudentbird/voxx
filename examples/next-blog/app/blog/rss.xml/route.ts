@@ -1,4 +1,4 @@
-import { renderRss } from "@voxx/core";
+import { renderRss } from "@prudentbird/voxx-core";
 import { getConfig, getPosts } from "../_voxx/data";
 
 export async function GET() {

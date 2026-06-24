@@ -1,5 +1,5 @@
-import { formatDate } from "@voxx/core";
-import type { Post, VoxxConfig } from "@voxx/core";
+import { formatDate } from "@prudentbird/voxx-core";
+import type { Post, VoxxConfig } from "@prudentbird/voxx-core";
 
 export function ReleaseList({
   posts,

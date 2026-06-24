@@ -6,8 +6,8 @@ description: Date-stamped markdown in, a reverse-chronological blog out.
 From the root of your Next.js app:
 
 ```bash
-npx voxx init
-npm i @voxx/core
+npx @prudentbird/voxx init
+npm i @prudentbird/voxx-core
 ```
 
 This writes:
@@ -33,7 +33,7 @@ Set `site.url` in `voxx.json`, run your dev server, and open `/blog`.
 Drop a `.md` file in your content folder, or let the CLI do it:
 
 ```bash
-npx voxx new "Why files win"
+npx @prudentbird/voxx new "Why files win"
 ```
 
 That creates `content/2026-06-11-why-files-win.md` with frontmatter filled

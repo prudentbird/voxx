@@ -7,7 +7,7 @@ import {
   DEFAULT_CONFIG,
   resolveCollectionDefaults,
   type CollectionInput,
-} from "@voxx/core";
+} from "@prudentbird/voxx-core";
 import {
   c,
   exists,
@@ -189,7 +189,7 @@ function nextMajor(pkg: Pkg): number | null {
   return m ? Number(m[1]) : null;
 }
 
-const CORE_NEXT_IMPORT = "@voxx/core/next";
+const CORE_NEXT_IMPORT = "@prudentbird/voxx-core/next";
 
 const MINIMAL_NEXT_CONFIG = `import type { NextConfig } from "next";
 import { withVoxx } from "${CORE_NEXT_IMPORT}";
@@ -748,8 +748,8 @@ export async function init(argv: string[]): Promise<void> {
     );
   } else if (!hasNext) {
     log.warn("No Next.js detected — wrote voxx.json + sample content only.");
-    log.info(`  Install the engine:  ${c.cyan("npm i @voxx/core")}`);
-    log.info(`  Or build static HTML: ${c.cyan("npx voxx build")}`);
+    log.info(`  Install the engine:  ${c.cyan("npm i @prudentbird/voxx-core")}`);
+    log.info(`  Or build static HTML: ${c.cyan("npx @prudentbird/voxx build")}`);
   } else if (!appDir) {
     log.warn(
       "Next.js found but no app/ directory — pass --app <dir> to scaffold routes.",
@@ -761,7 +761,7 @@ export async function init(argv: string[]): Promise<void> {
         `  ${step++}. ${c.cyan(`cd ${relative(process.cwd(), createdAppDir)}`)}`,
       );
     }
-    log.info(`  ${step++}. Install the engine:  ${c.cyan("npm i @voxx/core")}`);
+    log.info(`  ${step++}. Install the engine:  ${c.cyan("npm i @prudentbird/voxx-core")}`);
     if (cache?.kind === "manual") {
       log.info(
         `  ${step++}. Wrap your config — ${c.cyan("export default withVoxx(nextConfig)")} from ${c.cyan(CORE_NEXT_IMPORT)}.`,

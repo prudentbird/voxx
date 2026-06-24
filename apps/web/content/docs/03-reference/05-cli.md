@@ -12,7 +12,7 @@ voxx dev [--port <n>]
 ```
 
 The CLI is a convenience layer — everything it does, you could do by hand
-with files and [`@voxx/core`](/docs/reference/core-api).
+with files and [`@prudentbird/voxx-core`](/docs/reference/core-api).
 
 ## `voxx init [preset]`
 
@@ -30,7 +30,7 @@ With a Next.js app detected, `init` writes the routes for the preset, the
 `_voxx/` data layer and components, `llms.txt` and `llms-full.txt` routes,
 plus a sitemap and `robots.ts` (blog, docs) and an RSS route at
 `<base>/rss.xml` (blog, changelog) where the type calls for them. On Next 16+ it also wraps
-your `next.config` with `withVoxx` (from `@voxx/core/next`) when the config's shape is
+your `next.config` with `withVoxx` (from `@prudentbird/voxx-core/next`) when the config's shape is
 unambiguous — otherwise it tells you what to add.
 
 If your app already defines design tokens (`--background` and friends in a

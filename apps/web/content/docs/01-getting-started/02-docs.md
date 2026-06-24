@@ -6,8 +6,8 @@ description: Folders become the sidebar; ordering is a filename prefix.
 From the root of your Next.js app:
 
 ```bash
-npx voxx init docs
-npm i @voxx/core
+npx @prudentbird/voxx init docs
+npm i @prudentbird/voxx-core
 ```
 
 This writes:
@@ -52,7 +52,7 @@ The full details — ordering precedence, slugs, nesting — live in
 ## Add a page
 
 ```bash
-npx voxx new "Deploying" --section guides --order 3
+npx @prudentbird/voxx new "Deploying" --section guides --order 3
 ```
 
 creates `content/guides/03-deploying.md`. Or just create the file — the CLI
@@ -63,13 +63,13 @@ is a convenience, never a requirement.
 Editing a `.md` file updates the page in `next dev` without a manual refresh.
 Voxx reads content off the filesystem rather than importing it, so Next's HMR
 can't see those edits on its own. The scaffolded `instrumentation.ts` fixes
-that — it starts a dev-only watcher (shipped in `@voxx/core`) that bumps
+that — it starts a dev-only watcher (shipped in `@prudentbird/voxx-core`) that bumps
 `_voxx/content-version.ts` whenever content or `voxx.json` changes:
 
 ```ts
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { registerContentWatcher } = await import("@voxx/core");
+  const { registerContentWatcher } = await import("@prudentbird/voxx-core");
   await registerContentWatcher();
 }
 ```

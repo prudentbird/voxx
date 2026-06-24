@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { parseArgs } from "node:util";
-import { loadConfig } from "@voxx/core";
+import { loadConfig } from "@prudentbird/voxx-core";
 import { c, exists, log } from "../util";
 import { buildSite } from "./build";
 
