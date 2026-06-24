@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { buildSeo, serializeJsonLd } from "@prudentbird/voxx-core";
+import { buildSeo, serializeJsonLd } from "@voxx/core";
 import {
   getConfig,
   getPost,

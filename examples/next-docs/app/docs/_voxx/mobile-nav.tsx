@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import type { NavNode } from "@prudentbird/voxx-core";
+import type { NavNode } from "@voxx/core";
 import { SidebarNav } from "./sidebar-nav";
 
 export function MobileNav({

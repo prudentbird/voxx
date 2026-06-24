@@ -48,7 +48,7 @@ arguments reads it, and the type-aware
 its type. Reach the others by name:
 
 ```ts
-import { getPosts, getPost } from "@prudentbird/voxx-core";
+import { getPosts, getPost } from "@voxx/core";
 
 const posts = await getPosts(); // first collection
 const docs = await getPosts({ collection: "docs" }); // by name

@@ -6,9 +6,9 @@ description: Scaffold your first Voxx surface in a couple of minutes.
 Every Voxx setup starts the same way — pick a surface, run one command:
 
 ```bash
-npx @prudentbird/voxx init            # a blog
-npx @prudentbird/voxx init docs       # a docs site
-npx @prudentbird/voxx init changelog  # a release-notes page
+npx voxx init            # a blog
+npx voxx init docs       # a docs site
+npx voxx init changelog  # a release-notes page
 ```
 
 `voxx init` looks at the directory you run it in and does the right thing:
@@ -25,7 +25,7 @@ npx @prudentbird/voxx init changelog  # a release-notes page
 Then install the engine the scaffolded files import:
 
 ```bash
-npm i @prudentbird/voxx-core
+npm i @voxx/core
 ```
 
 Set `site.url` in `voxx.json`, start your dev server, and open the mount path
@@ -48,12 +48,12 @@ Every preset accepts the same flags:
 The scaffolded data layer uses Next's `"use cache"` directive, so your pages
 prerender statically and content reads cost nothing at request time. The
 `withVoxx` helper sets everything that makes this work — Cache Components
-enabled, `@prudentbird/voxx-core` kept external, and `voxx.json` plus your
+enabled, `@voxx/core` kept external, and `voxx.json` plus your
 content directories traced into the serverless bundle so runtime reads resolve:
 
 ```ts
 import type { NextConfig } from "next";
-import { withVoxx } from "@prudentbird/voxx-core/next";
+import { withVoxx } from "@voxx/core/next";
 
 const nextConfig: NextConfig = {};
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { NavNode } from "@prudentbird/voxx-core";
+import type { NavNode } from "@voxx/core";
 
 export function SidebarNav({ items }: { items: NavNode[] }) {
   const pathname = usePathname();

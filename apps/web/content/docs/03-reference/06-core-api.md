@@ -1,15 +1,15 @@
 ---
 title: Core API
-description: The @prudentbird/voxx-core engine — plain async functions, framework optional.
+description: The @voxx/core engine — plain async functions, framework optional.
 ---
 
-`@prudentbird/voxx-core` is the engine everything else is built on: the Next.js
+`@voxx/core` is the engine everything else is built on: the Next.js
 scaffolding, the static builder, and this site. The public API is plain
 async functions — Voxx is built with [Effect](https://effect.website)
 internally, but you never have to touch it.
 
 ```ts
-import { getPosts, getPost, buildNavTree, buildSeo } from "@prudentbird/voxx-core";
+import { getPosts, getPost, buildNavTree, buildSeo } from "@voxx/core";
 
 const posts = await getPosts(); // reads voxx.json
 const post = await getPost("getting-started/blog");
@@ -100,7 +100,7 @@ runtime and outside development. Options:
 
 ## The Effect entry point
 
-If you _do_ speak Effect, `@prudentbird/voxx-core/effect` exposes the raw programs —
+If you _do_ speak Effect, `@voxx/core/effect` exposes the raw programs —
 `getPostsEffect`, `loadConfigEffect`, `renderMarkdownEffect`,
 `parseFrontmatter` — alongside the `ConfigInput` and `Frontmatter` schemas
 and the tagged errors (`ConfigError`, `InvalidFrontmatter`, `PostNotFound`,

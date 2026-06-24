@@ -9,7 +9,7 @@ a default — and several defaults are [type-aware](#type-aware-defaults).
 
 ```jsonc
 {
-  "$schema": "./node_modules/@prudentbird/voxx-core/voxx.schema.json",
+  "$schema": "./node_modules/@voxx/core/voxx.schema.json",
   "site": {
     "title": "Acme",
     "description": "Tools for people who ship.",

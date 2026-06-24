@@ -1,9 +1,9 @@
-# @prudentbird/voxx-core
+# @voxx/core
 
 The portable content engine behind [Voxx](https://github.com/prudentbird/voxx): point it at a folder of markdown and get SEO-ready data for a blog, a docs site, or a changelog.
 
 ```ts
-import { getPosts, getPost, buildNavTree, buildSeo } from "@prudentbird/voxx-core";
+import { getPosts, getPost, buildNavTree, buildSeo } from "@voxx/core";
 
 const posts = await getPosts(); // reads voxx.json, renders markdown
 const post = await getPost("getting-started/install");
@@ -35,8 +35,8 @@ const docs = await getPosts({ collection: "docs" });
 
 ## Entry points
 
-- `@prudentbird/voxx-core` — plain Promise API.
-- `@prudentbird/voxx-core/effect` — the raw Effect programs, schemas, and tagged errors.
-- `@prudentbird/voxx-core/theme/voxx.css` — token-aware default styles (inherits shadcn design tokens when present).
+- `@voxx/core` — plain Promise API.
+- `@voxx/core/effect` — the raw Effect programs, schemas, and tagged errors.
+- `@voxx/core/theme/voxx.css` — token-aware default styles (inherits shadcn design tokens when present).
 
 Scaffolding lives in the `voxx` CLI; this package has no opinion about your framework.

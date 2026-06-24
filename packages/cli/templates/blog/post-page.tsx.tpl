@@ -1,7 +1,7 @@
-import type { Post, VoxxConfig } from "@prudentbird/voxx-core";
+import type { Post, VoxxConfig } from "@voxx/core";
 import Link from "next/link";
 import { OnThisPage } from "./on-this-page";
-import { formatDate } from "@prudentbird/voxx-core";
+import { formatDate } from "@voxx/core";
 
 export function PostPage({
   post,

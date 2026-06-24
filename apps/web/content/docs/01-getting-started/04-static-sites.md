@@ -7,8 +7,8 @@ Voxx doesn't require Next.js — or any framework. `voxx build` renders your
 whole collection to plain HTML and CSS:
 
 ```bash
-npx @prudentbird/voxx init          # choose "static site" when asked
-npx @prudentbird/voxx build         # -> dist/
+npx voxx init          # choose "static site" when asked
+npx voxx build         # -> dist/
 ```
 
 The output depends on your content type:
@@ -27,15 +27,15 @@ references like `![diagram](./diagram.png)` are resolved to where they
 land. Multi-collection configs build every collection in one pass.
 
 ```bash
-npx @prudentbird/voxx build --out public    # somewhere other than ./dist
-npx @prudentbird/voxx build --drafts        # include draft pages
+npx voxx build --out public    # somewhere other than ./dist
+npx voxx build --drafts        # include draft pages
 ```
 
 Preview locally with the built-in dev server — it rebuilds on change and
 includes drafts by default:
 
 ```bash
-npx @prudentbird/voxx dev                   # http://localhost:4321
+npx voxx dev                   # http://localhost:4321
 ```
 
 Or serve the built folder with anything that can serve files:
@@ -47,11 +47,11 @@ npx serve dist
 ## Bring your own framework
 
 The static builder and the Next.js scaffolding are both thin layers over
-[`@prudentbird/voxx-core`](/docs/reference/core-api), whose public API is plain async
+[`@voxx/core`](/docs/reference/core-api), whose public API is plain async
 functions:
 
 ```ts
-import { getPosts, buildSeo, renderRss } from "@prudentbird/voxx-core";
+import { getPosts, buildSeo, renderRss } from "@voxx/core";
 
 const posts = await getPosts(); // reads voxx.json, returns Post[]
 ```

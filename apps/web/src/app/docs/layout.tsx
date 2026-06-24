@@ -1,7 +1,7 @@
-import "@prudentbird/voxx-core/theme/voxx.css";
+import "@voxx/core/theme/voxx.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { buildNavTree } from "@prudentbird/voxx-core";
+import { buildNavTree } from "@voxx/core";
 import { ThemeSwitcher } from "~/components/theme-switcher";
 import { Wordmark } from "~/components/wordmark";
 import { getPosts } from "./_voxx/data";

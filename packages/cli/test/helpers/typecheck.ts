@@ -22,8 +22,8 @@ function compilerOptions(): ts.CompilerOptions {
       react: [join(WEB_NM, "@types/react")],
       "react/jsx-runtime": [join(WEB_NM, "@types/react/jsx-runtime")],
       "react-dom": [join(WEB_NM, "@types/react-dom")],
-      "@prudentbird/voxx-core": [CORE_TYPES],
-      "@prudentbird/voxx-core/*": [join(ROOT, "packages/core/*")],
+      "@voxx/core": [CORE_TYPES],
+      "@voxx/core/*": [join(ROOT, "packages/core/*")],
     },
   };
 }
@@ -40,7 +40,7 @@ async function collectSources(dir: string): Promise<string[]> {
 export async function typecheckDir(appDir: string): Promise<string[]> {
   if (!(await exists(CORE_TYPES))) {
     throw new Error(
-      `@prudentbird/voxx-core types not found at ${CORE_TYPES} — run "pnpm build --filter=voxx^..." first.`,
+      `@voxx/core types not found at ${CORE_TYPES} — run "pnpm build --filter=voxx^..." first.`,
     );
   }
   if (!(await exists(WEB_NM))) {

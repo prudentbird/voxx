@@ -1,5 +1,5 @@
 {
-  "name": "@prudentbird/voxx-core",
+  "name": "@voxx/core",
   "version": "0.0.1",
   "description": "The portable content engine behind Voxx: markdown + frontmatter -> SEO-ready blogs, docs, and changelogs.",
   "license": "MIT",

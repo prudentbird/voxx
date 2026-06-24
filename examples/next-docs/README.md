@@ -10,5 +10,5 @@ pnpm dev      # open http://localhost:3000/docs
 pnpm build
 ```
 
-Add content with `npx @prudentbird/voxx new "Title"` or by dropping markdown files into
+Add content with `npx voxx new "Title"` or by dropping markdown files into
 `content/`.

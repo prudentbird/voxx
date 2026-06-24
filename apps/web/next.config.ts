@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withVoxx } from "@prudentbird/voxx-core/next";
+import { withVoxx } from "@voxx/core/next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,

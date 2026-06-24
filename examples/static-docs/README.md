@@ -10,5 +10,5 @@ pnpm dev      # preview with a local server
 pnpm build    # render static HTML to ./dist
 ```
 
-Add content with `npx @prudentbird/voxx new "Title"` or by dropping markdown files into
+Add content with `npx voxx new "Title"` or by dropping markdown files into
 `content/`.

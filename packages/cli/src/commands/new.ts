@@ -8,7 +8,7 @@ import {
   slugify,
   splitDatePrefix,
   splitOrderPrefix,
-} from "@prudentbird/voxx-core";
+} from "@voxx/core";
 import { exists, isSafeRelPath, log, writeFileSafe, yamlValue } from "../util";
 
 const MD_RE = /\.md$/;

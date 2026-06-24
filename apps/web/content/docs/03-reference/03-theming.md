@@ -33,7 +33,7 @@ wins, `prefers-color-scheme` covers the rest.
 The scaffolded layout imports the stylesheet like any other file:
 
 ```tsx
-import "@prudentbird/voxx-core/theme/voxx.css";
+import "@voxx/core/theme/voxx.css";
 ```
 
 (`voxx init` copies it into your app's `_voxx/` folder instead, so you can

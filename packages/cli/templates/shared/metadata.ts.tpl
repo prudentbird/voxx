@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { SeoData } from "@prudentbird/voxx-core";
+import type { SeoData } from "@voxx/core";
 
 export function toMetadata(seo: SeoData): Metadata {
   const metadata: Metadata = {

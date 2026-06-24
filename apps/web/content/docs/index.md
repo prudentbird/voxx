@@ -51,7 +51,7 @@ Need more than one on the same site? Mount them side by side with
 
 ## How the pieces fit
 
-- **[`@prudentbird/voxx-core`](/docs/reference/core-api)** is the portable engine: plain
+- **[`@voxx/core`](/docs/reference/core-api)** is the portable engine: plain
   async functions in, structured data out. It has no opinion about your
   framework.
 - **The [`voxx` CLI](/docs/reference/cli)** scaffolds a surface into your

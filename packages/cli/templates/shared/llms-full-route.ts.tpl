@@ -1,4 +1,4 @@
-import { renderLlmsFull } from "@prudentbird/voxx-core";
+import { renderLlmsFull } from "@voxx/core";
 import { getConfig, getPosts } from "{{DATA_IMPORT}}";
 
 export async function GET() {

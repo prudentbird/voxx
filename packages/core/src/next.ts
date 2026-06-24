@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const CORE_PACKAGE = "@prudentbird/voxx-core";
+const CORE_PACKAGE = "@voxx/core";
 const DEFAULT_CONTENT_DIR = "content";
 
 /** Options for {@link withVoxx}. */
@@ -52,7 +52,7 @@ function contentDirs(cwd: string): string[] {
  * Wraps a Next.js config with the settings every Voxx app needs to run
  * correctly on serverless platforms.
  *
- * Enables Cache Components, marks `@prudentbird/voxx-core` as an external
+ * Enables Cache Components, marks `@voxx/core` as an external
  * server package, and traces `voxx.json` plus every content directory into the
  * serverless function bundle so runtime config and content reads resolve. Voxx
  * content is filesystem-backed and read at request time during cache

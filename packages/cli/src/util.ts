@@ -83,12 +83,12 @@ export async function writeFileSafe(
 }
 
 /**
- * Resolves the path to a sub-asset of the installed `@prudentbird/voxx-core` package.
+ * Resolves the path to a sub-asset of the installed `@voxx/core` package.
  *
  * @param subpath - Package-relative path, e.g. `"theme/voxx.css"`.
  */
 export function resolveCoreAsset(subpath: string): string {
-  return require.resolve(`@prudentbird/voxx-core/${subpath}`);
+  return require.resolve(`@voxx/core/${subpath}`);
 }
 
 /**

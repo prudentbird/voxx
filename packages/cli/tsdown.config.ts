@@ -6,5 +6,5 @@ export default defineConfig({
   dts: false,
   clean: true,
   sourcemap: true,
-  deps: { neverBundle: [/^effect/, /^@effect\//, "@prudentbird/voxx-core"] },
+  deps: { neverBundle: [/^effect/, /^@effect\//, "@voxx/core"] },
 });

@@ -6,7 +6,7 @@ import {
   loadConfig as coreLoadConfig,
   type Post,
   type VoxxConfig,
-} from "@prudentbird/voxx-core";
+} from "@voxx/core";
 import { CONTENT_VERSION } from "./content-version";
 
 async function getPostsCached(version: number): Promise<Post[]> {

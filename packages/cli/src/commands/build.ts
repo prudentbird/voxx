@@ -23,7 +23,7 @@ import {
   type Post,
   type SeoData,
   type VoxxConfig,
-} from "@prudentbird/voxx-core";
+} from "@voxx/core";
 import { c, exists, log, resolveCoreAsset } from "../util";
 
 function stripLead(path: string): string {

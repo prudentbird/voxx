@@ -276,7 +276,7 @@ export default function Home() {
               </h3>
               <p className="text-[15px] leading-[1.65] text-muted-foreground">
                 <code className="rounded-[5px] border border-border/60 bg-secondary px-1 font-mono text-[13px] text-foreground">
-                  npx @prudentbird/voxx init
+                  npx voxx init
                 </code>{" "}
                 writes real route files into your project. You own them —
                 restyle them, extend them, delete what you don&rsquo;t need. No
@@ -330,7 +330,7 @@ export default function Home() {
           <Reveal as="p" className="mt-9 text-[15px] text-muted-foreground">
             Bringing your own framework?{" "}
             <code className="rounded-[5px] border border-border/60 bg-secondary px-1.5 font-mono text-[13.5px] text-foreground">
-              @prudentbird/voxx-core
+              @voxx/core
             </code>{" "}
             exposes the parsing, validation and rendering primitives directly.
           </Reveal>
