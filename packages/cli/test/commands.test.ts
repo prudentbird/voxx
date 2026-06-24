@@ -336,26 +336,30 @@ describe("voxx add collection", () => {
       {
         name: "blog",
         type: "blog",
-        dir: "content/blog",
+        dir: "app/(voxx)/blog/_content",
         basePath: "/blog",
         drafts: false,
       },
       {
         name: "docs",
         type: "docs",
-        dir: "content/docs",
+        dir: "app/(voxx)/docs/_content",
         basePath: "/docs",
         drafts: false,
       },
     ]);
 
-    expect(await exists(join(dir, "app/docs/[[...slug]]/page.tsx"))).toBe(true);
-    expect(await exists(join(dir, "content/docs/index.md"))).toBe(true);
-    const data = await readFile(join(dir, "app/docs/_voxx/data.ts"), "utf8");
+    expect(
+      await exists(join(dir, "app/(voxx)/docs/[[...slug]]/page.tsx")),
+    ).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/docs/_content/index.md"))).toBe(
+      true,
+    );
+    const data = await readFile(join(dir, "app/(voxx)/docs/_data.ts"), "utf8");
     expect(data).toContain('coreGetPosts({ collection: "docs" })');
 
-    const sitemap = await readFile(join(dir, "app/sitemap.ts"), "utf8");
-    expect(sitemap).toContain("./blog/_voxx/data");
+    const sitemap = await readFile(join(dir, "app/(voxx)/sitemap.ts"), "utf8");
+    expect(sitemap).toContain("./blog/_data");
   });
 
   it("appends to an existing collections array without touching entries", async () => {
@@ -476,12 +480,12 @@ describe("voxx init feature gating (Next.js)", () => {
     await nextApp();
     await init(["blog", "--no-sitemap", "--no-llms", "--yes"]);
 
-    expect(await exists(join(dir, "app/blog/page.tsx"))).toBe(true);
-    expect(await exists(join(dir, "app/blog/rss.xml/route.ts"))).toBe(true);
-    expect(await exists(join(dir, "app/robots.ts"))).toBe(true);
-    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(false);
-    expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(false);
-    expect(await exists(join(dir, "app/llms-full.txt/route.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/(voxx)/blog/page.tsx"))).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/blog/rss.xml/route.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/robots.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/sitemap.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/(voxx)/llms.txt/route.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/(voxx)/llms-full.txt/route.ts"))).toBe(false);
 
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.features).toMatchObject({ sitemap: false, llmsTxt: false });
@@ -490,10 +494,10 @@ describe("voxx init feature gating (Next.js)", () => {
   it("scaffolds the default blog routes when no features are disabled", async () => {
     await nextApp();
     await init(["blog", "--yes"]);
-    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(true);
-    expect(await exists(join(dir, "app/robots.ts"))).toBe(true);
-    expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(true);
-    const data = await readFile(join(dir, "app/blog/_voxx/data.ts"), "utf8");
+    expect(await exists(join(dir, "app/(voxx)/sitemap.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/robots.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/llms.txt/route.ts"))).toBe(true);
+    const data = await readFile(join(dir, "app/(voxx)/blog/_data.ts"), "utf8");
     expect(data).toContain("findPost");
   });
 });
@@ -502,11 +506,11 @@ describe("voxx add / remove feature", () => {
   it("enables a disabled feature and scaffolds its route", async () => {
     await nextApp();
     await init(["blog", "--no-sitemap", "--yes"]);
-    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/(voxx)/sitemap.ts"))).toBe(false);
 
     await add(["sitemap"]);
     expect(process.exitCode).not.toBe(1);
-    expect(await exists(join(dir, "app/sitemap.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/sitemap.ts"))).toBe(true);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.features.sitemap).toBe(true);
   });
@@ -514,12 +518,12 @@ describe("voxx add / remove feature", () => {
   it("disables a feature and deletes its route files", async () => {
     await nextApp();
     await init(["blog", "--yes"]);
-    expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(true);
+    expect(await exists(join(dir, "app/(voxx)/llms.txt/route.ts"))).toBe(true);
 
     await remove(["llms", "--force"]);
     expect(process.exitCode).not.toBe(1);
-    expect(await exists(join(dir, "app/llms.txt/route.ts"))).toBe(false);
-    expect(await exists(join(dir, "app/llms-full.txt/route.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/(voxx)/llms.txt/route.ts"))).toBe(false);
+    expect(await exists(join(dir, "app/(voxx)/llms-full.txt/route.ts"))).toBe(false);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
     expect(cfg.features.llmsTxt).toBe(false);
   });
