@@ -8,7 +8,7 @@ const TEMPLATES_DIR = fileURLToPath(new URL("../templates", import.meta.url));
 
 const useColor = process.stdout.isTTY && !process.env["NO_COLOR"];
 const wrap = (code: string) => (s: string) =>
-  useColor ? `[${code}m${s}[0m` : s;
+  useColor ? `\x1b[${code}m${s}\x1b[0m` : s;
 
 /** ANSI color helpers that degrade gracefully in non-TTY environments. */
 export const c = {
