@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { buildNavTree } from "@prudentbird/voxx-core";
 import { ThemeSwitcher } from "~/components/theme-switcher";
 import { Wordmark } from "~/components/wordmark";
-import { getPosts } from "./_voxx/data";
-import { MobileNav } from "./_voxx/mobile-nav";
-import { SidebarNav } from "./_voxx/sidebar-nav";
+import { getPosts } from "./_data";
+import { MobileNav } from "./_mobile-nav";
+import { SidebarNav } from "./_sidebar-nav";
 
 export const metadata: Metadata = {
   title: {

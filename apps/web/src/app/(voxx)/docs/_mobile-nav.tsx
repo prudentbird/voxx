@@ -13,7 +13,7 @@ import {
   SheetTrigger,
 } from "@voxx/ui/components/sheet";
 import { Wordmark } from "~/components/wordmark";
-import { SidebarNav } from "./sidebar-nav";
+import { SidebarNav } from "./_sidebar-nav";
 
 export function MobileNav({ items }: { items: NavNode[] }) {
   const [open, setOpen] = useState(false);
