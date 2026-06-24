@@ -8,7 +8,7 @@
   },
   "content": {
     "type": "blog",
-    "dir": "content",
+    "dir": "app/(voxx)/blog/_content",
     "basePath": "/blog",
     "drafts": false
   },

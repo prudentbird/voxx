@@ -8,7 +8,7 @@
   },
   "content": {
     "type": "docs",
-    "dir": "content",
+    "dir": "app/(voxx)/docs/_content",
     "basePath": "/docs",
     "drafts": false
   },

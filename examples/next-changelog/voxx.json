@@ -8,7 +8,7 @@
   },
   "content": {
     "type": "changelog",
-    "dir": "content",
+    "dir": "app/(voxx)/changelog/_content",
     "basePath": "/changelog",
     "drafts": false
   },
