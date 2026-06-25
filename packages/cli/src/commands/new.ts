@@ -13,6 +13,13 @@ import { exists, isSafeRelPath, log, writeFileSafe, yamlValue } from "../util";
 
 const MD_RE = /\.md$/;
 
+/**
+ * Route segments that live under a blog's base path and must not be shadowed
+ * by a post slug. `api` is the streaming endpoint (`<basePath>/api`); a post
+ * slugged `api` would resolve to the route handler instead of its page.
+ */
+const RESERVED_SLUGS = ["api"];
+
 type ContentType = "blog" | "docs" | "changelog";
 
 interface VoxxJson {
@@ -248,6 +255,7 @@ export async function newPost(argv: string[]): Promise<void> {
   }
 
   const taken = await existingSlugs(join(cwd, contentDir));
+  for (const reserved of RESERVED_SLUGS) taken.add(reserved);
   const slug = await resolveSlug(baseSlug, taken);
 
   const fileName = values.flat ? `${slug}.md` : `${date}-${slug}.md`;
