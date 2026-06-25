@@ -21,7 +21,10 @@ export default async function DocsLayout({
         <div className="voxx-docs__nav-inner">
           <div className="voxx-docs__nav-header">
             <MobileNav items={tree} title={config.site.title} />
-            <Link href={config.site.titleHref ?? "/"} className="voxx-docs__title">
+            <Link
+              href={config.site.titleHref ?? "/"}
+              className="voxx-docs__title"
+            >
               {config.site.title}
             </Link>
           </div>

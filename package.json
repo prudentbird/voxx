@@ -13,7 +13,7 @@
     "version-packages": "changeset version",
     "dev:app": "turbo dev --filter=@voxx/web",
     "build:app": "turbo run build --filter=@voxx/web",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,md,tpl}\"",
     "release": "turbo run build --filter=@prudentbird/voxx-core --filter=@prudentbird/voxx && changeset publish"
   },
   "devDependencies": {

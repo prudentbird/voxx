@@ -1,0 +1,16 @@
+{
+  "overrides": [
+    {
+      "files": ["*.ts.tpl", "*.tsx.tpl"],
+      "options": { "parser": "typescript" }
+    },
+    {
+      "files": "*.json.tpl",
+      "options": { "parser": "json" }
+    },
+    {
+      "files": "*.md.tpl",
+      "options": { "parser": "markdown" }
+    }
+  ]
+}
