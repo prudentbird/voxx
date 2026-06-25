@@ -24,7 +24,7 @@ a default — and several defaults are [type-aware](#type-aware-defaults).
     "drafts": false,
   },
   "theme": {
-    "preset": "shadcn",
+    "preset": "default",
     "css": null,
     "codeTheme": "github-light github-dark",
   },
