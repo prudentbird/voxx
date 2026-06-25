@@ -1,8 +1,7 @@
 import "server-only";
 import { cacheLife } from "next/cache";
 import {
-  findPost,
-  getPost as coreGetPost,
+  getPostOrNull as coreGetPostOrNull,
   getPosts as coreGetPosts,
   listPosts as coreListPosts,
   loadConfig as coreLoadConfig,
@@ -111,11 +110,9 @@ async function getPostCached(
   "use cache";
   cacheLife("max");
   void version;
-  // Resolve existence from metadata first: a genuine render or config failure
-  // then surfaces as an error instead of being misreported as a 404.
-  const { posts } = await coreListPosts({ ...{ collection: "changelog" }, reachable: true });
-  if (!findPost(posts, slug)) return null;
-  return coreGetPost(slug, { ...{ collection: "changelog" }, reachable: true });
+  // Returns null only when no slug matches; a render or config failure still
+  // throws, so a genuine 404 stays distinct from a broken post.
+  return coreGetPostOrNull(slug, { ...{ collection: "changelog" }, reachable: true });
 }
 
 /** A single post rendered to HTML, or `null` when no slug matches. */
