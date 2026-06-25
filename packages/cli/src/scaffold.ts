@@ -124,14 +124,22 @@ export async function collectionOps(
   } else if (type === "changelog") {
     ops.push(
       await op(cwd, join(dir, "page.tsx"), "changelog/page.tsx.tpl"),
-      await op(cwd, join(dir, "_release-list.tsx"), "changelog/release-list.tsx.tpl"),
+      await op(cwd, join(dir, "_release-item.tsx"), "changelog/release-item.tsx.tpl"),
+      await op(cwd, join(dir, "_release-stream.tsx"), "changelog/release-stream.tsx.tpl"),
+      await op(cwd, join(dir, "releases", "route.ts"), "changelog/releases-route.ts.tpl", {
+        DATA_IMPORT: "../_data",
+      }),
     );
   } else {
     ops.push(
       await op(cwd, join(dir, "page.tsx"), "blog/page.tsx.tpl"),
       await op(cwd, join(dir, "[slug]", "page.tsx"), "blog/slug-page.tsx.tpl"),
       await op(cwd, join(dir, "_post-page.tsx"), "blog/post-page.tsx.tpl"),
-      await op(cwd, join(dir, "_post-list.tsx"), "blog/post-list.tsx.tpl"),
+      await op(cwd, join(dir, "_post-card.tsx"), "blog/post-card.tsx.tpl"),
+      await op(cwd, join(dir, "_post-stream.tsx"), "blog/post-stream.tsx.tpl"),
+      await op(cwd, join(dir, "posts", "route.ts"), "blog/posts-route.ts.tpl", {
+        DATA_IMPORT: "../_data",
+      }),
     );
   }
 
