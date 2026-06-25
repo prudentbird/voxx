@@ -5,6 +5,16 @@ import type { ReactNode } from "react";
 import type { VoxxConfig } from "@prudentbird/voxx-core";
 import { ReleaseItem, type StreamRelease } from "./_release-item";
 
+/** The release slug a URL hash points at, decoded defensively. */
+function hashSlug(): string {
+  const raw = window.location.hash.slice(1);
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 export function ReleaseStream({
   children,
   initialCount,
@@ -26,11 +36,10 @@ export function ReleaseStream({
   const [loading, setLoading] = useState(false);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const loadingRef = useRef(false);
+  const issuedForRef = useRef<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const loaded = initialCount + appended.length;
-  const loadedRef = useRef(loaded);
-  loadedRef.current = loaded;
   const hasMore = loaded < total;
 
   const load = useCallback(
@@ -72,35 +81,44 @@ export function ReleaseStream({
     return () => observer.disconnect();
   }, [load, hasMore, loaded, perBatch]);
 
-  // Deep links: when the URL targets a release that isn't loaded yet, ask the
-  // endpoint for everything up to it in one request, then scroll once rendered.
+  // Record the release a deep link points at, on load and on hash change.
   useEffect(() => {
     function jumpToHash() {
-      const slug = decodeURIComponent(window.location.hash.slice(1));
-      if (!slug) return;
-      if (document.getElementById(slug)) {
-        document.getElementById(slug)?.scrollIntoView();
-        return;
-      }
-      setScrollTarget(slug);
-      void load(
-        new URLSearchParams({ offset: String(loadedRef.current), until: slug }),
-      );
+      const slug = hashSlug();
+      if (slug) setScrollTarget(slug);
     }
     jumpToHash();
     window.addEventListener("hashchange", jumpToHash);
     return () => window.removeEventListener("hashchange", jumpToHash);
-  }, [load]);
+  }, []);
 
-  // Once a deep-link target has rendered, scroll to it.
+  // Resolve a deep-link target: scroll once it has rendered, otherwise fetch
+  // everything up to it (once), and give up if it never turns up. Re-runs when a
+  // load settles, so a target requested mid-fetch is not dropped.
   useEffect(() => {
-    if (!scrollTarget) return;
+    if (!scrollTarget) {
+      issuedForRef.current = null;
+      return;
+    }
     const el = document.getElementById(scrollTarget);
     if (el) {
       el.scrollIntoView();
       setScrollTarget(null);
+      issuedForRef.current = null;
+      return;
     }
-  }, [scrollTarget, appended]);
+    if (loading) return;
+    if (issuedForRef.current === scrollTarget) {
+      // Already fetched up to this slug and it still isn't here — it doesn't exist.
+      setScrollTarget(null);
+      issuedForRef.current = null;
+      return;
+    }
+    issuedForRef.current = scrollTarget;
+    void load(
+      new URLSearchParams({ offset: String(loaded), until: scrollTarget }),
+    );
+  }, [scrollTarget, appended, loading, loaded, load]);
 
   return (
     <div className="voxx-releases">

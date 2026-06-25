@@ -20,6 +20,7 @@ export default async function ChangelogPage() {
     getConfig(),
   ]);
   const basePath = config.content.basePath || "/changelog";
+  const releasesEndpoint = `${basePath === "/" ? "" : basePath}/releases`;
 
   return (
     <main className="voxx voxx-index">
@@ -42,7 +43,7 @@ export default async function ChangelogPage() {
           initialCount={initial.length}
           total={total}
           perBatch={PER_BATCH}
-          endpoint={`${basePath}/releases`}
+          endpoint={releasesEndpoint}
           config={config}
         >
           {initial.map((post) => (

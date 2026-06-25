@@ -24,6 +24,7 @@ export default async function BlogIndex({ searchParams }: Props) {
     getConfig(),
   ]);
   const basePath = config.content.basePath || "/";
+  const postsEndpoint = `${basePath === "/" ? "" : basePath}/posts`;
 
   return (
     <main className="voxx voxx-index">
@@ -58,7 +59,7 @@ export default async function BlogIndex({ searchParams }: Props) {
           initialCount={initial.length}
           total={total}
           perBatch={PER_BATCH}
-          endpoint={`${basePath}/posts`}
+          endpoint={postsEndpoint}
           tag={tag}
           config={config}
         >
