@@ -5,9 +5,13 @@ import "./src/env";
 import type { NextConfig } from "next";
 import { withVoxx } from "@prudentbird/voxx-core/next";
 
+const posthogCredentialed = Boolean(
+  process.env.POSTHOG_CLI_API_KEY && process.env.POSTHOG_CLI_ENV_ID,
+);
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  productionBrowserSourceMaps: true,
+  productionBrowserSourceMaps: posthogCredentialed,
 };
 
 export default withVoxx(nextConfig);
