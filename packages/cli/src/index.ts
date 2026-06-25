@@ -75,7 +75,10 @@ async function dispatch(
   cmd: string | undefined,
   rest: string[],
 ): Promise<void> {
-  const handler = cmd !== undefined ? TRACKED_COMMANDS[cmd] : undefined;
+  const handler =
+    cmd !== undefined && Object.hasOwn(TRACKED_COMMANDS, cmd)
+      ? TRACKED_COMMANDS[cmd]
+      : undefined;
   if (handler) {
     await handler(rest);
   } else if (
@@ -93,7 +96,7 @@ async function dispatch(
 
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
-  const tracked = cmd !== undefined && cmd in TRACKED_COMMANDS;
+  const tracked = cmd !== undefined && Object.hasOwn(TRACKED_COMMANDS, cmd);
   if (tracked) await showTelemetryNotice();
 
   const start = performance.now();
