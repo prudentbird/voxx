@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { buildNavTree } from "@prudentbird/voxx-core";
 import { ThemeSwitcher } from "~/components/theme-switcher";
 import { Wordmark } from "~/components/wordmark";
-import { getPosts } from "./_data";
+import { listPosts } from "./_data";
 import { MobileNav } from "./_mobile-nav";
 import { SidebarNav } from "./_sidebar-nav";
 
@@ -20,7 +20,7 @@ export default async function DocsLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const posts = await getPosts();
+  const { posts } = await listPosts();
   const tree = buildNavTree(posts);
   return (
     <div className="voxx voxx-docs">
