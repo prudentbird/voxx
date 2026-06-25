@@ -37,7 +37,9 @@ async function listPostsCached(
  * pagination, plus the unpaginated total. Cheap enough to scale to large
  * content sets — use it for indexes, navigation, sitemaps, and feeds.
  */
-export async function listPosts(opts: ListOptions = {}): Promise<ListPostsResult> {
+export async function listPosts(
+  opts: ListOptions = {},
+): Promise<ListPostsResult> {
   return listPostsCached(CONTENT_VERSION, opts);
 }
 
@@ -45,7 +47,10 @@ async function listReachablePostsCached(version: number): Promise<PostMeta[]> {
   "use cache";
   cacheLife("max");
   void version;
-  const { posts } = await coreListPosts({ ...{ collection: "changelog" }, reachable: true });
+  const { posts } = await coreListPosts({
+    ...{ collection: "changelog" },
+    reachable: true,
+  });
   return posts;
 }
 
@@ -112,7 +117,10 @@ async function getPostCached(
   void version;
   // Returns null only when no slug matches; a render or config failure still
   // throws, so a genuine 404 stays distinct from a broken post.
-  return coreGetPostOrNull(slug, { ...{ collection: "changelog" }, reachable: true });
+  return coreGetPostOrNull(slug, {
+    ...{ collection: "changelog" },
+    reachable: true,
+  });
 }
 
 /** A single post rendered to HTML, or `null` when no slug matches. */

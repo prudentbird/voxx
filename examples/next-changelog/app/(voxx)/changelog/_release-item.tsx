@@ -26,7 +26,9 @@ export function ReleaseItem({
             {post.version ? `v${post.version}` : post.title}
           </a>
         </h2>
-        <time dateTime={post.date}>{formatDate(post.date, config.site.locale)}</time>
+        <time dateTime={post.date}>
+          {formatDate(post.date, config.site.locale)}
+        </time>
       </header>
       <div
         className="voxx-prose"

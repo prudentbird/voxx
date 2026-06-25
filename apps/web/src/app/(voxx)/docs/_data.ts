@@ -38,7 +38,9 @@ async function listPostsCached(
  * pagination, plus the unpaginated total. Cheap enough to scale to large
  * content sets — use it for navigation, sitemaps, and feeds.
  */
-export async function listPosts(opts: ListOptions = {}): Promise<ListPostsResult> {
+export async function listPosts(
+  opts: ListOptions = {},
+): Promise<ListPostsResult> {
   return listPostsCached(CONTENT_VERSION, opts);
 }
 
@@ -46,7 +48,10 @@ async function listReachablePostsCached(version: number): Promise<PostMeta[]> {
   "use cache";
   cacheLife("max");
   void version;
-  const { posts } = await coreListPosts({ collection: "docs", reachable: true });
+  const { posts } = await coreListPosts({
+    collection: "docs",
+    reachable: true,
+  });
   return posts;
 }
 
@@ -90,7 +95,10 @@ async function getPostCached(
   void version;
   // Resolve existence from metadata first: a genuine render or config failure
   // then surfaces as an error instead of being misreported as a 404.
-  const { posts } = await coreListPosts({ collection: "docs", reachable: true });
+  const { posts } = await coreListPosts({
+    collection: "docs",
+    reachable: true,
+  });
   if (!findPost(posts, slug)) return null;
   return coreGetPost(slug, { collection: "docs", reachable: true });
 }

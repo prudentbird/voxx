@@ -39,7 +39,11 @@ const PAIRS: Array<[tpl: string, file: string, vars?: Record<string, string>]> =
       "(voxx)/llms-full.txt/route.ts",
       { DATA_IMPORT: "../docs/_data" },
     ],
-    ["shared/robots.ts.tpl", "(voxx)/robots.ts", { DATA_IMPORT: "./docs/_data" }],
+    [
+      "shared/robots.ts.tpl",
+      "(voxx)/robots.ts",
+      { DATA_IMPORT: "./docs/_data" },
+    ],
     [
       "shared/sitemap.ts.tpl",
       "(voxx)/sitemap.ts",
@@ -48,9 +52,15 @@ const PAIRS: Array<[tpl: string, file: string, vars?: Record<string, string>]> =
   ];
 
 describe("templates stay in sync with the generated example app", () => {
-  it.each(PAIRS)("%s matches examples/next-docs/app/%s", async (tpl, file, vars) => {
-    const rendered = render(await readFile(join(TEMPLATES, tpl), "utf8"), vars);
-    const actual = await readFile(join(APP, file), "utf8");
-    expect(rendered).toBe(actual);
-  });
+  it.each(PAIRS)(
+    "%s matches examples/next-docs/app/%s",
+    async (tpl, file, vars) => {
+      const rendered = render(
+        await readFile(join(TEMPLATES, tpl), "utf8"),
+        vars,
+      );
+      const actual = await readFile(join(APP, file), "utf8");
+      expect(rendered).toBe(actual);
+    },
+  );
 });

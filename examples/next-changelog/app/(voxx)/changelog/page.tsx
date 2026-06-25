@@ -34,8 +34,8 @@ export default async function ChangelogPage() {
         <div className="voxx-empty">
           <p>No releases yet.</p>
           <p>
-            Add a Markdown file named for the version (e.g. <code>1.0.0.md</code>)
-            to your content folder.
+            Add a Markdown file named for the version (e.g.{" "}
+            <code>1.0.0.md</code>) to your content folder.
           </p>
         </div>
       ) : (

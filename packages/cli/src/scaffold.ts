@@ -1,11 +1,6 @@
 import { dirname, join, relative } from "node:path";
 import { type ContentType } from "@prudentbird/voxx-core";
-import {
-  readTemplate,
-  render,
-  resolveCoreAsset,
-  type WriteOp,
-} from "./util";
+import { readTemplate, render, resolveCoreAsset, type WriteOp } from "./util";
 import { type FeatureFlags, type FeatureKey } from "./features";
 import { type PlannedCollection } from "./collections";
 
@@ -95,22 +90,39 @@ export async function collectionOps(
     await op(cwd, join(dir, "_data.ts"), "shared/data.ts.tpl", {
       COLLECTION_ARG: `{ collection: ${JSON.stringify(name)} }`,
     }),
-    await op(cwd, join(dir, "_content-version.ts"), "shared/content-version.ts.tpl"),
-    await op(cwd, join(dir, "_theme-toggle.tsx"), "shared/theme-toggle.tsx.tpl"),
+    await op(
+      cwd,
+      join(dir, "_content-version.ts"),
+      "shared/content-version.ts.tpl",
+    ),
+    await op(
+      cwd,
+      join(dir, "_theme-toggle.tsx"),
+      "shared/theme-toggle.tsx.tpl",
+    ),
   );
 
   if (type !== "changelog") {
     ops.push(
-      await op(cwd, join(dir, "_on-this-page.tsx"), "shared/on-this-page.tsx.tpl"),
+      await op(
+        cwd,
+        join(dir, "_on-this-page.tsx"),
+        "shared/on-this-page.tsx.tpl",
+      ),
       await op(cwd, join(dir, "_metadata.ts"), "shared/metadata.ts.tpl"),
     );
   }
 
   if (type !== "docs" && flags.rss) {
     ops.push(
-      await op(cwd, join(dir, "rss.xml", "route.ts"), "shared/rss-route.ts.tpl", {
-        DATA_IMPORT: "../_data",
-      }),
+      await op(
+        cwd,
+        join(dir, "rss.xml", "route.ts"),
+        "shared/rss-route.ts.tpl",
+        {
+          DATA_IMPORT: "../_data",
+        },
+      ),
     );
   }
 
@@ -124,11 +136,24 @@ export async function collectionOps(
   } else if (type === "changelog") {
     ops.push(
       await op(cwd, join(dir, "page.tsx"), "changelog/page.tsx.tpl"),
-      await op(cwd, join(dir, "_release-item.tsx"), "changelog/release-item.tsx.tpl"),
-      await op(cwd, join(dir, "_release-stream.tsx"), "changelog/release-stream.tsx.tpl"),
-      await op(cwd, join(dir, "api", "route.ts"), "changelog/releases-route.ts.tpl", {
-        DATA_IMPORT: "../_data",
-      }),
+      await op(
+        cwd,
+        join(dir, "_release-item.tsx"),
+        "changelog/release-item.tsx.tpl",
+      ),
+      await op(
+        cwd,
+        join(dir, "_release-stream.tsx"),
+        "changelog/release-stream.tsx.tpl",
+      ),
+      await op(
+        cwd,
+        join(dir, "api", "route.ts"),
+        "changelog/releases-route.ts.tpl",
+        {
+          DATA_IMPORT: "../_data",
+        },
+      ),
     );
   } else {
     ops.push(
@@ -166,7 +191,13 @@ export async function siteWideOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
 
   if (split) {
     ops.push(
-      await op(cwd, join(group, "layout.tsx"), "shared/voxx-root-layout.tsx.tpl", {}, true),
+      await op(
+        cwd,
+        join(group, "layout.tsx"),
+        "shared/voxx-root-layout.tsx.tpl",
+        {},
+        true,
+      ),
     );
   }
 
@@ -197,23 +228,41 @@ export async function siteWideOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
 
   if (flags.sitemap) {
     ops.push(
-      await op(cwd, join(group, "sitemap.ts"), "shared/sitemap.ts.tpl", {
-        DATA_IMPORT: dataFromGroup,
-      }, true),
+      await op(
+        cwd,
+        join(group, "sitemap.ts"),
+        "shared/sitemap.ts.tpl",
+        {
+          DATA_IMPORT: dataFromGroup,
+        },
+        true,
+      ),
     );
   }
   if (flags.robots) {
     ops.push(
-      await op(cwd, join(group, "robots.ts"), "shared/robots.ts.tpl", {
-        DATA_IMPORT: dataFromGroup,
-      }, true),
+      await op(
+        cwd,
+        join(group, "robots.ts"),
+        "shared/robots.ts.tpl",
+        {
+          DATA_IMPORT: dataFromGroup,
+        },
+        true,
+      ),
     );
   }
   if (flags.llmsTxt) {
     ops.push(
-      await op(cwd, join(group, "llms.txt", "route.ts"), "shared/llms-route.ts.tpl", {
-        DATA_IMPORT: dataFromRouteDir,
-      }, true),
+      await op(
+        cwd,
+        join(group, "llms.txt", "route.ts"),
+        "shared/llms-route.ts.tpl",
+        {
+          DATA_IMPORT: dataFromRouteDir,
+        },
+        true,
+      ),
       await op(
         cwd,
         join(group, "llms-full.txt", "route.ts"),
@@ -286,9 +335,14 @@ export async function featureAddOps(
       ];
     case "llmsTxt":
       return [
-        await op(cwd, join(group, "llms.txt", "route.ts"), "shared/llms-route.ts.tpl", {
-          DATA_IMPORT: dataFromRouteDir,
-        }),
+        await op(
+          cwd,
+          join(group, "llms.txt", "route.ts"),
+          "shared/llms-route.ts.tpl",
+          {
+            DATA_IMPORT: dataFromRouteDir,
+          },
+        ),
         await op(
           cwd,
           join(group, "llms-full.txt", "route.ts"),
@@ -335,20 +389,27 @@ export function featureFilePaths(
 
 const SAMPLE_TEMPLATES: Record<
   ContentType,
-  (today: string) => Array<[tpl: string, rel: string, vars?: Record<string, string>]>
+  (
+    today: string,
+  ) => Array<[tpl: string, rel: string, vars?: Record<string, string>]>
 > = {
   blog: (today) => [
     ["blog/hello-world.md.tpl", `${today}-hello-world.md`, { DATE: today }],
   ],
   docs: () => [
     ["docs/index.md.tpl", "index.md"],
-    ["docs/getting-started-index.md.tpl", join("01-getting-started", "index.md")],
+    [
+      "docs/getting-started-index.md.tpl",
+      join("01-getting-started", "index.md"),
+    ],
     [
       "docs/installation.md.tpl",
       join("01-getting-started", "01-installation.md"),
     ],
   ],
-  changelog: (today) => [["changelog/release.md.tpl", "0.1.0.md", { DATE: today }]],
+  changelog: (today) => [
+    ["changelog/release.md.tpl", "0.1.0.md", { DATE: today }],
+  ],
 };
 
 /**

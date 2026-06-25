@@ -128,9 +128,7 @@ export type WriteOutcome = readonly [
  *
  * @param ops - Planned write operations.
  */
-export async function collisions(
-  ops: readonly WriteOp[],
-): Promise<WriteOp[]> {
+export async function collisions(ops: readonly WriteOp[]): Promise<WriteOp[]> {
   const found: WriteOp[] = [];
   for (const op of ops) {
     if (await exists(op.path)) found.push(op);

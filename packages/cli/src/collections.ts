@@ -221,7 +221,12 @@ export function planAddCollection(raw: RawConfig, spec: AddSpec): AddPlan {
     };
   }
 
-  const collection: PlannedCollection = { name, type: spec.type, dir, basePath };
+  const collection: PlannedCollection = {
+    name,
+    type: spec.type,
+    dir,
+    basePath,
+  };
   const next = { ...collection, drafts: false };
   const rawCollections = Array.isArray(raw["collections"])
     ? (raw["collections"] as RawConfig[])
