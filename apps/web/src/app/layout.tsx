@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider, PostHogPageView } from "@posthog/next";
+import { PostHogRelease } from "~/components/posthog-release";
 import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 
 const outfit = Outfit({
@@ -103,16 +104,10 @@ export default function RootLayout({
             clientOptions={{
               api_host: "/ingest",
               capture_performance: { web_vitals: true },
-              before_send: (event) => {
-                if (event) {
-                  event.properties.deploy_sha =
-                    process.env.NEXT_PUBLIC_DEPLOY_SHA;
-                }
-                return event;
-              },
             }}
           >
             <PostHogPageView />
+            <PostHogRelease />
             {children}
           </PostHogProvider>
         </ThemeProvider>
