@@ -498,7 +498,8 @@ describe("voxx init feature gating (Next.js)", () => {
     expect(await exists(join(dir, "app/(voxx)/robots.ts"))).toBe(true);
     expect(await exists(join(dir, "app/(voxx)/llms.txt/route.ts"))).toBe(true);
     const data = await readFile(join(dir, "app/(voxx)/blog/_data.ts"), "utf8");
-    expect(data).toContain("findPost");
+    expect(data).toContain("export async function listPosts");
+    expect(data).toContain("export async function getPost");
   });
 });
 
