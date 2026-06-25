@@ -1,5 +1,5 @@
 import { absoluteUrl, escapeXml, isoDate, joinPath, rfc822 } from "./util";
-import type { Post, VoxxConfig } from "./types";
+import type { Post, PostMeta, VoxxConfig } from "./types";
 
 /** Options for `renderRss`. */
 export interface RenderRssOptions {
@@ -88,7 +88,7 @@ export interface RenderSitemapOptions {
  * @returns Sitemap XML string.
  */
 export function renderSitemap(
-  posts: Post[],
+  posts: PostMeta[],
   config: VoxxConfig,
   opts: RenderSitemapOptions = {},
 ): string {

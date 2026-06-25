@@ -5,10 +5,17 @@ import { loadConfigEffect, type LoadConfigOptions } from "./config";
 import {
   getPostEffect,
   getPostsEffect,
+  listPostsEffect,
   type GetPostsEffectOptions,
+  type ListPostsResult,
 } from "./content";
 import { renderMarkdownEffect, type RenderResult } from "./render";
-import { DEFAULT_CONFIG, type Post, type VoxxConfig } from "./types";
+import {
+  DEFAULT_CONFIG,
+  type Post,
+  type PostMeta,
+  type VoxxConfig,
+} from "./types";
 
 type Services = FileSystem.FileSystem | Path.Path;
 
@@ -33,10 +40,32 @@ export function loadConfig(opts?: LoadConfigOptions): Promise<VoxxConfig> {
 }
 
 /**
- * Returns all published posts for the active collection, sorted by the
- * collection type's natural order (date, semver, or manual order prefix).
+ * Lists post metadata for the active collection without rendering Markdown,
+ * with optional `tag`/`category` filtering and `offset`/`limit` pagination.
+ * Returns the requested page plus the unpaginated `total`.
  *
- * @param opts - Collection filter, draft visibility, and optional pre-loaded config.
+ * Prefer this over {@link getPosts} for indexes, navigation, sitemaps, and
+ * feeds that only need metadata — it never renders a post, so it scales to
+ * large content sets.
+ *
+ * @param opts - Filter, pagination, draft visibility, and optional pre-loaded config.
+ */
+export function listPosts(opts: GetPostsOptions = {}): Promise<ListPostsResult> {
+  return run(
+    Effect.gen(function* () {
+      const config = opts.config ?? (yield* loadConfigEffect(opts));
+      return yield* listPostsEffect(config, opts);
+    }),
+  );
+}
+
+/**
+ * Returns rendered posts for the active collection, sorted by the collection
+ * type's natural order (date, semver, or manual order prefix). Filtering and
+ * pagination are applied before rendering, so only the returned posts are
+ * rendered to HTML.
+ *
+ * @param opts - Filter, pagination, draft visibility, and optional pre-loaded config.
  */
 export function getPosts(opts: GetPostsOptions = {}): Promise<Post[]> {
   return run(
@@ -90,6 +119,7 @@ export {
 } from "./llms";
 export type { LlmsSection } from "./llms";
 export { findPost } from "./content";
+export type { ListPostsResult } from "./content";
 export { registerContentWatcher } from "./dev";
 export type { ContentWatcherOptions } from "./dev";
 export { buildNavTree } from "./nav";
@@ -117,6 +147,7 @@ export type {
   ContentType,
   CollectionConfig,
   Post,
+  PostMeta,
   TocItem,
   NavNode,
   SeoData,

@@ -1,4 +1,4 @@
-import type { NavNode, Post } from "./types";
+import type { NavNode, PostMeta } from "./types";
 import { humanize } from "./util";
 
 /**
@@ -7,10 +7,10 @@ import { humanize } from "./util";
  * Directory segments become category nodes; index files promote their
  * title and URL onto the parent node.
  *
- * @param posts - Posts sorted by `getPostsEffect` (order-prefix aware).
+ * @param posts - Post metadata sorted in docs order (order-prefix aware).
  * @returns Top-level `NavNode` array suitable for a sidebar component.
  */
-export function buildNavTree(posts: Post[]): NavNode[] {
+export function buildNavTree(posts: PostMeta[]): NavNode[] {
   const root: NavNode = { title: "", children: [] };
   const nodes = new Map<string, NavNode>();
 

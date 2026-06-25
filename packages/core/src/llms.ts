@@ -1,5 +1,5 @@
 import { absoluteUrl } from "./util";
-import type { ContentType, Post, VoxxConfig } from "./types";
+import type { ContentType, Post, PostMeta, VoxxConfig } from "./types";
 
 const SECTION_HEADING: Record<ContentType, string> = {
   blog: "Posts",
@@ -14,7 +14,7 @@ const escHeading = (s: string) => oneLine(s);
 /** A titled group of posts for use in `renderLlmsTxtSections`. */
 export interface LlmsSection {
   heading: string;
-  posts: Post[];
+  posts: PostMeta[];
 }
 
 /**
@@ -63,7 +63,7 @@ export function renderLlmsTxtSections(
  * @param config - Resolved Voxx config.
  * @returns `llms.txt` Markdown string.
  */
-export function renderLlmsTxt(posts: Post[], config: VoxxConfig): string {
+export function renderLlmsTxt(posts: PostMeta[], config: VoxxConfig): string {
   return renderLlmsTxtSections(
     [{ heading: SECTION_HEADING[config.content.type], posts }],
     config,
