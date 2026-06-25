@@ -3,7 +3,7 @@ import "../_voxx/voxx-globals.css";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { buildNavTree } from "@prudentbird/voxx-core";
-import { getConfig, getPosts } from "./_data";
+import { getConfig, listPosts } from "./_data";
 import { SidebarNav } from "./_sidebar-nav";
 import { MobileNav } from "./_mobile-nav";
 import { ThemeToggle } from "./_theme-toggle";
@@ -13,7 +13,7 @@ export default async function DocsLayout({
 }: {
   children: ReactNode;
 }) {
-  const [posts, config] = await Promise.all([getPosts(), getConfig()]);
+  const [{ posts }, config] = await Promise.all([listPosts(), getConfig()]);
   const tree = buildNavTree(posts);
   return (
     <div className="voxx voxx-docs">
