@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { constants } from "node:os";
 import { performance } from "node:perf_hooks";
 import {
   capture,
@@ -27,6 +28,12 @@ const TRACKED_COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
 };
 
 /**
+ * Set when a dev session is ended by a signal, so the process can exit with the
+ * conventional 128 + signo code after telemetry has been flushed.
+ */
+let devExitSignal: NodeJS.Signals | null = null;
+
+/**
  * Starts the dev server and keeps the process alive until the user stops it
  * (Ctrl+C / SIGTERM), then shuts the server down. Blocking for the whole
  * session keeps telemetry active for the dev process's full lifetime, so the
@@ -36,9 +43,10 @@ async function runDev(args: string[]): Promise<void> {
   const handle = await dev(args);
   if (!handle) return;
   await new Promise<void>((resolve) => {
-    const stop = () => {
+    const stop = (signal: NodeJS.Signals) => {
       process.off("SIGINT", stop);
       process.off("SIGTERM", stop);
+      devExitSignal = signal;
       resolve();
     };
     process.on("SIGINT", stop);
@@ -144,7 +152,13 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  log.error(err instanceof Error ? err.message : String(err));
-  process.exitCode = 1;
-});
+main()
+  .then(() => {
+    if (devExitSignal) {
+      process.exitCode = 128 + constants.signals[devExitSignal];
+    }
+  })
+  .catch((err) => {
+    log.error(err instanceof Error ? err.message : String(err));
+    process.exitCode = 1;
+  });
