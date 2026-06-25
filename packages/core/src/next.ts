@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { recordCoreUsage } from "./telemetry";
 
 const CORE_PACKAGE = "@prudentbird/voxx-core";
 const DEFAULT_CONTENT_DIR = "content";
@@ -71,6 +72,7 @@ export function withVoxx<T extends object>(
   serverExternalPackages: string[];
   outputFileTracingIncludes: Record<string, string[]>;
 } {
+  recordCoreUsage();
   const base = config as T & ManagedConfig;
   const dirs = contentDirs(options.cwd ?? process.cwd());
   const includes = ["./voxx.json", ...dirs.map((dir) => `./${dir}/**/*`)];

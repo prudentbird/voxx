@@ -10,6 +10,7 @@ import {
   type ListPostsResult,
 } from "./content";
 import { renderMarkdownEffect, type RenderResult } from "./render";
+import { recordCoreUsage } from "./telemetry";
 import {
   DEFAULT_CONFIG,
   type Post,
@@ -19,8 +20,10 @@ import {
 
 type Services = FileSystem.FileSystem | Path.Path;
 
-const run = <A, E>(effect: Effect.Effect<A, E, Services>): Promise<A> =>
-  Effect.runPromise(Effect.provide(effect, NodeContext.layer));
+const run = <A, E>(effect: Effect.Effect<A, E, Services>): Promise<A> => {
+  recordCoreUsage();
+  return Effect.runPromise(Effect.provide(effect, NodeContext.layer));
+};
 
 /** Options accepted by `getPosts` and `getPost`. */
 export interface GetPostsOptions
@@ -50,7 +53,9 @@ export function loadConfig(opts?: LoadConfigOptions): Promise<VoxxConfig> {
  *
  * @param opts - Filter, pagination, draft visibility, and optional pre-loaded config.
  */
-export function listPosts(opts: GetPostsOptions = {}): Promise<ListPostsResult> {
+export function listPosts(
+  opts: GetPostsOptions = {},
+): Promise<ListPostsResult> {
   return run(
     Effect.gen(function* () {
       const config = opts.config ?? (yield* loadConfigEffect(opts));

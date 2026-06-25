@@ -33,6 +33,8 @@ jobs:
 
       - name: Build
         run: pnpm turbo run build --filter=@prudentbird/voxx-core --filter=@prudentbird/voxx
+        env:
+          VOXX_PUBLIC_POSTHOG_KEY: ${{ secrets.VOXX_PUBLIC_POSTHOG_KEY }}
 
       - name: Publish
         run: pnpm changeset publish
