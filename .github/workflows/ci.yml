@@ -28,3 +28,5 @@ jobs:
 
       - name: Build, lint, typecheck, test
         run: pnpm exec turbo run build lint typecheck test --filter=!@examples/*
+        env:
+          SKIP_ENV_VALIDATION: "1"
