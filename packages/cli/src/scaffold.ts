@@ -126,7 +126,7 @@ export async function collectionOps(
       await op(cwd, join(dir, "page.tsx"), "changelog/page.tsx.tpl"),
       await op(cwd, join(dir, "_release-item.tsx"), "changelog/release-item.tsx.tpl"),
       await op(cwd, join(dir, "_release-stream.tsx"), "changelog/release-stream.tsx.tpl"),
-      await op(cwd, join(dir, "releases", "route.ts"), "changelog/releases-route.ts.tpl", {
+      await op(cwd, join(dir, "api", "route.ts"), "changelog/releases-route.ts.tpl", {
         DATA_IMPORT: "../_data",
       }),
     );
@@ -137,7 +137,7 @@ export async function collectionOps(
       await op(cwd, join(dir, "_post-page.tsx"), "blog/post-page.tsx.tpl"),
       await op(cwd, join(dir, "_post-card.tsx"), "blog/post-card.tsx.tpl"),
       await op(cwd, join(dir, "_post-stream.tsx"), "blog/post-stream.tsx.tpl"),
-      await op(cwd, join(dir, "posts", "route.ts"), "blog/posts-route.ts.tpl", {
+      await op(cwd, join(dir, "api", "route.ts"), "blog/posts-route.ts.tpl", {
         DATA_IMPORT: "../_data",
       }),
     );
