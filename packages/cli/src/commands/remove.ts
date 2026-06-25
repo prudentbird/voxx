@@ -1,11 +1,5 @@
 import { relative } from "node:path";
-import {
-  c,
-  deleteFiles,
-  exists,
-  log,
-  type WriteOutcome,
-} from "../util";
+import { c, deleteFiles, exists, log, type WriteOutcome } from "../util";
 import { FEATURE_KEYS, FEATURES, type FeatureKey } from "../features";
 import { featureFilePaths } from "../scaffold";
 import { loadProject, writeConfig } from "../project";
@@ -42,7 +36,8 @@ function printDeletions(
 
 export async function remove(argv: string[]): Promise<void> {
   const [target, ...rest] = argv;
-  const force = rest.includes("--force") || rest.includes("-y") || rest.includes("--yes");
+  const force =
+    rest.includes("--force") || rest.includes("-y") || rest.includes("--yes");
 
   if (!target) {
     log.error(`Usage: voxx remove <${FEATURE_KEYS.join("|")}>`);

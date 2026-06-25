@@ -3,3 +3,5 @@ export async function register() {
   const { registerContentWatcher } = await import("@prudentbird/voxx-core");
   await registerContentWatcher();
 }
+
+export { onRequestError } from "@posthog/next";

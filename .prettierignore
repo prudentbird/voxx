@@ -1,0 +1,10 @@
+# Templates whose {{PLACEHOLDER}} tokens are structural (bare statements,
+# spreads, or YAML frontmatter) and parse as invalid syntax, so Prettier would
+# corrupt or reject them. These are hand-maintained to match formatted output;
+# the template-sync test guards their alignment with the generated example app.
+packages/cli/templates/blog/layout.tsx.tpl
+packages/cli/templates/changelog/layout.tsx.tpl
+packages/cli/templates/docs/layout.tsx.tpl
+packages/cli/templates/shared/data.ts.tpl
+packages/cli/templates/blog/hello-world.md.tpl
+packages/cli/templates/changelog/release.md.tpl

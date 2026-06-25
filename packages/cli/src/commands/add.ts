@@ -94,10 +94,7 @@ async function writeWithWarning(
   return executeWrites(ops, overwrite);
 }
 
-async function addCollection(
-  project: Project,
-  rest: string[],
-): Promise<void> {
+async function addCollection(project: Project, rest: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args: rest,
     options: {
@@ -189,10 +186,7 @@ function featuresFromConfig(project: Project): FeatureFlags {
   return flags;
 }
 
-async function addFeature(
-  project: Project,
-  key: FeatureKey,
-): Promise<void> {
+async function addFeature(project: Project, key: FeatureKey): Promise<void> {
   const features = (project.raw["features"] ?? {}) as Record<string, boolean>;
   const wasEnabled = features[key] === true;
   features[key] = true;
@@ -214,7 +208,9 @@ async function addFeature(
     };
     const ops = await featureAddOps(ctx, key);
     const interactive = canPrompt();
-    results.push(...(await writeWithWarning(ops, project.cwd, false, interactive)));
+    results.push(
+      ...(await writeWithWarning(ops, project.cwd, false, interactive)),
+    );
   }
 
   printResults(`voxx add ${key}`, results);
@@ -223,9 +219,7 @@ async function addFeature(
 export async function add(argv: string[]): Promise<void> {
   const [target, ...rest] = argv;
   if (!target) {
-    log.error(
-      `Usage: voxx add <${FEATURE_KEYS.join("|")}|collection>`,
-    );
+    log.error(`Usage: voxx add <${FEATURE_KEYS.join("|")}|collection>`);
     process.exitCode = 1;
     return;
   }

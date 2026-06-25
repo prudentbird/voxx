@@ -14,7 +14,10 @@ export default async function BlogLayout({
   return (
     <div className="voxx">
       <header className="voxx-header">
-        <Link href={config.site.titleHref ?? "/"} className="voxx-header__title">
+        <Link
+          href={config.site.titleHref ?? "/"}
+          className="voxx-header__title"
+        >
           {config.site.title}
         </Link>
         <div className="voxx-header__actions">

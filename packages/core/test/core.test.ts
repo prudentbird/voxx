@@ -246,7 +246,10 @@ describe("listing, filtering, and pagination", () => {
         }\n---\n\nBody ${i}.\n`,
       );
     }
-    return { ...config, content: { ...config.content, dir } } satisfies VoxxConfig;
+    return {
+      ...config,
+      content: { ...config.content, dir },
+    } satisfies VoxxConfig;
   }
 
   it("returns metadata with a total and renders nothing", async () => {
@@ -578,7 +581,10 @@ describe("seo", () => {
   it("sources authors from the post, preferring per-author urls", () => {
     const multi: Post = {
       ...samplePost,
-      authors: [{ name: "Jane Doe", url: "https://jane.example" }, { name: "Sam" }],
+      authors: [
+        { name: "Jane Doe", url: "https://jane.example" },
+        { name: "Sam" },
+      ],
     };
     const seo = buildSeo(multi, config);
     expect(seo.openGraph?.authors).toEqual(["Jane Doe", "Sam"]);
@@ -589,7 +595,10 @@ describe("seo", () => {
   });
 
   it("uses a single Person object when there is one author", () => {
-    const one = buildSeo({ ...samplePost, authors: [{ name: "Solo" }] }, config);
+    const one = buildSeo(
+      { ...samplePost, authors: [{ name: "Solo" }] },
+      config,
+    );
     expect(one.jsonLd?.["author"]).toEqual({ "@type": "Person", name: "Solo" });
   });
 });

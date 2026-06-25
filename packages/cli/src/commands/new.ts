@@ -60,7 +60,9 @@ async function existingSlugs(dir: string): Promise<Set<string>> {
       const { rest } = splitDatePrefix(entry.replace(MD_RE, ""));
       slugs.add(slugify(splitOrderPrefix(rest).rest));
     }
-  } catch {}
+  } catch {
+    return slugs;
+  }
   return slugs;
 }
 

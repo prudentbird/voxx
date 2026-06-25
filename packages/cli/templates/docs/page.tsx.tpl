@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { buildSeo, serializeJsonLd } from "@prudentbird/voxx-core";
-import {
-  getConfig,
-  getPost,
-  listPosts,
-  listReachablePosts,
-} from "../_data";
+import { getConfig, getPost, listPosts, listReachablePosts } from "../_data";
 import { toMetadata } from "../_metadata";
 import { DocPage } from "../_doc-page";
 
@@ -41,7 +36,9 @@ export default async function DocRoute({ params }: Params) {
           <article className="voxx-article">
             <div className="voxx-empty">
               <p>No pages yet.</p>
-              <p>Add a Markdown file to your content folder to start your docs.</p>
+              <p>
+                Add a Markdown file to your content folder to start your docs.
+              </p>
             </div>
           </article>
         </div>

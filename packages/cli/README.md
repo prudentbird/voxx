@@ -60,6 +60,14 @@ Renders the whole site to static HTML in `./dist` — post list, docs tree with 
 
 A preview server for static sites: builds to a temp directory, watches `voxx.json` and your content folders, rebuilds on change, and serves the result on `--port` (default 4321). Drafts are included by default so you can review them at their real URLs.
 
+### `voxx telemetry [status|enable|disable]`
+
+Manages anonymous usage telemetry. `status` prints the current resolved state (and any active env override), `disable` opts out, `enable` opts back in.
+
+Voxx reports a single anonymous event per command — the command name, whether it succeeded, its duration, and the package/Node/OS versions. It **never** collects arguments, file paths, names, or content. The CLI prints a one-time notice on first run.
+
+Opt out persistently with `voxx telemetry disable`, or per-invocation with `VOXX_TELEMETRY_DISABLED=1`, `DO_NOT_TRACK=1`, or `CI=1` (telemetry is also off automatically in CI). The opt-out state lives in `${XDG_STATE_HOME:-~/.local/state}/voxx/telemetry.json`.
+
 ## Content conventions
 
 - Folders become docs sections; `index.md` is a section's landing page.

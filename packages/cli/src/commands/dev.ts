@@ -49,7 +49,9 @@ export async function serveFile(outDir: string, urlPath: string) {
       const type =
         MIME[extname(path).toLowerCase()] ?? "application/octet-stream";
       return { status: 200, type, body };
-    } catch {}
+    } catch {
+      continue;
+    }
   }
   return {
     status: 404,
@@ -173,12 +175,6 @@ export async function dev(argv: string[]): Promise<DevHandle | undefined> {
         void rm(outDir, { recursive: true, force: true }).finally(resolve);
       });
     });
-
-  const shutdown = () => {
-    void close().then(() => process.exit(0));
-  };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
 
   return { port, close };
 }

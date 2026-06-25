@@ -106,10 +106,7 @@ async function findRootLayout(
  * @param cwd - Project root.
  * @param appDir - App router directory relative to `cwd`.
  */
-async function splitRootLayout(
-  cwd: string,
-  appDir: string,
-): Promise<boolean> {
+async function splitRootLayout(cwd: string, appDir: string): Promise<boolean> {
   const siteDir = join(cwd, appDir, "(site)");
   const moved: string[] = [];
   for (const file of [
@@ -318,8 +315,7 @@ async function resolveInteractive(
   let createdAppDir: string | null = null;
 
   if (!hasNext) {
-    const chosen =
-      flags.next ? "next" : flags.static ? "static" : undefined;
+    const chosen = flags.next ? "next" : flags.static ? "static" : undefined;
     mode =
       chosen ??
       (await promptSelect<"static" | "next">({
@@ -395,7 +391,8 @@ async function resolveInteractive(
               : "Use lowercase letters, numbers, and dashes.",
         });
     const base = single && flags.base ? normalizeBase(flags.base) : undefined;
-    const dir = single && flags.dir ? flags.dir : collectionDir(mode, appDir, name);
+    const dir =
+      single && flags.dir ? flags.dir : collectionDir(mode, appDir, name);
     const collection = defaultCollection(type, name);
     collections.push({
       ...collection,
@@ -512,9 +509,7 @@ async function resolveHeadless(
     return {
       ...collection,
       dir: single && flags.dir ? flags.dir : collectionDir(mode, appDir, name),
-      ...(single && flags.base
-        ? { basePath: normalizeBase(flags.base) }
-        : {}),
+      ...(single && flags.base ? { basePath: normalizeBase(flags.base) } : {}),
     };
   });
 
@@ -855,11 +850,7 @@ async function scaffoldPlan(
   });
 }
 
-function prefixFor(
-  startCwd: string,
-  cwd: string,
-  plan: ResolvedPlan,
-): string {
+function prefixFor(startCwd: string, cwd: string, plan: ResolvedPlan): string {
   if (plan.createdAppDir) return `${relative(startCwd, cwd)}/`;
   if (cwd !== startCwd) return `${relative(startCwd, cwd)}/`;
   return "";

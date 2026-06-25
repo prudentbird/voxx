@@ -163,7 +163,9 @@ describe("changelog build output structure", () => {
 
 describe("site.titleHref header link", () => {
   it("points the blog header title at titleHref when set, site root otherwise", async () => {
-    await writeConfig({ site: { title: "Test Site", url: "https://test.dev" } });
+    await writeConfig({
+      site: { title: "Test Site", url: "https://test.dev" },
+    });
     await writeFileAt(
       "first.md",
       "---\ntitle: First Post\ndate: 2026-01-01\n---\n\nBody one.\n",
@@ -220,9 +222,9 @@ describe("site.titleHref header link", () => {
     await writeFileAt("index.md", "---\ntitle: Welcome\n---\n\nIntro.\n");
     await build([]);
     const page = await readDom("dist/docs/index.html");
-    expect(
-      page.querySelector(".voxx-docs__title")?.getAttribute("href"),
-    ).toBe("https://test.dev");
+    expect(page.querySelector(".voxx-docs__title")?.getAttribute("href")).toBe(
+      "https://test.dev",
+    );
   });
 });
 

@@ -3,7 +3,12 @@
 The portable content engine behind [Voxx](https://github.com/prudentbird/voxx): point it at a folder of markdown and get SEO-ready data for a blog, a docs site, or a changelog.
 
 ```ts
-import { listPosts, getPost, buildNavTree, buildSeo } from "@prudentbird/voxx-core";
+import {
+  listPosts,
+  getPost,
+  buildNavTree,
+  buildSeo,
+} from "@prudentbird/voxx-core";
 
 const { posts, total } = await listPosts({ limit: 10 }); // metadata, no rendering
 const post = await getPost("getting-started/install"); // renders just this post
@@ -38,6 +43,38 @@ const docs = await getPosts({ collection: "docs" });
 
 - `@prudentbird/voxx-core` — plain Promise API.
 - `@prudentbird/voxx-core/effect` — the raw Effect programs, schemas, and tagged errors.
+- `@prudentbird/voxx-core/telemetry` — the anonymous usage-telemetry engine shared with the `voxx` CLI.
 - `@prudentbird/voxx-core/theme/voxx.css` — token-aware default styles (inherits shadcn design tokens when present).
 
 Scaffolding lives in the `voxx` CLI; this package has no opinion about your framework.
+
+## Telemetry
+
+The engine reports a single anonymous `core_used` event the first time you call
+any data function (`loadConfig`, `getPosts`, `renderMarkdown`, …) or `withVoxx`
+in a process — at most one event per process. It also reports an anonymous
+`core_api_call` event for each public core API call so we can understand which
+parts of the engine are used, whether they succeed, how long they take, and the
+rough shape of the work being done. Both events are **anonymous, non-blocking,
+and privacy-preserving**.
+
+What is sent: a randomly generated install id, the package version, the Node
+version, the OS platform/arch, the public API name, success/failure, duration,
+content type, option flags, feature flags, result counts where relevant, and
+sanitized error tags/names/codes for failures or recoverable internal issues.
+What is **never** sent: arguments, file paths, slugs, collection names, post
+names, titles, error messages, or content.
+
+It is a no-op in published builds without an embedded project key, and it never
+delays your process — events are flushed on `beforeExit`, raced against a short
+timeout.
+
+**Opt out** at any time by setting any of these environment variables to a
+truthy value:
+
+- `VOXX_TELEMETRY_DISABLED=1`
+- `DO_NOT_TRACK=1`
+- `CI=1` (also auto-disables in CI)
+
+The persistent opt-out toggled by `voxx telemetry disable` is stored in
+`${XDG_STATE_HOME:-~/.local/state}/voxx/telemetry.json`.

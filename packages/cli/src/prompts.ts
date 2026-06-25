@@ -44,9 +44,7 @@ export async function promptText(opts: {
       placeholder: opts.placeholder,
       defaultValue: opts.defaultValue,
       initialValue: opts.defaultValue,
-      validate: opts.validate
-        ? (v) => opts.validate!(v ?? "")
-        : undefined,
+      validate: opts.validate ? (v) => opts.validate!(v ?? "") : undefined,
     }),
   );
   return (value ?? opts.defaultValue ?? "").trim();

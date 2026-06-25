@@ -608,7 +608,9 @@ export async function build(argv: string[]): Promise<void> {
       log.warn(
         `drafts: true on ${publishing
           .map((col) => `"${col.name}"`)
-          .join(", ")} — draft posts are published as normal, listed posts. Use drafts: "unlisted" to build them as reachable-by-URL previews that stay hidden from listings and feeds.`,
+          .join(
+            ", ",
+          )} — draft posts are published as normal, listed posts. Use drafts: "unlisted" to build them as reachable-by-URL previews that stay hidden from listings and feeds.`,
       );
     }
   }

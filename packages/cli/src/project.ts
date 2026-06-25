@@ -123,8 +123,5 @@ export async function loadProject(cwd: string): Promise<Project | null> {
  * @param raw - Config object to serialize.
  */
 export async function writeConfig(cwd: string, raw: RawConfig): Promise<void> {
-  await writeFile(
-    join(cwd, "voxx.json"),
-    `${JSON.stringify(raw, null, 2)}\n`,
-  );
+  await writeFile(join(cwd, "voxx.json"), `${JSON.stringify(raw, null, 2)}\n`);
 }

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PostHogProvider, PostHogPageView } from "@posthog/next";
 import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 
 const outfit = Outfit({
@@ -98,7 +99,15 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          <PostHogProvider
+            clientOptions={{
+              api_host: "/ingest",
+              capture_performance: { web_vitals: true },
+            }}
+          >
+            <PostHogPageView />
+            {children}
+          </PostHogProvider>
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

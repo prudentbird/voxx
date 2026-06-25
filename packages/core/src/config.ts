@@ -206,7 +206,7 @@ export const loadConfigEffect = (opts: LoadConfigOptions = {}) =>
 
     const data = yield* Effect.try({
       try: () => JSON.parse(raw) as unknown,
-      catch: (cause) =>
+      catch: (cause: unknown) =>
         new ConfigError({ message: `${configPath} is not valid JSON`, cause }),
     });
 
