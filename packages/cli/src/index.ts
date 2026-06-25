@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+import { performance } from "node:perf_hooks";
+import {
+  capture,
+  getTelemetryState,
+  markNoticeShown,
+  shouldShowNotice,
+  shutdownTelemetry,
+} from "@prudentbird/voxx-core/telemetry";
 import { c, log } from "./util";
 import { init } from "./commands/init";
 import { add } from "./commands/add";
@@ -6,6 +14,17 @@ import { remove } from "./commands/remove";
 import { build } from "./commands/build";
 import { dev } from "./commands/dev";
 import { newPost } from "./commands/new";
+import { telemetry } from "./commands/telemetry";
+
+const TRACKED_COMMANDS = new Set([
+  "init",
+  "add",
+  "remove",
+  "new",
+  "build",
+  "dev",
+  "telemetry",
+]);
 
 const HELP = `${c.bold("voxx")} — a zero-friction, file-based CMS for blogs and docs
 
@@ -18,6 +37,7 @@ ${c.bold("Usage:")}
   voxx new "Title" [--collection <name>] [--slug <slug>] [--dir <content>] [--date <YYYY-MM-DD>] [--flat] [--section <path>] [--order <n>] [--index]
   voxx build [--out <dir>] [--drafts]
   voxx dev [--port <n>] [--drafts]
+  voxx telemetry [status|enable|disable]   Manage anonymous usage telemetry
 
 ${c.bold("Examples:")}
   voxx init                 Set up Voxx interactively (prompts for type, name, features)
@@ -31,8 +51,30 @@ ${c.bold("Examples:")}
   voxx dev                  Preview the static site locally, rebuilding on change
 `;
 
-async function main(): Promise<void> {
-  const [cmd, ...rest] = process.argv.slice(2);
+/**
+ * Prints the one-time, anonymous-telemetry opt-out notice on first tracked run,
+ * then records that it has been shown. Best-effort and silent on any failure.
+ */
+async function showTelemetryNotice(): Promise<void> {
+  try {
+    const state = await getTelemetryState();
+    if (!state.hasKey || !state.enabled) return;
+    if (!(await shouldShowNotice())) return;
+    log.info(
+      c.dim(
+        "Voxx collects anonymous usage telemetry (command, duration, success, versions, OS) to improve the tool. No content, paths, names, or arguments are collected. Opt out with `voxx telemetry disable` or DO_NOT_TRACK=1.",
+      ),
+    );
+    await markNoticeShown();
+  } catch {
+    return;
+  }
+}
+
+async function dispatch(
+  cmd: string | undefined,
+  rest: string[],
+): Promise<void> {
   switch (cmd) {
     case "init":
       await init(rest);
@@ -52,6 +94,9 @@ async function main(): Promise<void> {
     case "dev":
       await dev(rest);
       break;
+    case "telemetry":
+      await telemetry(rest);
+      break;
     case undefined:
     case "-h":
     case "--help":
@@ -61,6 +106,35 @@ async function main(): Promise<void> {
       log.error(`Unknown command: ${cmd}`);
       log.info(HELP);
       process.exitCode = 1;
+  }
+}
+
+async function main(): Promise<void> {
+  const [cmd, ...rest] = process.argv.slice(2);
+  const tracked = cmd !== undefined && TRACKED_COMMANDS.has(cmd);
+  if (tracked) await showTelemetryNotice();
+
+  const start = performance.now();
+  let threw = false;
+  try {
+    await dispatch(cmd, rest);
+  } catch (err) {
+    threw = true;
+    throw err;
+  } finally {
+    if (tracked) {
+      const success = !threw && !process.exitCode;
+      await capture(
+        "command",
+        {
+          command: cmd,
+          success,
+          durationMs: Math.round(performance.now() - start),
+        },
+        { source: "cli", version: process.env.VOXX_VERSION ?? "" },
+      );
+      await shutdownTelemetry();
+    }
   }
 }
 
