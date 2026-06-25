@@ -69,13 +69,13 @@ function stateFile(): string {
   return join(stateDir(), "telemetry.json");
 }
 
+/** Process-local view of the persisted state, honored even if a write fails. */
+let cachedState: TelemetryState | null = null;
+
+/** Persists telemetry state to disk. Throws if the state dir is unwritable. */
 async function writeState(state: TelemetryState): Promise<void> {
-  try {
-    await mkdir(stateDir(), { recursive: true });
-    await writeFile(stateFile(), `${JSON.stringify(state, null, 2)}\n`);
-  } catch {
-    return;
-  }
+  await mkdir(stateDir(), { recursive: true });
+  await writeFile(stateFile(), `${JSON.stringify(state, null, 2)}\n`);
 }
 
 async function readPersistedState(): Promise<TelemetryState | null> {
@@ -101,14 +101,19 @@ async function readPersistedState(): Promise<TelemetryState | null> {
  * falls back to an in-memory identity for the current process.
  */
 async function loadState(): Promise<TelemetryState> {
+  if (cachedState) return cachedState;
   const existing = await readPersistedState();
-  if (existing) return existing;
+  if (existing) {
+    cachedState = existing;
+    return existing;
+  }
   const created: TelemetryState = {
     distinctId: randomUUID(),
     enabled: true,
     noticeShown: false,
   };
-  await writeState(created);
+  cachedState = created;
+  await writeState(created).catch(() => {});
   return created;
 }
 
@@ -310,7 +315,9 @@ export async function getTelemetryState(): Promise<TelemetryStatus> {
  */
 export async function setTelemetryEnabled(enabled: boolean): Promise<void> {
   const state = await loadState();
-  await writeState({ ...state, enabled });
+  const next = { ...state, enabled };
+  cachedState = next;
+  await writeState(next);
 }
 
 /**
@@ -331,7 +338,9 @@ export async function markNoticeShown(): Promise<void> {
   try {
     const state = await loadState();
     if (state.noticeShown) return;
-    await writeState({ ...state, noticeShown: true });
+    const next = { ...state, noticeShown: true };
+    cachedState = next;
+    await writeState(next);
   } catch {
     return;
   }
