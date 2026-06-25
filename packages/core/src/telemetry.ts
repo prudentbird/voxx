@@ -298,12 +298,22 @@ function errorProps(error: unknown): Record<string, unknown> {
  */
 export async function getTelemetryState(): Promise<TelemetryStatus> {
   const override = envOverride();
+  const hasKey = PROJECT_KEY.length > 0;
+  if (override !== null || !hasKey) {
+    const existing = cachedState ?? (await readPersistedState());
+    return {
+      enabled: false,
+      envOverride: override,
+      distinctId: existing?.distinctId ?? "",
+      hasKey,
+    };
+  }
   const state = await loadState();
   return {
-    enabled: state.enabled && override === null,
-    envOverride: override,
+    enabled: state.enabled,
+    envOverride: null,
     distinctId: state.distinctId,
-    hasKey: PROJECT_KEY.length > 0,
+    hasKey,
   };
 }
 
