@@ -130,7 +130,7 @@
         "preset": {
           "type": "string",
           "enum": [
-            "shadcn"
+            "default"
           ]
         },
         "css": {

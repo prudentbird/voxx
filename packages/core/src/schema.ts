@@ -85,7 +85,7 @@ export const ConfigInput = Schema.Struct({
   ),
   theme: Schema.optional(
     Schema.Struct({
-      preset: Schema.optional(Schema.Literal("shadcn")),
+      preset: Schema.optional(Schema.Literal("default")),
       css: Schema.optional(Schema.NullOr(Schema.String)),
       codeTheme: Schema.optional(Schema.String),
     }),

@@ -44,7 +44,7 @@ export interface VoxxConfig {
   };
   collections: CollectionConfig[];
   theme: {
-    preset: "shadcn";
+    preset: "default";
     /** Path to a custom CSS file, or `null` to use the preset default. */
     css: string | null;
     /** One or two Shiki theme names separated by a space (light dark). */
@@ -186,7 +186,7 @@ export const DEFAULT_CONFIG: VoxxConfig = {
     },
   ],
   theme: {
-    preset: "shadcn",
+    preset: "default",
     css: null,
     codeTheme: "github-light github-dark",
   },
