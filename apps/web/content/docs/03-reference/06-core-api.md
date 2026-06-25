@@ -119,6 +119,19 @@ The small utilities the engine uses are exported too: `slugify`,
 `readingTimeMinutes`, `splitDatePrefix`, `splitOrderPrefix`, `humanize`,
 `parseVersion`, and `escapeXml`.
 
+## Telemetry
+
+The Promise API records anonymous package telemetry unless telemetry is opted
+out. Voxx sends one `core_used` event per process and one `core_api_call` event
+per public API call. Per-call events include the API name, success/failure,
+duration, content type, option flags, feature flags, and result counts where
+relevant. Failed API calls and recoverable internal issues include sanitized
+error tags, names, or codes.
+
+Telemetry never includes arguments, file paths, slugs, collection names, post
+names, titles, error messages, or content. Opt out with `VOXX_TELEMETRY_DISABLED=1`,
+`DO_NOT_TRACK=1`, `CI=1`, or `voxx telemetry disable`.
+
 ## Dev content watcher
 
 `registerContentWatcher(options?)` powers [live reload](/docs/getting-started/docs#live-reload)
