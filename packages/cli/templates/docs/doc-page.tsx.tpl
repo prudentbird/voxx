@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Post, VoxxConfig } from "@prudentbird/voxx-core";
+import type { Post, PostMeta, VoxxConfig } from "@prudentbird/voxx-core";
 import { OnThisPage } from "./_on-this-page";
 
 export function DocPage({
@@ -10,8 +10,8 @@ export function DocPage({
 }: {
   post: Post;
   config: VoxxConfig;
-  prev?: Post | null;
-  next?: Post | null;
+  prev?: PostMeta | null;
+  next?: PostMeta | null;
 }) {
   const showToc = config.features.toc && post.toc.length > 0;
 
