@@ -13,7 +13,7 @@
     "drafts": false
   },
   "theme": {
-    "preset": "shadcn",
+    "preset": "default",
     "css": null,
     "codeTheme": "github-light github-dark"
   },
