@@ -96,6 +96,28 @@ export function getPost(
 }
 
 /**
+ * Like {@link getPost}, but resolves to `null` when no post matches the slug
+ * instead of throwing `PostNotFound`. Render and config failures still reject,
+ * so a genuine 404 stays distinct from a broken post or config.
+ *
+ * @param slug - Slash-separated path, e.g. `"getting-started/install"`.
+ * @param opts - Collection filter, draft visibility, and optional pre-loaded config.
+ */
+export function getPostOrNull(
+  slug: string,
+  opts: GetPostsOptions = {},
+): Promise<Post | null> {
+  return run(
+    Effect.gen(function* () {
+      const config = opts.config ?? (yield* loadConfigEffect(opts));
+      return yield* getPostEffect(config, slug, opts).pipe(
+        Effect.catchTag("PostNotFound", () => Effect.succeed(null)),
+      );
+    }),
+  );
+}
+
+/**
  * Converts a Markdown string to HTML with syntax highlighting and TOC extraction.
  *
  * @param markdown - Raw Markdown source.
