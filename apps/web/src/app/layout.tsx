@@ -5,7 +5,6 @@ import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider, PostHogPageView } from "@posthog/next";
-import { PostHogRelease } from "~/components/posthog-release";
 import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 
 const outfit = Outfit({
@@ -107,7 +106,6 @@ export default function RootLayout({
             }}
           >
             <PostHogPageView />
-            <PostHogRelease />
             {children}
           </PostHogProvider>
         </ThemeProvider>
