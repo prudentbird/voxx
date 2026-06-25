@@ -59,6 +59,13 @@ scans the collection for the match and renders only that post. Drafts follow
 the same visibility rules as `listPosts` (pass `includeDrafts: true` to preview
 them); rejects with `PostNotFound` when nothing matches.
 
+### `getPostOrNull(slug, options?)`
+
+Like `getPost`, but resolves to `null` when no slug matches instead of
+rejecting — ideal for a route that renders one post and `notFound()`s when it
+is missing. Render and config failures still reject, so a genuine 404 stays
+distinct from a broken post.
+
 ### `findPost(posts, slug)`
 
 The pure lookup over a loaded list (`PostMeta[]` or `Post[]`), exported so a
