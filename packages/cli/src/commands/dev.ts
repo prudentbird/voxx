@@ -49,7 +49,9 @@ export async function serveFile(outDir: string, urlPath: string) {
       const type =
         MIME[extname(path).toLowerCase()] ?? "application/octet-stream";
       return { status: 200, type, body };
-    } catch {}
+    } catch {
+      continue;
+    }
   }
   return {
     status: 404,
