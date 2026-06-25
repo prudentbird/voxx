@@ -1,6 +1,11 @@
+import { performance } from "node:perf_hooks";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { recordCoreUsage } from "./telemetry";
+import {
+  recordCoreApiCall,
+  recordCoreIssue,
+  recordCoreUsage,
+} from "./telemetry";
 
 const CORE_PACKAGE = "@prudentbird/voxx-core";
 const DEFAULT_CONTENT_DIR = "content";
@@ -44,7 +49,8 @@ function contentDirs(cwd: string): string[] {
     }
     if (data.content?.dir) dirs.add(data.content.dir);
     return dirs.size > 0 ? [...dirs] : [DEFAULT_CONTENT_DIR];
-  } catch {
+  } catch (error) {
+    recordCoreIssue("with_voxx_config_read_failed", error);
     return [DEFAULT_CONTENT_DIR];
   }
 }
@@ -73,20 +79,33 @@ export function withVoxx<T extends object>(
   outputFileTracingIncludes: Record<string, string[]>;
 } {
   recordCoreUsage();
-  const base = config as T & ManagedConfig;
-  const dirs = contentDirs(options.cwd ?? process.cwd());
-  const includes = ["./voxx.json", ...dirs.map((dir) => `./${dir}/**/*`)];
-  const existing = base.outputFileTracingIncludes ?? {};
+  const start = performance.now();
+  try {
+    const base = config as T & ManagedConfig;
+    const dirs = contentDirs(options.cwd ?? process.cwd());
+    const includes = ["./voxx.json", ...dirs.map((dir) => `./${dir}/**/*`)];
+    const existing = base.outputFileTracingIncludes ?? {};
 
-  return {
-    ...base,
-    cacheComponents: base.cacheComponents ?? true,
-    serverExternalPackages: [
-      ...new Set([...(base.serverExternalPackages ?? []), CORE_PACKAGE]),
-    ],
-    outputFileTracingIncludes: {
-      ...existing,
-      "/*": [...new Set([...(existing["/*"] ?? []), ...includes])],
-    },
-  };
+    const nextConfig = {
+      ...base,
+      cacheComponents: base.cacheComponents ?? true,
+      serverExternalPackages: [
+        ...new Set([...(base.serverExternalPackages ?? []), CORE_PACKAGE]),
+      ],
+      outputFileTracingIncludes: {
+        ...existing,
+        "/*": [...new Set([...(existing["/*"] ?? []), ...includes])],
+      },
+    };
+    recordCoreApiCall("withVoxx", start, true, {
+      content_dir_count: dirs.length,
+      had_cache_components: base.cacheComponents !== undefined,
+      had_server_external_packages: base.serverExternalPackages !== undefined,
+      had_tracing_includes: base.outputFileTracingIncludes !== undefined,
+    });
+    return nextConfig;
+  } catch (err) {
+    recordCoreApiCall("withVoxx", start, false, {}, err);
+    throw err;
+  }
 }

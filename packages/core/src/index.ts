@@ -1,3 +1,4 @@
+import { performance } from "node:perf_hooks";
 import { Effect } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
@@ -10,19 +11,82 @@ import {
   type ListPostsResult,
 } from "./content";
 import { renderMarkdownEffect, type RenderResult } from "./render";
-import { recordCoreUsage } from "./telemetry";
-import {
-  DEFAULT_CONFIG,
-  type Post,
-  type PostMeta,
-  type VoxxConfig,
-} from "./types";
+import { recordCoreApiCall, recordCoreUsage } from "./telemetry";
+import { DEFAULT_CONFIG, type Post, type VoxxConfig } from "./types";
 
 type Services = FileSystem.FileSystem | Path.Path;
 
-const run = <A, E>(effect: Effect.Effect<A, E, Services>): Promise<A> => {
+type CoreApi =
+  | "loadConfig"
+  | "listPosts"
+  | "getPosts"
+  | "getPost"
+  | "getPostOrNull"
+  | "renderMarkdown";
+
+const collectionType = (
+  opts: GetPostsOptions,
+): VoxxConfig["content"]["type"] | undefined => {
+  if (!opts.config) return undefined;
+  if (!opts.collection) return opts.config.content.type;
+  return opts.config.collections?.find((c) => c.name === opts.collection)?.type;
+};
+
+const optionsTelemetry = (opts: GetPostsOptions): Record<string, unknown> => ({
+  config_source: opts.config
+    ? "provided"
+    : opts.path
+      ? "path"
+      : opts.cwd
+        ? "cwd"
+        : "default",
+  content_type: collectionType(opts),
+  collection_selected: opts.collection !== undefined,
+  include_drafts: opts.includeDrafts === true,
+  reachable: opts.reachable === true,
+  filtered_by_tag: opts.tag !== undefined,
+  filtered_by_category: opts.category !== undefined,
+  paginated: opts.offset !== undefined || opts.limit !== undefined,
+});
+
+const configTelemetry = (config: VoxxConfig): Record<string, unknown> => ({
+  content_type: config.content.type,
+  collection_count: config.collections.length,
+  feature_toc: config.features.toc,
+  feature_rss: config.features.rss,
+  feature_sitemap: config.features.sitemap,
+  feature_robots: config.features.robots,
+  feature_llms_txt: config.features.llmsTxt,
+  feature_tags: config.features.tags,
+  feature_reading_time: config.features.readingTime,
+});
+
+const lengthBucket = (value: string): string => {
+  const length = value.length;
+  if (length < 1_000) return "lt_1k";
+  if (length < 10_000) return "1k_10k";
+  if (length < 100_000) return "10k_100k";
+  return "gte_100k";
+};
+
+const run = <A, E>(
+  api: CoreApi,
+  effect: Effect.Effect<A, E, Services>,
+  props: Record<string, unknown> = {},
+  resultProps: (result: A) => Record<string, unknown> = () => ({}),
+): Promise<A> => {
   recordCoreUsage();
-  return Effect.runPromise(Effect.provide(effect, NodeContext.layer));
+  const start = performance.now();
+  return Effect.runPromise(Effect.provide(effect, NodeContext.layer)).then(
+    (result) => {
+      recordCoreApiCall(api, start, true, { ...props, ...resultProps(result) });
+      return result;
+    },
+    (error: unknown) => {
+      recordCoreApiCall(api, start, false, props, error);
+      throw error;
+    },
+  );
 };
 
 /** Options accepted by `getPosts` and `getPost`. */
@@ -39,7 +103,14 @@ export interface GetPostsOptions
  * @returns Fully resolved `VoxxConfig`.
  */
 export function loadConfig(opts?: LoadConfigOptions): Promise<VoxxConfig> {
-  return run(loadConfigEffect(opts));
+  return run(
+    "loadConfig",
+    loadConfigEffect(opts),
+    {
+      config_source: opts?.path ? "path" : opts?.cwd ? "cwd" : "default",
+    },
+    configTelemetry,
+  );
 }
 
 /**
@@ -57,9 +128,15 @@ export function listPosts(
   opts: GetPostsOptions = {},
 ): Promise<ListPostsResult> {
   return run(
+    "listPosts",
     Effect.gen(function* () {
       const config = opts.config ?? (yield* loadConfigEffect(opts));
       return yield* listPostsEffect(config, opts);
+    }),
+    optionsTelemetry(opts),
+    (result) => ({
+      post_count: result.posts.length,
+      total_count: result.total,
     }),
   );
 }
@@ -74,10 +151,13 @@ export function listPosts(
  */
 export function getPosts(opts: GetPostsOptions = {}): Promise<Post[]> {
   return run(
+    "getPosts",
     Effect.gen(function* () {
       const config = opts.config ?? (yield* loadConfigEffect(opts));
       return yield* getPostsEffect(config, opts);
     }),
+    optionsTelemetry(opts),
+    (posts) => ({ post_count: posts.length }),
   );
 }
 
@@ -93,10 +173,13 @@ export function getPost(
   opts: GetPostsOptions = {},
 ): Promise<Post> {
   return run(
+    "getPost",
     Effect.gen(function* () {
       const config = opts.config ?? (yield* loadConfigEffect(opts));
       return yield* getPostEffect(config, slug, opts);
     }),
+    optionsTelemetry(opts),
+    () => ({ found: true }),
   );
 }
 
@@ -113,12 +196,15 @@ export function getPostOrNull(
   opts: GetPostsOptions = {},
 ): Promise<Post | null> {
   return run(
+    "getPostOrNull",
     Effect.gen(function* () {
       const config = opts.config ?? (yield* loadConfigEffect(opts));
       return yield* getPostEffect(config, slug, opts).pipe(
         Effect.catchTag("PostNotFound", () => Effect.succeed(null)),
       );
     }),
+    optionsTelemetry(opts),
+    (post) => ({ found: post !== null }),
   );
 }
 
@@ -132,7 +218,16 @@ export function renderMarkdown(
   markdown: string,
   config: VoxxConfig = DEFAULT_CONFIG,
 ): Promise<RenderResult> {
-  return run(renderMarkdownEffect(markdown, config));
+  return run(
+    "renderMarkdown",
+    renderMarkdownEffect(markdown, config),
+    {
+      content_type: config.content.type,
+      markdown_length: lengthBucket(markdown),
+      feature_toc: config.features.toc,
+    },
+    (result) => ({ toc_count: result.toc.length }),
+  );
 }
 
 export { buildSeo } from "./seo";

@@ -18,6 +18,7 @@ import { visit } from "unist-util-visit";
 import { toString } from "hast-util-to-string";
 import type { Root } from "hast";
 import { RenderError } from "./errors";
+import { recordCoreIssue } from "./telemetry";
 import type { TocItem, VoxxConfig } from "./types";
 
 /** Result returned by the Markdown renderer. */
@@ -155,7 +156,9 @@ async function ensureLanguages(
   for (const lang of wanted) {
     try {
       await highlighter.loadLanguage(lang);
-    } catch {}
+    } catch (error) {
+      recordCoreIssue("render_language_load_failed", error);
+    }
   }
 }
 
@@ -199,7 +202,7 @@ export const renderMarkdownEffect = (
         toc: (file.data["toc"] as TocItem[] | undefined) ?? [],
       };
     },
-    catch: (cause) =>
+    catch: (cause: unknown) =>
       new RenderError({
         message: `Failed to render markdown: ${String(cause)}`,
         cause,

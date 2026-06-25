@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { arch, homedir, platform } from "node:os";
 import { join } from "node:path";
+import { performance } from "node:perf_hooks";
 import { PostHog } from "posthog-node";
 
 const POSTHOG_HOST = "https://us.i.posthog.com";
@@ -184,6 +185,15 @@ export async function shutdownTelemetry(): Promise<void> {
 }
 
 let coreUsageRecorded = false;
+let flushRegistered = false;
+
+function registerTelemetryFlush(): void {
+  if (flushRegistered) return;
+  flushRegistered = true;
+  process.once("beforeExit", () => {
+    void shutdownTelemetry();
+  });
+}
 
 /**
  * Records a single anonymous `core_used` event for the current process, at most
@@ -194,10 +204,87 @@ let coreUsageRecorded = false;
 export function recordCoreUsage(): void {
   if (coreUsageRecorded) return;
   coreUsageRecorded = true;
-  process.once("beforeExit", () => {
-    void shutdownTelemetry();
-  });
+  registerTelemetryFlush();
   void capture("core_used", {}, { source: "core", version: CORE_VERSION });
+}
+
+/**
+ * Records one anonymous event for a public core API call. The caller is
+ * responsible for passing only low-cardinality, non-identifying props: no
+ * paths, slugs, post names, arguments, or content.
+ */
+export function recordCoreApiCall(
+  api: string,
+  start: number,
+  success: boolean,
+  props: Record<string, unknown> = {},
+  error?: unknown,
+): void {
+  registerTelemetryFlush();
+  void capture(
+    "core_api_call",
+    {
+      ...props,
+      api,
+      success,
+      durationMs: Math.round(performance.now() - start),
+      ...(error ? errorProps(error) : {}),
+    },
+    { source: "core", version: CORE_VERSION },
+  );
+}
+
+/**
+ * Records an anonymous recoverable issue inside core. Use low-cardinality issue
+ * names only and never include paths, slugs, names, arguments, or content.
+ */
+export function recordCoreIssue(
+  issue: string,
+  error?: unknown,
+  props: Record<string, unknown> = {},
+): void {
+  registerTelemetryFlush();
+  void capture(
+    "core_issue",
+    {
+      ...props,
+      issue,
+      ...(error ? errorProps(error) : {}),
+    },
+    { source: "core", version: CORE_VERSION },
+  );
+}
+
+function errorProps(error: unknown): Record<string, unknown> {
+  if (!error || typeof error !== "object") {
+    return { error_type: typeof error };
+  }
+
+  const record = error as {
+    _tag?: unknown;
+    name?: unknown;
+    code?: unknown;
+    cause?: unknown;
+  };
+  const props: Record<string, unknown> = {};
+  if (typeof record._tag === "string") props.error_tag = record._tag;
+  if (typeof record.name === "string") props.error_name = record.name;
+  if (typeof record.code === "string") props.error_code = record.code;
+
+  const cause = record.cause;
+  if (cause && typeof cause === "object") {
+    const causeRecord = cause as { name?: unknown; code?: unknown };
+    if (typeof causeRecord.name === "string") {
+      props.cause_name = causeRecord.name;
+    }
+    if (typeof causeRecord.code === "string") {
+      props.cause_code = causeRecord.code;
+    }
+  }
+
+  return Object.keys(props).length > 0
+    ? props
+    : { error_type: error.constructor?.name ?? "Object" };
 }
 
 /**

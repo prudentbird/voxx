@@ -12,6 +12,7 @@ import { Effect } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
 import { loadConfigEffect } from "./config";
+import { recordCoreIssue } from "./telemetry";
 
 type Services = FileSystem.FileSystem | Path.Path;
 
@@ -49,7 +50,8 @@ function findVersionModules(root: string, depth = 6): string[] {
     let entries: Dirent<string>[];
     try {
       entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
+    } catch (error) {
+      recordCoreIssue("content_watcher_scan_failed", error);
       return;
     }
     for (const entry of entries) {
@@ -99,7 +101,9 @@ export async function registerContentWatcher(
   try {
     const config = await run(loadConfigEffect({ cwd }));
     for (const collection of config.collections) dirs.add(collection.dir);
-  } catch {}
+  } catch (error) {
+    recordCoreIssue("content_watcher_config_load_failed", error);
+  }
 
   const paths = new Set<string>([join(cwd, "voxx.json"), ...dirs]);
 
@@ -117,6 +121,8 @@ export async function registerContentWatcher(
     if (!existsSync(path)) continue;
     try {
       watchers.push(watch(path, { recursive: true }, bump));
-    } catch {}
+    } catch (error) {
+      recordCoreIssue("content_watcher_register_failed", error);
+    }
   }
 }
