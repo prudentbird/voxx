@@ -103,6 +103,13 @@ export default function RootLayout({
             clientOptions={{
               api_host: "/ingest",
               capture_performance: { web_vitals: true },
+              before_send: (event) => {
+                if (event) {
+                  event.properties.deploy_sha =
+                    process.env.NEXT_PUBLIC_DEPLOY_SHA;
+                }
+                return event;
+              },
             }}
           >
             <PostHogPageView />

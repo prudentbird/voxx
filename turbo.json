@@ -8,7 +8,8 @@
     "VOXX_TELEMETRY_DISABLED",
     "XDG_STATE_HOME",
     "POSTHOG_CLI_ENV_ID",
-    "POSTHOG_CLI_API_KEY"
+    "POSTHOG_CLI_API_KEY",
+    "VERCEL_GIT_COMMIT_SHA"
   ],
   "tasks": {
     "build": {
