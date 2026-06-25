@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import { getConfig, getPosts } from "./_data";
-import { ReleaseList } from "./_release-list";
+import { getConfig, getPostsPage, listPosts } from "./_data";
+import { ReleaseItem } from "./_release-item";
+import { ReleaseStream } from "./_release-stream";
+
+const PER_BATCH = 10;
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getConfig();
@@ -11,7 +14,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ChangelogPage() {
-  const [posts, config] = await Promise.all([getPosts(), getConfig()]);
+  const [{ total }, initial, config] = await Promise.all([
+    listPosts(),
+    getPostsPage(0, PER_BATCH),
+    getConfig(),
+  ]);
+  const basePath = config.content.basePath || "/changelog";
 
   return (
     <main className="voxx voxx-index">
@@ -21,7 +29,27 @@ export default async function ChangelogPage() {
           <p className="voxx-index__desc">{config.site.description}</p>
         ) : null}
       </header>
-      <ReleaseList posts={posts} config={config} />
+      {total === 0 ? (
+        <div className="voxx-empty">
+          <p>No releases yet.</p>
+          <p>
+            Add a Markdown file named for the version (e.g. <code>1.0.0.md</code>)
+            to your content folder.
+          </p>
+        </div>
+      ) : (
+        <ReleaseStream
+          initialCount={initial.length}
+          total={total}
+          perBatch={PER_BATCH}
+          endpoint={`${basePath}/releases`}
+          config={config}
+        >
+          {initial.map((post) => (
+            <ReleaseItem key={post.slug} post={post} config={config} />
+          ))}
+        </ReleaseStream>
+      )}
     </main>
   );
 }
