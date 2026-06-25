@@ -32,7 +32,10 @@ const collectionType = (
   return opts.config.collections?.find((c) => c.name === opts.collection)?.type;
 };
 
-const optionsTelemetry = (opts: GetPostsOptions): Record<string, unknown> => ({
+const optionsTelemetry = (
+  opts: GetPostsOptions,
+  reachableDefault = false,
+): Record<string, unknown> => ({
   config_source: opts.config
     ? "provided"
     : opts.path
@@ -43,7 +46,7 @@ const optionsTelemetry = (opts: GetPostsOptions): Record<string, unknown> => ({
   content_type: collectionType(opts),
   collection_selected: opts.collection !== undefined,
   include_drafts: opts.includeDrafts === true,
-  reachable: opts.reachable === true,
+  reachable: opts.reachable ?? reachableDefault,
   filtered_by_tag: opts.tag !== undefined,
   filtered_by_category: opts.category !== undefined,
   paginated: opts.offset !== undefined || opts.limit !== undefined,
@@ -178,7 +181,7 @@ export function getPost(
       const config = opts.config ?? (yield* loadConfigEffect(opts));
       return yield* getPostEffect(config, slug, opts);
     }),
-    optionsTelemetry(opts),
+    optionsTelemetry(opts, true),
     () => ({ found: true }),
   );
 }
@@ -203,7 +206,7 @@ export function getPostOrNull(
         Effect.catchTag("PostNotFound", () => Effect.succeed(null)),
       );
     }),
-    optionsTelemetry(opts),
+    optionsTelemetry(opts, true),
     (post) => ({ found: post !== null }),
   );
 }
