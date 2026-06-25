@@ -16,15 +16,15 @@ import { dev } from "./commands/dev";
 import { newPost } from "./commands/new";
 import { telemetry } from "./commands/telemetry";
 
-const TRACKED_COMMANDS = new Set([
-  "init",
-  "add",
-  "remove",
-  "new",
-  "build",
-  "dev",
-  "telemetry",
-]);
+const TRACKED_COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
+  init,
+  add,
+  remove,
+  new: newPost,
+  build,
+  dev: (args) => dev(args).then(() => {}),
+  telemetry,
+};
 
 const HELP = `${c.bold("voxx")} — a zero-friction, file-based CMS for blogs and docs
 
@@ -75,43 +75,25 @@ async function dispatch(
   cmd: string | undefined,
   rest: string[],
 ): Promise<void> {
-  switch (cmd) {
-    case "init":
-      await init(rest);
-      break;
-    case "add":
-      await add(rest);
-      break;
-    case "remove":
-      await remove(rest);
-      break;
-    case "new":
-      await newPost(rest);
-      break;
-    case "build":
-      await build(rest);
-      break;
-    case "dev":
-      await dev(rest);
-      break;
-    case "telemetry":
-      await telemetry(rest);
-      break;
-    case undefined:
-    case "-h":
-    case "--help":
-      log.info(HELP);
-      break;
-    default:
-      log.error(`Unknown command: ${cmd}`);
-      log.info(HELP);
-      process.exitCode = 1;
+  const handler = cmd !== undefined ? TRACKED_COMMANDS[cmd] : undefined;
+  if (handler) {
+    await handler(rest);
+  } else if (
+    cmd === undefined ||
+    cmd === "-h" ||
+    cmd === "--help"
+  ) {
+    log.info(HELP);
+  } else {
+    log.error(`Unknown command: ${cmd}`);
+    log.info(HELP);
+    process.exitCode = 1;
   }
 }
 
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
-  const tracked = cmd !== undefined && TRACKED_COMMANDS.has(cmd);
+  const tracked = cmd !== undefined && cmd in TRACKED_COMMANDS;
   if (tracked) await showTelemetryNotice();
 
   const start = performance.now();

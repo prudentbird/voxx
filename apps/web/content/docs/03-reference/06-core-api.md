@@ -121,7 +121,7 @@ The small utilities the engine uses are exported too: `slugify`,
 
 ## Telemetry
 
-The Promise API records anonymous package telemetry unless telemetry is opted
+The Promise API records anonymous package telemetry unless the user has opted
 out. Voxx sends one `core_used` event per process and one `core_api_call` event
 per public API call. Per-call events include the API name, success/failure,
 duration, content type, option flags, feature flags, and result counts where

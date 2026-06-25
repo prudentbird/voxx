@@ -104,7 +104,6 @@ export default function RootLayout({
               api_host: "/ingest",
               capture_performance: { web_vitals: true },
             }}
-            bootstrapFlags
           >
             <PostHogPageView />
             {children}
