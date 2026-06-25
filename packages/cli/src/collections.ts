@@ -121,7 +121,7 @@ export function buildVoxxJson(
   }
 
   out["theme"] = {
-    preset: "shadcn",
+    preset: "default",
     css: null,
     codeTheme: "github-light github-dark",
   };
