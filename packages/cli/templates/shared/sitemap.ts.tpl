@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@prudentbird/voxx-core";
-import { getConfig, getPosts } from "{{DATA_IMPORT}}";
+import { getConfig, listPosts } from "{{DATA_IMPORT}}";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, config] = await Promise.all([getPosts(), getConfig()]);
+  const [{ posts }, config] = await Promise.all([listPosts(), getConfig()]);
 
   const index = {
     url: absoluteUrl(config.site.url, config.content.basePath),

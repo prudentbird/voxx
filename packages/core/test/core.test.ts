@@ -13,6 +13,7 @@ import {
   findPost,
   getPost,
   getPosts,
+  listPosts,
   joinPath,
   readingTimeMinutes,
   renderLlmsTxt,
@@ -229,6 +230,72 @@ describe("content", () => {
     const posts = await getPosts({ config: cfg });
     expect(posts[0]!.slug).toBe("my-prefixed-post");
     expect(posts[0]!.date.slice(0, 10)).toBe("2026-04-01");
+  });
+});
+
+describe("listing, filtering, and pagination", () => {
+  async function makeManyPostsDir() {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-list-"));
+    for (let i = 1; i <= 5; i++) {
+      const month = String(i).padStart(2, "0");
+      const tag = i % 2 === 0 ? "even" : "odd";
+      await writeFile(
+        join(dir, `post-${i}.md`),
+        `---\ntitle: Post ${i}\ndate: 2026-${month}-01\ntags: [${tag}]\ncategory: ${
+          i <= 2 ? "news" : "guides"
+        }\n---\n\nBody ${i}.\n`,
+      );
+    }
+    return { ...config, content: { ...config.content, dir } } satisfies VoxxConfig;
+  }
+
+  it("returns metadata with a total and renders nothing", async () => {
+    const cfg = await makeManyPostsDir();
+    const { posts, total } = await listPosts({ config: cfg });
+    expect(total).toBe(5);
+    expect(posts.map((p) => p.slug)).toEqual([
+      "post-5",
+      "post-4",
+      "post-3",
+      "post-2",
+      "post-1",
+    ]);
+    // PostMeta carries no rendered body.
+    expect(posts[0]).not.toHaveProperty("html");
+    expect(posts[0]).not.toHaveProperty("content");
+  });
+
+  it("paginates with offset and limit while reporting the full total", async () => {
+    const cfg = await makeManyPostsDir();
+    const page1 = await listPosts({ config: cfg, limit: 2 });
+    expect(page1.total).toBe(5);
+    expect(page1.posts.map((p) => p.slug)).toEqual(["post-5", "post-4"]);
+
+    const page2 = await listPosts({ config: cfg, limit: 2, offset: 2 });
+    expect(page2.total).toBe(5);
+    expect(page2.posts.map((p) => p.slug)).toEqual(["post-3", "post-2"]);
+
+    const page3 = await listPosts({ config: cfg, limit: 2, offset: 4 });
+    expect(page3.posts.map((p) => p.slug)).toEqual(["post-1"]);
+  });
+
+  it("filters by tag and category, counting only matches in total", async () => {
+    const cfg = await makeManyPostsDir();
+    const even = await listPosts({ config: cfg, tag: "even" });
+    expect(even.total).toBe(2);
+    expect(even.posts.map((p) => p.slug)).toEqual(["post-4", "post-2"]);
+
+    const news = await listPosts({ config: cfg, category: "news" });
+    expect(news.total).toBe(2);
+    expect(news.posts.map((p) => p.slug)).toEqual(["post-2", "post-1"]);
+  });
+
+  it("applies filters and pagination to getPosts before rendering", async () => {
+    const cfg = await makeManyPostsDir();
+    const posts = await getPosts({ config: cfg, tag: "odd", limit: 2 });
+    expect(posts.map((p) => p.slug)).toEqual(["post-5", "post-3"]);
+    // getPosts renders only what it returns.
+    expect(posts[0]!.html).toContain("Body 5");
   });
 });
 

@@ -14,11 +14,11 @@ import {
   splitDatePrefix,
   splitOrderPrefix,
 } from "./util";
-import type { Post, VoxxConfig } from "./types";
+import type { Post, PostMeta, VoxxConfig } from "./types";
 
 const MD_RE = /\.md$/;
 
-/** Options for filtering posts returned by `getPostsEffect`. */
+/** Options for filtering and paginating posts returned by the content readers. */
 export interface GetPostsEffectOptions {
   /** When `true`, includes posts whose frontmatter sets `draft: true`, regardless of the `drafts` config. */
   includeDrafts?: boolean;
@@ -30,16 +30,41 @@ export interface GetPostsEffectOptions {
   reachable?: boolean;
   /** Restricts results to a named collection defined in `config.collections`. */
   collection?: string;
+  /** Keeps only posts whose `tags` include this value. */
+  tag?: string;
+  /** Keeps only posts whose `category` equals this value. */
+  category?: string;
+  /** Skips this many posts from the start of the sorted, filtered set. */
+  offset?: number;
+  /** Caps the result to this many posts. When unset, returns all remaining. */
+  limit?: number;
 }
+
+/** Result of `listPostsEffect` — a page of metadata plus the unpaginated total. */
+export interface ListPostsResult {
+  /** Post metadata for the requested page, in the collection's natural order. */
+  posts: PostMeta[];
+  /** Total posts matching the filters, before `offset`/`limit` are applied. */
+  total: number;
+}
+
 const orderKey = (order: number | undefined, slug: string) =>
   `${String(order ?? 9999).padStart(4, "0")} ${slug}`;
 
-interface BuiltPost {
-  post: Post;
+/**
+ * A post's metadata plus the bookkeeping needed to render it later. `content`
+ * is intentionally absent so a metadata pass over a large content set stays
+ * cheap; rendering re-reads the file for only the posts that are returned.
+ */
+interface BuiltMeta {
+  meta: PostMeta;
   sortKey: string;
+  absPath: string;
+  rel: string;
+  assetBase: string;
 }
 
-const buildPost = (config: VoxxConfig, absPath: string, rel: string) =>
+const buildMeta = (config: VoxxConfig, absPath: string, rel: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const raw = yield* fs.readFileString(absPath);
@@ -105,9 +130,6 @@ const buildPost = (config: VoxxConfig, absPath: string, rel: string) =>
     const assetBase = dirRel
       ? joinPath(config.content.basePath, dirRel)
       : config.content.basePath;
-    const { html, toc } = yield* renderMarkdownEffect(content, config, {
-      assetBase,
-    });
 
     let date = data.date ?? filenameDate;
     if (!date) {
@@ -123,7 +145,7 @@ const buildPost = (config: VoxxConfig, absPath: string, rel: string) =>
       date = (created ?? new Date()).toISOString();
     }
 
-    const post: Post = {
+    const meta: PostMeta = {
       slug,
       path,
       url,
@@ -140,28 +162,47 @@ const buildPost = (config: VoxxConfig, absPath: string, rel: string) =>
       authors: normalizeAuthors(data.author),
       excerpt: data.excerpt ?? deriveExcerpt(content),
       readingTimeMinutes: readingTimeMinutes(content),
-      html,
-      toc,
-      content,
     };
-    return { post, sortKey } satisfies BuiltPost;
+    return { meta, sortKey, absPath, rel, assetBase } satisfies BuiltMeta;
   });
 
 /**
- * Reads all Markdown files from the configured content directory,
- * renders them, and returns sorted posts.
+ * Renders a built post's Markdown body, producing the full {@link Post}. The
+ * file is re-read here so the metadata pass can discard raw content and stay
+ * memory-light over large content sets.
+ */
+const renderBuilt = (config: VoxxConfig, built: BuiltMeta) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const raw = yield* fs.readFileString(built.absPath);
+    const { content } = yield* parseFrontmatter(built.rel, raw);
+    const { html, toc } = yield* renderMarkdownEffect(content, config, {
+      assetBase: built.assetBase,
+    });
+    return { ...built.meta, html, toc, content } satisfies Post;
+  });
+
+const matchesSlug = (meta: PostMeta, wanted: string) =>
+  meta.path.join("/") === wanted ||
+  (meta.path.length <= 1 && meta.slug === wanted);
+
+const paginate = <T>(items: T[], opts: GetPostsEffectOptions): T[] => {
+  const start = opts.offset ?? 0;
+  const end = opts.limit !== undefined ? start + opts.limit : undefined;
+  return start === 0 && end === undefined ? items : items.slice(start, end);
+};
+
+/**
+ * Reads every Markdown file in the active collection and returns their
+ * metadata, filtered by draft visibility, `tag`, and `category`, then sorted
+ * in the collection's natural order. No Markdown is rendered — this is the
+ * cheap pass that listing, pagination, and slug lookup build on.
  *
  * - **docs** — sorted by numeric directory/file order prefix.
  * - **changelog** — sorted by date descending, then semver descending.
  * - **blog** — sorted by date descending.
- *
- * @param config - Resolved Voxx config.
- * @param opts - Optional collection filter and draft visibility.
  */
-export const getPostsEffect = (
-  config: VoxxConfig,
-  opts: GetPostsEffectOptions = {},
-) =>
+const collectMetas = (config: VoxxConfig, opts: GetPostsEffectOptions) =>
   Effect.gen(function* () {
     if (opts.collection) {
       const active = config.collections?.find(
@@ -190,7 +231,7 @@ export const getPostsEffect = (
       yield* Effect.logWarning(
         `Content directory "${dir}" does not exist — treating it as empty.`,
       );
-      return [];
+      return [] as BuiltMeta[];
     }
 
     const entries = yield* fs.readDirectory(dir, { recursive: true });
@@ -205,13 +246,13 @@ export const getPostsEffect = (
 
     const built = yield* Effect.forEach(
       files,
-      (rel) => buildPost(config, path.join(dir, rel), rel),
+      (rel) => buildMeta(config, path.join(dir, rel), rel),
       { concurrency: 8 },
     );
 
     const seen = new Map<string, string>();
     for (let i = 0; i < built.length; i++) {
-      const key = built[i]!.post.path.join("/");
+      const key = built[i]!.meta.path.join("/");
       const previous = seen.get(key);
       if (previous !== undefined) {
         yield* Effect.logWarning(
@@ -222,45 +263,90 @@ export const getPostsEffect = (
       }
     }
 
-    const visible = built.filter((b) => includeDrafts || !b.post.draft);
+    const visible = built.filter((b) => {
+      if (!includeDrafts && b.meta.draft) return false;
+      if (opts.tag && !b.meta.tags.includes(opts.tag)) return false;
+      if (opts.category && b.meta.category !== opts.category) return false;
+      return true;
+    });
 
     if (config.content.type === "docs") {
-      return visible
-        .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-        .map((b) => b.post);
+      return visible.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
     }
 
     const isChangelog = config.content.type === "changelog";
+    return visible.sort((a, b) => {
+      const byDate = b.meta.date.localeCompare(a.meta.date);
+      if (byDate !== 0) return byDate;
+      if (isChangelog && a.meta.version && b.meta.version) {
+        return compareVersions(b.meta.version, a.meta.version);
+      }
+      return a.meta.slug.localeCompare(b.meta.slug);
+    });
+  });
 
-    return visible
-      .map((b) => b.post)
-      .sort((a, b) => {
-        const byDate = b.date.localeCompare(a.date);
-        if (byDate !== 0) return byDate;
-        if (isChangelog && a.version && b.version) {
-          return compareVersions(b.version, a.version);
-        }
-        return a.slug.localeCompare(b.slug);
-      });
+/**
+ * Lists post metadata for the active collection without rendering any Markdown.
+ * Supports `tag`/`category` filtering and `offset`/`limit` pagination, and
+ * returns the unpaginated `total` so callers can build page controls.
+ *
+ * Use this for indexes, navigation, sitemaps, and feeds that only need
+ * metadata — it scales to large content sets because no post is rendered.
+ *
+ * @param config - Resolved Voxx config.
+ * @param opts - Collection, draft visibility, filter, and pagination options.
+ */
+export const listPostsEffect = (
+  config: VoxxConfig,
+  opts: GetPostsEffectOptions = {},
+) =>
+  Effect.gen(function* () {
+    const all = yield* collectMetas(config, opts);
+    return {
+      posts: paginate(all, opts).map((b) => b.meta),
+      total: all.length,
+    } satisfies ListPostsResult;
+  });
+
+/**
+ * Reads the active collection and returns fully rendered posts. Filtering and
+ * pagination are applied to metadata first, so only the posts actually
+ * returned are rendered to HTML.
+ *
+ * @param config - Resolved Voxx config.
+ * @param opts - Collection, draft visibility, filter, and pagination options.
+ */
+export const getPostsEffect = (
+  config: VoxxConfig,
+  opts: GetPostsEffectOptions = {},
+) =>
+  Effect.gen(function* () {
+    const all = yield* collectMetas(config, opts);
+    return yield* Effect.forEach(
+      paginate(all, opts),
+      (built) => renderBuilt(config, built),
+      { concurrency: 8 },
+    );
   });
 
 /**
  * Finds a post in an already-loaded array by slug or path.
  *
- * @param posts - Array returned by `getPosts`.
+ * @param posts - Array of post metadata, e.g. from `listPosts` or `getPosts`.
  * @param slug - Slash-separated path, e.g. `"getting-started/install"`.
  * @returns The matching post, or `undefined` if not found.
  */
-export function findPost(posts: Post[], slug: string): Post | undefined {
+export function findPost<T extends PostMeta>(
+  posts: T[],
+  slug: string,
+): T | undefined {
   const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
-  return posts.find(
-    (p) =>
-      p.path.join("/") === wanted || (p.path.length <= 1 && p.slug === wanted),
-  );
+  return posts.find((p) => matchesSlug(p, wanted));
 }
 
 /**
- * Loads all posts and returns the one matching `slug`.
+ * Resolves a single post by slug and renders only that post — the rest of the
+ * collection is scanned for metadata but never rendered.
  * Throws `PostNotFound` if no match exists.
  */
 export const getPostEffect = (
@@ -269,11 +355,12 @@ export const getPostEffect = (
   opts: GetPostsEffectOptions = {},
 ) =>
   Effect.gen(function* () {
-    const posts = yield* getPostsEffect(config, {
+    const all = yield* collectMetas(config, {
       ...opts,
       reachable: opts.reachable ?? true,
     });
-    const post = findPost(posts, slug);
-    if (!post) return yield* new PostNotFound({ slug });
-    return post;
+    const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
+    const built = all.find((b) => matchesSlug(b.meta, wanted));
+    if (!built) return yield* new PostNotFound({ slug });
+    return yield* renderBuilt(config, built);
   });

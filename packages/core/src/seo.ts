@@ -1,7 +1,7 @@
 import { absoluteUrl } from "./util";
 import type {
   ContentType,
-  Post,
+  PostMeta,
   SeoData,
   VoxxAuthor,
   VoxxConfig,
@@ -23,11 +23,11 @@ const personLd = (author: VoxxAuthor) => ({
  * Builds the full SEO payload for a post — canonical URL, Open Graph,
  * Twitter card, and JSON-LD — based on the active config flags.
  *
- * @param post - The rendered post to generate metadata for.
+ * @param post - The post metadata to generate SEO data for.
  * @param config - Resolved Voxx config.
  * @returns `SeoData` ready to be spread into `<head>` metadata.
  */
-export function buildSeo(post: Post, config: VoxxConfig): SeoData {
+export function buildSeo(post: PostMeta, config: VoxxConfig): SeoData {
   const canonical = absoluteUrl(config.site.url, post.url);
   const description = post.description ?? post.excerpt;
   const imgSrc = post.image ?? config.seo.defaultImage ?? undefined;

@@ -4,8 +4,8 @@ import { buildSeo, serializeJsonLd } from "@prudentbird/voxx-core";
 import {
   getConfig,
   getPost,
-  getPosts,
-  getReachablePosts,
+  listPosts,
+  listReachablePosts,
 } from "../_data";
 import { toMetadata } from "../_metadata";
 import { DocPage } from "../_doc-page";
@@ -13,7 +13,7 @@ import { DocPage } from "../_doc-page";
 type Params = { params: Promise<{ slug?: string[] }> };
 
 export async function generateStaticParams() {
-  const posts = await getReachablePosts();
+  const posts = await listReachablePosts();
   return posts.map((post) => ({ slug: post.path }));
 }
 
@@ -29,9 +29,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function DocRoute({ params }: Params) {
   const { slug = [] } = await params;
-  const [post, posts, config] = await Promise.all([
+  const [post, { posts }, config] = await Promise.all([
     getPost(slug.join("/")),
-    getPosts(),
+    listPosts(),
     getConfig(),
   ]);
   if (!post) {

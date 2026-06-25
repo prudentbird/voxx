@@ -77,8 +77,13 @@ export interface TocItem {
   depth: number;
 }
 
-/** A fully processed content post ready to render. */
-export interface Post {
+/**
+ * Post metadata without the rendered body — everything derivable from
+ * frontmatter, the filename, and a quick content scan, but none of the
+ * expensive Markdown rendering. Listing, sorting, filtering, and pagination
+ * operate on this so a large content set never has to render every post.
+ */
+export interface PostMeta {
   /** Final path segment(s), e.g. `["getting-started", "install"]`. */
   slug: string;
   path: string[];
@@ -103,6 +108,10 @@ export interface Post {
   /** Plain-text excerpt derived from the first 180 characters of content. */
   excerpt: string;
   readingTimeMinutes: number;
+}
+
+/** A fully processed content post with its rendered body, ready to display. */
+export interface Post extends PostMeta {
   /** Rendered HTML string. */
   html: string;
   toc: TocItem[];
