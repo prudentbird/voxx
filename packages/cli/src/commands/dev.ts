@@ -174,11 +174,5 @@ export async function dev(argv: string[]): Promise<DevHandle | undefined> {
       });
     });
 
-  const shutdown = () => {
-    void close().then(() => process.exit(0));
-  };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
-
   return { port, close };
 }

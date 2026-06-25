@@ -22,9 +22,30 @@ const TRACKED_COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   remove,
   new: newPost,
   build,
-  dev: (args) => dev(args).then(() => {}),
+  dev: runDev,
   telemetry,
 };
+
+/**
+ * Starts the dev server and keeps the process alive until the user stops it
+ * (Ctrl+C / SIGTERM), then shuts the server down. Blocking for the whole
+ * session keeps telemetry active for the dev process's full lifetime, so the
+ * caller's success timing and flush run only after the session truly exits.
+ */
+async function runDev(args: string[]): Promise<void> {
+  const handle = await dev(args);
+  if (!handle) return;
+  await new Promise<void>((resolve) => {
+    const stop = () => {
+      process.off("SIGINT", stop);
+      process.off("SIGTERM", stop);
+      resolve();
+    };
+    process.on("SIGINT", stop);
+    process.on("SIGTERM", stop);
+  });
+  await handle.close();
+}
 
 const HELP = `${c.bold("voxx")} — a zero-friction, file-based CMS for blogs and docs
 
