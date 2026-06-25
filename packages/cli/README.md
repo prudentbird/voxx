@@ -12,7 +12,7 @@ npx @prudentbird/voxx init changelog --yes  # headless, accept defaults
 
 ### `voxx init [blog|docs|changelog ...]`
 
-An interactive, shadcn-style wizard. It detects your setup and asks only for what it needs:
+An interactive wizard. It detects your setup and asks only for what it needs:
 
 - **Target** — when there's no Next.js app, choose a static site (`voxx build`) or a fresh app via `create-next-app`, then scaffold into it.
 - **Collections** — pick one or more types and name each (a blog can live at `/posts`).
