@@ -18,9 +18,9 @@ npx @prudentbird/voxx dev             # no framework? preview a static site loca
 
 ## Packages
 
-| Package                       | What it is                                                                 |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| [`voxx`](packages/cli)        | The CLI: `init`, `add`, `remove`, `new`, `build`, `dev`.                   |
+| Package                                   | What it is                                                                 |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| [`voxx`](packages/cli)                    | The CLI: `init`, `add`, `remove`, `new`, `build`, `dev`.                   |
 | [`@prudentbird/voxx-core`](packages/core) | The portable content engine — use it directly to bring your own framework. |
 
 This repo also dogfoods itself: [`apps/web`](apps/web) is the Voxx docs site, built with Voxx.

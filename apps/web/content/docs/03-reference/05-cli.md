@@ -9,6 +9,7 @@ voxx init --add [blog|docs|changelog] [--name <name>] [--dir <dir>] [--base <pat
 voxx new "Title" [--collection <name>] [--dir <content>] [--date <YYYY-MM-DD>] [--slug <slug>] [--flat] [--section <path>] [--order <n>]
 voxx build [--out <dir>] [--drafts]
 voxx dev [--port <n>]
+voxx telemetry [status|enable|disable]
 ```
 
 The CLI is a convenience layer — everything it does, you could do by hand
@@ -115,3 +116,25 @@ draft-preview story.
 | Flag          | Default | What it does      |
 | ------------- | ------- | ----------------- |
 | `--port 8080` | `4321`  | Port to listen on |
+
+## `voxx telemetry [status|enable|disable]`
+
+Manages anonymous usage telemetry. Voxx reports a single anonymous event per
+command — the command name, whether it succeeded, its duration, and the
+package, Node, and OS versions. It **never** collects arguments, file paths,
+names, or content, and the CLI prints a one-time notice on first run.
+
+| Subcommand | What it does                                    |
+| ---------- | ----------------------------------------------- |
+| `status`   | Prints the resolved state and any env override  |
+| `disable`  | Opts out (persisted)                            |
+| `enable`   | Opts back in (persisted)                        |
+
+Per-invocation opt-out is also honored via the `VOXX_TELEMETRY_DISABLED=1`,
+`DO_NOT_TRACK=1`, or `CI=1` environment variables — telemetry is off
+automatically in CI. The persistent setting lives in
+`${XDG_STATE_HOME:-~/.local/state}/voxx/telemetry.json`.
+
+The same engine powers [`@prudentbird/voxx-core`](/docs/reference/core-api),
+which reports one anonymous `core_used` event per process when used directly
+without the CLI; the opt-out variables above apply there too.

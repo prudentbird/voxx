@@ -9,7 +9,12 @@ async functions — Voxx is built with [Effect](https://effect.website)
 internally, but you never have to touch it.
 
 ```ts
-import { listPosts, getPost, buildNavTree, buildSeo } from "@prudentbird/voxx-core";
+import {
+  listPosts,
+  getPost,
+  buildNavTree,
+  buildSeo,
+} from "@prudentbird/voxx-core";
 
 const { posts, total } = await listPosts({ limit: 10 }); // metadata, no rendering
 const post = await getPost("getting-started/blog"); // renders just this post
