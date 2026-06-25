@@ -24,7 +24,7 @@ export default async function BlogIndex({ searchParams }: Props) {
     getConfig(),
   ]);
   const basePath = config.content.basePath || "/";
-  const postsEndpoint = `${basePath === "/" ? "" : basePath}/posts`;
+  const postsEndpoint = `${basePath === "/" ? "" : basePath}/api`;
 
   return (
     <main className="voxx voxx-index">

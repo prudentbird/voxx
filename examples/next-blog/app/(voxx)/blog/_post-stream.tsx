@@ -19,7 +19,7 @@ export function PostStream({
   initialCount: number;
   total: number;
   perBatch: number;
-  /** Route that returns a metadata slice, e.g. `/blog/posts`. */
+  /** Route that returns a metadata slice, e.g. `/blog/api`. */
   endpoint: string;
   /** Active tag filter, forwarded to the endpoint. */
   tag?: string;

@@ -20,7 +20,7 @@ export default async function ChangelogPage() {
     getConfig(),
   ]);
   const basePath = config.content.basePath || "/changelog";
-  const releasesEndpoint = `${basePath === "/" ? "" : basePath}/releases`;
+  const releasesEndpoint = `${basePath === "/" ? "" : basePath}/api`;
 
   return (
     <main className="voxx voxx-index">

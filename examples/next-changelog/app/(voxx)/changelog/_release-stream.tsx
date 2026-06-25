@@ -28,7 +28,7 @@ export function ReleaseStream({
   initialCount: number;
   total: number;
   perBatch: number;
-  /** Route that returns a rendered slice, e.g. `/changelog/releases`. */
+  /** Route that returns a rendered slice, e.g. `/changelog/api`. */
   endpoint: string;
   config: VoxxConfig;
 }) {
