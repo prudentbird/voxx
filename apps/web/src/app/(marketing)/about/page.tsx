@@ -43,11 +43,20 @@ export default function AboutPage() {
       <h2>Open source</h2>
       <p>
         Voxx is MIT-licensed and maintained by{" "}
-        <a href="https://prudentbird.com">prudentbird</a>. The core is framework
-        agnostic, so you can use it to read and render markdown in whatever
-        stack you build with. The full source is available on{" "}
-        <a href="https://github.com/prudentbird/voxx">GitHub</a>. Read the{" "}
-        <Link href="/docs">docs</Link> to get started.
+        <a href="https://prudentbird.com" target="_blank" rel="noreferrer">
+          prudentbird
+        </a>
+        . The core is framework agnostic, so you can use it to read and render
+        markdown in whatever stack you build with. The full source is available
+        on{" "}
+        <a
+          href="https://github.com/prudentbird/voxx"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub
+        </a>
+        . Read the <Link href="/docs">docs</Link> to get started.
       </p>
     </ProsePage>
   );
