@@ -8,7 +8,7 @@ export async function GET() {
   return new Response(body, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      Vary: "Accept, Accept-Encoding",
+      Vary: "Accept-Encoding",
     },
   });
 }
