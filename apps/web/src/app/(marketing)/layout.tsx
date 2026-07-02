@@ -1,9 +1,66 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
+import { JsonLd } from "~/components/json-ld";
 import { Wordmark } from "~/components/wordmark";
 import { SiteHeader } from "~/components/site-header";
 import { ThemeSwitcher } from "~/components/theme-switcher";
+
+const SITE_URL = "https://voxx.prudentbird.com";
+const REPO_URL = "https://github.com/prudentbird/voxx";
+const SITE_DESCRIPTION =
+  "A zero-friction CMS for you and your agents. Point Voxx at a folder of markdown and ship a blog, docs, or changelog.";
+const SAME_AS = [
+  REPO_URL,
+  "https://www.npmjs.com/package/@prudentbird/voxx",
+  "https://www.npmjs.com/package/@prudentbird/voxx-core",
+  "https://prudentbird.com",
+];
+
+const SITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "Voxx",
+      url: SITE_URL,
+      description: "A zero-friction, file-based CMS for you and your agents.",
+      sameAs: SAME_AS,
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "technical support",
+        email: "me@prudentbird.com",
+        url: `${REPO_URL}/issues`,
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "Voxx",
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      inLanguage: "en-US",
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "Voxx",
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Node.js >= 24",
+      softwareHelp: { "@type": "CreativeWork", url: `${SITE_URL}/docs` },
+      author: {
+        "@type": "Organization",
+        name: "Prudent Bird",
+        url: "https://prudentbird.com",
+      },
+      sameAs: SAME_AS,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+  ],
+};
 
 export default function MarketingLayout({
   children,
@@ -12,6 +69,7 @@ export default function MarketingLayout({
 }>) {
   return (
     <>
+      <JsonLd data={SITE_JSON_LD} />
       <SiteHeader>
         <div className="mx-auto flex h-[68px] w-full max-w-[1140px] items-center justify-between gap-6 px-8 max-sm:px-6">
           <Wordmark />
