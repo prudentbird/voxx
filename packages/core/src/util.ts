@@ -216,10 +216,7 @@ export function escapeXml(value: string): string {
 }
 
 /**
- * Serializes a JSON-LD object to a string safe for inline `<script>` tags.
- *
- * Escapes `<`, `>`, `&`, and Unicode line/paragraph separators to prevent
- * XSS and parser errors.
+ * Serializes an object as a JSON string safe for inline `<script>` tags.
  */
 export function serializeJsonLd(data: unknown): string {
   return JSON.stringify(data)

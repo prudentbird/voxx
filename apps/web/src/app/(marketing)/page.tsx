@@ -1,11 +1,11 @@
-import type { CSSProperties } from "react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
+import { Button } from "@voxx/ui/components/button";
+import { Reveal } from "~/components/landing/reveal";
 import { CopyCommand } from "~/components/copy-command";
 import { EditorDemo } from "~/components/landing/editor-demo";
-import { ManifestoHeading } from "~/components/landing/manifesto-heading";
-import { Reveal } from "~/components/landing/reveal";
 import { SurfaceTabs } from "~/components/landing/surface-tabs";
-import { Button } from "@voxx/ui/components/button";
+import { ManifestoHeading } from "~/components/landing/manifesto-heading";
 import "./landing.css";
 
 const VERBS = [
