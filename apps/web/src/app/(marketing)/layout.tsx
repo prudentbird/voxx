@@ -54,19 +54,17 @@ export default function MarketingLayout({
               About
             </Link>
             <Link
-              href="/docs"
+              href="/contact"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              Docs
+              Contact
             </Link>
-            <a
-              href="https://github.com/prudentbird/voxx"
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href="/privacy"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              GitHub
-            </a>
+              Privacy
+            </Link>
           </nav>
           <ThemeSwitcher />
         </div>
