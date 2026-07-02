@@ -49,7 +49,8 @@ const SITE_JSON_LD = {
       url: SITE_URL,
       description: SITE_DESCRIPTION,
       applicationCategory: "DeveloperApplication",
-      operatingSystem: "Node.js >= 24",
+      operatingSystem: "macOS, Windows, Linux",
+      softwareRequirements: "Node.js >= 24",
       softwareHelp: { "@type": "CreativeWork", url: `${SITE_URL}/docs` },
       author: {
         "@type": "Organization",
