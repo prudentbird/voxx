@@ -1,7 +1,5 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { FAQ } from "~/lib/agent-docs";
-import { JsonLd } from "~/components/json-ld";
 import { Button } from "@voxx/ui/components/button";
 import { Reveal } from "~/components/landing/reveal";
 import { CopyCommand } from "~/components/copy-command";
@@ -9,16 +7,6 @@ import { EditorDemo } from "~/components/landing/editor-demo";
 import { SurfaceTabs } from "~/components/landing/surface-tabs";
 import { ManifestoHeading } from "~/components/landing/manifesto-heading";
 import "./landing.css";
-
-const FAQ_JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQ.map((item) => ({
-    "@type": "Question",
-    name: item.question,
-    acceptedAnswer: { "@type": "Answer", text: item.answer },
-  })),
-};
 
 const VERBS = [
   {
@@ -98,7 +86,6 @@ function Traffic() {
 export default function Home() {
   return (
     <>
-      <JsonLd data={FAQ_JSON_LD} />
       <section className="pt-[168px] max-sm:pt-[130px]">
         <div className="mx-auto flex max-w-[880px] flex-col items-center gap-7 px-8 text-center max-sm:px-6">
           <h1
