@@ -17,6 +17,12 @@ export default function MarketingLayout({
           <Wordmark />
           <nav className="flex items-center gap-7">
             <Link
+              href="/about"
+              className="text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              About
+            </Link>
+            <Link
               href="/docs"
               className="text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -38,9 +44,15 @@ export default function MarketingLayout({
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-border/60 bg-secondary">
-        <div className="mx-auto flex w-full max-w-[1140px] flex-wrap items-center justify-between gap-6 px-8 py-8 max-sm:gap-4 max-sm:px-6">
+        <div className="mx-auto flex w-full max-w-[1140px] flex-wrap items-center justify-between gap-6 px-8 py-8 max-sm:gap-5 max-sm:px-6">
           <Wordmark small />
-          <nav className="flex gap-6">
+          <nav className="flex flex-wrap gap-6 max-sm:order-last max-sm:w-full">
+            <Link
+              href="/about"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              About
+            </Link>
             <Link
               href="/docs"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
