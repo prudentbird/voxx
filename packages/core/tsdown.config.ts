@@ -6,7 +6,13 @@ const { version } = JSON.parse(
 ) as { version: string };
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/effect.ts", "src/next.ts", "src/telemetry.ts"],
+  entry: [
+    "src/index.ts",
+    "src/util.ts",
+    "src/effect.ts",
+    "src/next.ts",
+    "src/telemetry.ts",
+  ],
   format: ["esm"],
   dts: true,
   clean: true,

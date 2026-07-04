@@ -18,7 +18,6 @@ export interface WithVoxxOptions {
 
 /** The Next.js config fields {@link withVoxx} manages; all other fields pass through unchanged. */
 interface ManagedConfig {
-  cacheComponents?: boolean;
   serverExternalPackages?: string[];
   outputFileTracingIncludes?: Record<string, string[]>;
 }
@@ -56,17 +55,20 @@ function contentDirs(cwd: string): string[] {
 }
 
 /**
- * Wraps a Next.js config with the settings every Voxx app needs to run
- * correctly on serverless platforms.
+ * Wraps a Next.js config with the serverless plumbing every Voxx app needs.
  *
- * Enables Cache Components, marks `@prudentbird/voxx-core` as an external
- * server package, and traces `voxx.json` plus every content directory into the
- * serverless function bundle so runtime config and content reads resolve. Voxx
- * content is filesystem-backed and read at request time during cache
- * revalidation, so without these includes those reads fail on platforms that
- * bundle each route into an isolated function.
+ * Marks `@prudentbird/voxx-core` as an external server package and traces
+ * `voxx.json` plus every content directory into the serverless function bundle
+ * so runtime config and content reads resolve. Voxx content is
+ * filesystem-backed and read at request time (JSON API routes, and cache
+ * revalidation under Cache Components), so without these includes those reads
+ * fail on platforms that bundle each route into an isolated function.
  *
- * @param config - Base Next.js config. Existing values are preserved; `cacheComponents` defaults to `true` when unset.
+ * The helper does not manage the app's rendering mode. It never sets
+ * `cacheComponents`; that flag stays entirely under the host's control and
+ * passes through untouched like any unmanaged field.
+ *
+ * @param config - Base Next.js config. Existing values are preserved.
  * @param options - Optional `cwd` override for locating `voxx.json`.
  * @returns The base config merged with Voxx's required settings.
  */
@@ -74,7 +76,6 @@ export function withVoxx<T extends object>(
   config: T = {} as T,
   options: WithVoxxOptions = {},
 ): T & {
-  cacheComponents: boolean;
   serverExternalPackages: string[];
   outputFileTracingIncludes: Record<string, string[]>;
 } {
@@ -88,7 +89,6 @@ export function withVoxx<T extends object>(
 
     const nextConfig = {
       ...base,
-      cacheComponents: base.cacheComponents ?? true,
       serverExternalPackages: [
         ...new Set([...(base.serverExternalPackages ?? []), CORE_PACKAGE]),
       ],
@@ -99,7 +99,8 @@ export function withVoxx<T extends object>(
     };
     recordCoreApiCall("withVoxx", start, true, {
       content_dir_count: dirs.length,
-      had_cache_components: base.cacheComponents !== undefined,
+      host_cache_components:
+        (base as { cacheComponents?: unknown }).cacheComponents === true,
       had_server_external_packages: base.serverExternalPackages !== undefined,
       had_tracing_includes: base.outputFileTracingIncludes !== undefined,
     });

@@ -1,6 +1,6 @@
 import { renderLlmsFull } from "@prudentbird/voxx-core";
 import { getConfig, getPosts } from "../changelog/_data";
-
+export const dynamic = "force-static";
 export async function GET() {
   const [posts, config] = await Promise.all([getPosts(), getConfig()]);
   return new Response(renderLlmsFull(posts, config), {

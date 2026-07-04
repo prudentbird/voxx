@@ -6,6 +6,9 @@ import { render } from "../src/util";
 const ROOT = join(import.meta.dirname, "../../..");
 const TEMPLATES = join(ROOT, "packages/cli/templates");
 const APP = join(ROOT, "examples/next-docs/app");
+const BLOG_APP = join(ROOT, "examples/next-blog/app");
+
+const FORCE_STATIC = 'export const dynamic = "force-static";';
 
 const PAIRS: Array<[tpl: string, file: string, vars?: Record<string, string>]> =
   [
@@ -16,7 +19,7 @@ const PAIRS: Array<[tpl: string, file: string, vars?: Record<string, string>]> =
       { GLOBALS_IMPORT: 'import "../_voxx/voxx-globals.css";' },
     ],
     [
-      "shared/data.ts.tpl",
+      "shared/data-cached.ts.tpl",
       "(voxx)/docs/_data.ts",
       { COLLECTION_ARG: '{ collection: "docs" }' },
     ],
@@ -60,6 +63,45 @@ describe("templates stay in sync with the generated example app", () => {
         vars,
       );
       const actual = await readFile(join(APP, file), "utf8");
+      expect(rendered).toBe(actual);
+    },
+  );
+});
+
+const BLOG_PAIRS: Array<
+  [tpl: string, file: string, vars?: Record<string, string>]
+> = [
+  [
+    "shared/data-static.ts.tpl",
+    "(voxx)/blog/_data.ts",
+    { COLLECTION_ARG: '{ collection: "blog" }' },
+  ],
+  [
+    "shared/rss-route.ts.tpl",
+    "(voxx)/blog/rss.xml/route.ts",
+    { DATA_IMPORT: "../_data", STATIC_EXPORT: FORCE_STATIC },
+  ],
+  [
+    "shared/llms-route.ts.tpl",
+    "(voxx)/llms.txt/route.ts",
+    { DATA_IMPORT: "../blog/_data", STATIC_EXPORT: FORCE_STATIC },
+  ],
+  [
+    "shared/llms-full-route.ts.tpl",
+    "(voxx)/llms-full.txt/route.ts",
+    { DATA_IMPORT: "../blog/_data", STATIC_EXPORT: FORCE_STATIC },
+  ],
+];
+
+describe("static-variant templates stay in sync with next-blog", () => {
+  it.each(BLOG_PAIRS)(
+    "%s matches examples/next-blog/app/%s",
+    async (tpl, file, vars) => {
+      const rendered = render(
+        await readFile(join(TEMPLATES, tpl), "utf8"),
+        vars,
+      );
+      const actual = await readFile(join(BLOG_APP, file), "utf8");
       expect(rendered).toBe(actual);
     },
   );

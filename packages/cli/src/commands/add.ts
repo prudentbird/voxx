@@ -26,6 +26,7 @@ import {
   type ScaffoldContext,
 } from "../scaffold";
 import {
+  detectCacheComponents,
   detectTokens,
   loadProject,
   writeConfig,
@@ -160,6 +161,7 @@ async function addCollection(project: Project, rest: string[]): Promise<void> {
       flags: featuresFromConfig(project),
       hasTokens: await detectTokens(project.cwd),
       split: true,
+      cacheComponents: await detectCacheComponents(project.cwd),
     };
     ops.push(...(await collectionOps(ctx, plan.collection)));
   }
@@ -205,6 +207,7 @@ async function addFeature(project: Project, key: FeatureKey): Promise<void> {
       flags: featuresFromConfig(project),
       hasTokens: await detectTokens(project.cwd),
       split: true,
+      cacheComponents: await detectCacheComponents(project.cwd),
     };
     const ops = await featureAddOps(ctx, key);
     const interactive = canPrompt();

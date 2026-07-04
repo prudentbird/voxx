@@ -32,6 +32,7 @@ import {
   type VoxxConfig,
 } from "../src/index";
 import { parseFrontmatter } from "../src/frontmatter";
+import { withVoxx } from "../src/next";
 
 const config: VoxxConfig = {
   ...DEFAULT_CONFIG,
@@ -625,6 +626,43 @@ describe("serializeJsonLd", () => {
     expect(out).toContain("\\u0026");
     expect(out).not.toContain("&");
     expect(JSON.parse(out)).toEqual(value);
+  });
+});
+
+describe("withVoxx", () => {
+  const cwd = tmpdir();
+
+  it("wires serverless plumbing without touching rendering mode", () => {
+    const result = withVoxx({}, { cwd }) as Record<string, unknown>;
+    expect("cacheComponents" in result).toBe(false);
+    expect(result["serverExternalPackages"]).toContain(
+      "@prudentbird/voxx-core",
+    );
+    expect(result["outputFileTracingIncludes"]).toBeDefined();
+  });
+
+  it("passes cacheComponents through untouched when the host sets it", () => {
+    const on = withVoxx({ cacheComponents: true }, { cwd }) as Record<
+      string,
+      unknown
+    >;
+    expect(on["cacheComponents"]).toBe(true);
+
+    const off = withVoxx({ cacheComponents: false }, { cwd }) as Record<
+      string,
+      unknown
+    >;
+    expect(off["cacheComponents"]).toBe(false);
+  });
+
+  it("preserves and merges existing managed fields", () => {
+    const result = withVoxx(
+      { serverExternalPackages: ["keep-me"] },
+      { cwd },
+    ) as Record<string, unknown>;
+    const externals = result["serverExternalPackages"] as string[];
+    expect(externals).toContain("keep-me");
+    expect(externals).toContain("@prudentbird/voxx-core");
   });
 });
 

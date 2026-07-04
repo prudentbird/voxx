@@ -39,7 +39,9 @@ import {
 } from "../scaffold";
 import {
   detectAppDir,
+  detectCacheComponents,
   detectTokens,
+  NEXT_CONFIG_FILES,
   pkgHasNext,
   readPkg,
   type Pkg,
@@ -132,13 +134,6 @@ async function splitRootLayout(cwd: string, appDir: string): Promise<boolean> {
   return true;
 }
 
-const NEXT_CONFIG_FILES = [
-  "next.config.ts",
-  "next.config.mjs",
-  "next.config.js",
-  "next.config.cjs",
-];
-
 function nextMajor(pkg: Pkg): number | null {
   const range =
     pkg.dependencies?.["next"] ?? pkg.devDependencies?.["next"] ?? "";
@@ -222,6 +217,7 @@ interface InitFlags {
   static?: boolean;
   next?: boolean;
   isolate?: boolean;
+  cacheComponents?: boolean;
   force?: boolean;
   yes?: boolean;
   features: Partial<FeatureFlags>;
@@ -576,6 +572,8 @@ export async function init(argv: string[]): Promise<void> {
       next: { type: "boolean" },
       isolate: { type: "boolean" },
       "no-isolate": { type: "boolean" },
+      "cache-components": { type: "boolean" },
+      "no-cache-components": { type: "boolean" },
       force: { type: "boolean" },
       yes: { type: "boolean", short: "y" },
       toc: { type: "boolean" },
@@ -647,6 +645,11 @@ export async function init(argv: string[]): Promise<void> {
     static: values.static,
     next: values.next,
     isolate: values.isolate ? true : values["no-isolate"] ? false : undefined,
+    cacheComponents: values["cache-components"]
+      ? true
+      : values["no-cache-components"]
+        ? false
+        : undefined,
     force: values.force,
     yes: values.yes,
     features: parseFeatureFlags(values),
@@ -681,6 +684,7 @@ export async function init(argv: string[]): Promise<void> {
       Boolean(flags.force),
       interactive,
       flags.isolate,
+      flags.cacheComponents,
     );
   } catch (err) {
     if (err instanceof PromptCancelled) {
@@ -766,6 +770,7 @@ async function scaffoldPlan(
   force: boolean,
   interactive: boolean,
   isolate: boolean | undefined,
+  cacheComponentsFlag: boolean | undefined,
 ): Promise<void> {
   const { cwd, collections, site, flags } = plan;
   const firstType = collections[0]!.type;
@@ -789,6 +794,8 @@ async function scaffoldPlan(
   let configResult: ConfigResult | null = null;
   let wroteGlobals = false;
   let movedToSite = false;
+  let cacheComponents = false;
+  let detectedCacheComponents = false;
 
   if (plan.mode === "next") {
     resolvedAppDir = plan.appDir ?? (await detectAppDir(cwd));
@@ -804,6 +811,9 @@ async function scaffoldPlan(
 
     const hasTokens = await detectTokens(cwd);
     wroteGlobals = !hasTokens;
+
+    detectedCacheComponents = await detectCacheComponents(cwd);
+    cacheComponents = cacheComponentsFlag ?? detectedCacheComponents;
 
     const { split, moved } = await resolveSplit(
       cwd,
@@ -821,6 +831,7 @@ async function scaffoldPlan(
       flags,
       hasTokens,
       split,
+      cacheComponents,
     };
     ops.push(...(await nextScaffoldOps(ctx)));
   }
@@ -847,6 +858,8 @@ async function scaffoldPlan(
     configResult,
     wroteGlobals,
     startCwd,
+    cacheComponents,
+    detectedCacheComponents,
   });
 }
 
@@ -893,6 +906,8 @@ function printNextSteps(
     configResult: ConfigResult | null;
     wroteGlobals: boolean;
     startCwd: string;
+    cacheComponents: boolean;
+    detectedCacheComponents: boolean;
   },
 ): void {
   const { collections } = plan;
@@ -942,8 +957,16 @@ function printNextSteps(
       `  ${step++}. Upgrade to Next 16+, then wrap your config with ${c.cyan("withVoxx")} from ${c.cyan(CORE_NEXT_IMPORT)}.`,
     );
   }
+  if (ctx.cacheComponents && !ctx.detectedCacheComponents) {
+    log.info(
+      `  ${step++}. Add ${c.cyan("cacheComponents: true")} to your ${c.cyan("next.config")} — the cached data layer requires it.`,
+    );
+  }
   log.info(`  ${step++}. Set ${c.cyan("site.url")} in ${c.cyan("voxx.json")}.`);
   log.info(`  ${step}. Run your dev server and open ${c.cyan(firstBase)}.`);
+  log.info(
+    `  ${c.dim(`(Rendering mode: ${ctx.cacheComponents ? "Cache Components" : "static"}. Voxx adapts to your next.config; it does not change how the rest of your app renders.)`)}`,
+  );
   if (ctx.configResult?.kind === "already") {
     log.info(
       `  ${c.dim(`(next.config already wrapped with withVoxx in ${ctx.configResult.file}.)`)}`,

@@ -1,5 +1,4 @@
 import "server-only";
-import { cacheLife } from "next/cache";
 import {
   getPostOrNull as coreGetPostOrNull,
   getPosts as coreGetPosts,
@@ -10,7 +9,6 @@ import {
   type PostMeta,
   type VoxxConfig,
 } from "@prudentbird/voxx-core";
-import { CONTENT_VERSION } from "./_content-version";
 
 /** Filters and pagination accepted by {@link listPosts}. */
 export interface ListOptions {
@@ -22,14 +20,31 @@ export interface ListOptions {
   limit?: number;
 }
 
-async function listPostsCached(
-  version: number,
-  opts: ListOptions,
-): Promise<ListPostsResult> {
-  "use cache";
-  cacheLife("max");
-  void version;
-  return coreListPosts({ ...{ collection: "changelog" }, ...opts });
+// Content is immutable per deploy in production, so each distinct call is
+// resolved once and its promise is reused for the life of the process. That is
+// the same guarantee `"use cache"` plus a content version gave the Cache
+// Components variant, without the whole-app rendering-mode requirement.
+// Development bypasses the cache so markdown edits show up on the next request.
+// The size cap bounds keys minted from request query params (offsets, tags),
+// which would otherwise grow the map without limit; oldest entries evict first.
+const MAX_CACHE_ENTRIES = 256;
+const cache = new Map<string, Promise<unknown>>();
+
+function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
+  if (process.env.NODE_ENV === "development") return load();
+  const hit = cache.get(key);
+  if (hit) return hit as Promise<T>;
+  // Drop the entry if the load rejects so a transient failure is not cached
+  // for the life of the process.
+  const promise = load().catch((error: unknown) => {
+    cache.delete(key);
+    throw error;
+  });
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    cache.delete(cache.keys().next().value as string);
+  }
+  cache.set(key, promise);
+  return promise;
 }
 
 /**
@@ -40,30 +55,20 @@ async function listPostsCached(
 export async function listPosts(
   opts: ListOptions = {},
 ): Promise<ListPostsResult> {
-  return listPostsCached(CONTENT_VERSION, opts);
-}
-
-async function listReachablePostsCached(version: number): Promise<PostMeta[]> {
-  "use cache";
-  cacheLife("max");
-  void version;
-  const { posts } = await coreListPosts({
-    ...{ collection: "changelog" },
-    reachable: true,
-  });
-  return posts;
+  return memo(`listPosts:${JSON.stringify(opts)}`, () =>
+    coreListPosts({ ...{ collection: "changelog" }, ...opts }),
+  );
 }
 
 /** Metadata for every reachable post — used to enumerate static params. */
 export async function listReachablePosts(): Promise<PostMeta[]> {
-  return listReachablePostsCached(CONTENT_VERSION);
-}
-
-async function getPostsCached(version: number): Promise<Post[]> {
-  "use cache";
-  cacheLife("max");
-  void version;
-  return coreGetPosts({ collection: "changelog" });
+  return memo("listReachablePosts", async () => {
+    const { posts } = await coreListPosts({
+      ...{ collection: "changelog" },
+      reachable: true,
+    });
+    return posts;
+  });
 }
 
 /**
@@ -71,18 +76,7 @@ async function getPostsCached(version: number): Promise<Post[]> {
  * full corpus rendered (RSS, `llms-full.txt`).
  */
 export async function getPosts(): Promise<Post[]> {
-  return getPostsCached(CONTENT_VERSION);
-}
-
-async function getPostsPageCached(
-  version: number,
-  offset: number,
-  limit: number,
-): Promise<Post[]> {
-  "use cache";
-  cacheLife("max");
-  void version;
-  return coreGetPosts({ ...{ collection: "changelog" }, offset, limit });
+  return memo("getPosts", () => coreGetPosts({ collection: "changelog" }));
 }
 
 /**
@@ -94,36 +88,23 @@ export async function getPostsPage(
   offset: number,
   limit: number,
 ): Promise<Post[]> {
-  return getPostsPageCached(CONTENT_VERSION, offset, limit);
-}
-
-async function getConfigCached(version: number): Promise<VoxxConfig> {
-  "use cache";
-  cacheLife("max");
-  void version;
-  return coreLoadConfig();
+  return memo(`getPostsPage:${JSON.stringify([offset, limit])}`, () =>
+    coreGetPosts({ ...{ collection: "changelog" }, offset, limit }),
+  );
 }
 
 export async function getConfig(): Promise<VoxxConfig> {
-  return getConfigCached(CONTENT_VERSION);
-}
-
-async function getPostCached(
-  version: number,
-  slug: string,
-): Promise<Post | null> {
-  "use cache";
-  cacheLife("max");
-  void version;
-  // Returns null only when no slug matches; a render or config failure still
-  // throws, so a genuine 404 stays distinct from a broken post.
-  return coreGetPostOrNull(slug, {
-    ...{ collection: "changelog" },
-    reachable: true,
-  });
+  return memo("getConfig", () => coreLoadConfig());
 }
 
 /** A single post rendered to HTML, or `null` when no slug matches. */
 export async function getPost(slug: string): Promise<Post | null> {
-  return getPostCached(CONTENT_VERSION, slug);
+  return memo(`getPost:${JSON.stringify(slug)}`, () =>
+    // Returns null only when no slug matches; a render or config failure still
+    // throws, so a genuine 404 stays distinct from a broken post.
+    coreGetPostOrNull(slug, {
+      ...{ collection: "changelog" },
+      reachable: true,
+    }),
+  );
 }

@@ -24,6 +24,21 @@ export interface ScaffoldContext {
    * when nesting under an existing user root layout (the "ignore" path).
    */
   readonly split: boolean;
+  /**
+   * Whether the host enables Cache Components. `true` scaffolds the cached data
+   * layer (`"use cache"`); `false` scaffolds the static variant and marks
+   * deploy-stable GET routes `force-static`.
+   */
+  readonly cacheComponents: boolean;
+}
+
+/**
+ * Renders the route-segment export that pins deploy-stable GET handlers to
+ * static rendering. Empty under Cache Components, where route segment configs
+ * are unsupported.
+ */
+function staticExport(cacheComponents: boolean): string {
+  return cacheComponents ? "" : 'export const dynamic = "force-static";';
 }
 
 function baseSegmentOf(collection: PlannedCollection): string {
@@ -75,7 +90,7 @@ export async function collectionOps(
   ctx: ScaffoldContext,
   collection: PlannedCollection,
 ): Promise<WriteOp[]> {
-  const { cwd, appDir, flags, hasTokens, split } = ctx;
+  const { cwd, appDir, flags, hasTokens, split, cacheComponents } = ctx;
   const { type, name, basePath } = collection;
   const segment = baseSegmentOf(collection);
   const dir = join(groupDir(cwd, appDir), segment);
@@ -87,13 +102,13 @@ export async function collectionOps(
       BASE_PATH: basePath,
       RSS_PATH: rssPathFor(basePath),
     }),
-    await op(cwd, join(dir, "_data.ts"), "shared/data.ts.tpl", {
-      COLLECTION_ARG: `{ collection: ${JSON.stringify(name)} }`,
-    }),
     await op(
       cwd,
-      join(dir, "_content-version.ts"),
-      "shared/content-version.ts.tpl",
+      join(dir, "_data.ts"),
+      cacheComponents ? "shared/data-cached.ts.tpl" : "shared/data-static.ts.tpl",
+      {
+        COLLECTION_ARG: `{ collection: ${JSON.stringify(name)} }`,
+      },
     ),
     await op(
       cwd,
@@ -101,6 +116,18 @@ export async function collectionOps(
       "shared/theme-toggle.tsx.tpl",
     ),
   );
+
+  // The static data layer has no content version to invalidate, so this file
+  // exists only in the Cache Components variant.
+  if (cacheComponents) {
+    ops.push(
+      await op(
+        cwd,
+        join(dir, "_content-version.ts"),
+        "shared/content-version.ts.tpl",
+      ),
+    );
+  }
 
   if (type !== "changelog") {
     ops.push(
@@ -121,6 +148,7 @@ export async function collectionOps(
         "shared/rss-route.ts.tpl",
         {
           DATA_IMPORT: "../_data",
+          STATIC_EXPORT: staticExport(cacheComponents),
         },
       ),
     );
@@ -180,7 +208,8 @@ export async function collectionOps(
  * @param ctx - Scaffold context.
  */
 export async function siteWideOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
-  const { cwd, appDir, collections, flags, hasTokens, split } = ctx;
+  const { cwd, appDir, collections, flags, hasTokens, split, cacheComponents } =
+    ctx;
   const group = groupDir(cwd, appDir);
   const voxxDir = join(group, "_voxx");
   const segment = baseSegmentOf(collections[0]!);
@@ -260,6 +289,7 @@ export async function siteWideOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
         "shared/llms-route.ts.tpl",
         {
           DATA_IMPORT: dataFromRouteDir,
+          STATIC_EXPORT: staticExport(cacheComponents),
         },
         true,
       ),
@@ -267,7 +297,10 @@ export async function siteWideOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
         cwd,
         join(group, "llms-full.txt", "route.ts"),
         "shared/llms-full-route.ts.tpl",
-        { DATA_IMPORT: dataFromRouteDir },
+        {
+          DATA_IMPORT: dataFromRouteDir,
+          STATIC_EXPORT: staticExport(cacheComponents),
+        },
         true,
       ),
     );
@@ -299,7 +332,7 @@ export async function featureAddOps(
   ctx: ScaffoldContext,
   key: FeatureKey,
 ): Promise<WriteOp[]> {
-  const { cwd, appDir, collections } = ctx;
+  const { cwd, appDir, collections, cacheComponents } = ctx;
   const group = groupDir(cwd, appDir);
   const segment = baseSegmentOf(collections[0]!);
   const dataFromGroup = `./${segment}/_data`;
@@ -315,7 +348,10 @@ export async function featureAddOps(
             cwd,
             join(group, baseSegmentOf(collection), "rss.xml", "route.ts"),
             "shared/rss-route.ts.tpl",
-            { DATA_IMPORT: "../_data" },
+            {
+              DATA_IMPORT: "../_data",
+              STATIC_EXPORT: staticExport(cacheComponents),
+            },
           ),
         );
       }
@@ -341,13 +377,17 @@ export async function featureAddOps(
           "shared/llms-route.ts.tpl",
           {
             DATA_IMPORT: dataFromRouteDir,
+            STATIC_EXPORT: staticExport(cacheComponents),
           },
         ),
         await op(
           cwd,
           join(group, "llms-full.txt", "route.ts"),
           "shared/llms-full-route.ts.tpl",
-          { DATA_IMPORT: dataFromRouteDir },
+          {
+            DATA_IMPORT: dataFromRouteDir,
+            STATIC_EXPORT: staticExport(cacheComponents),
+          },
         ),
       ];
     default:

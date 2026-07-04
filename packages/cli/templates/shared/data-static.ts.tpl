@@ -56,7 +56,7 @@ export async function listPosts(
   opts: ListOptions = {},
 ): Promise<ListPostsResult> {
   return memo(`listPosts:${JSON.stringify(opts)}`, () =>
-    coreListPosts({ ...{ collection: "blog" }, ...opts }),
+    coreListPosts({ ...{{COLLECTION_ARG}}, ...opts }),
   );
 }
 
@@ -64,7 +64,7 @@ export async function listPosts(
 export async function listReachablePosts(): Promise<PostMeta[]> {
   return memo("listReachablePosts", async () => {
     const { posts } = await coreListPosts({
-      ...{ collection: "blog" },
+      ...{{COLLECTION_ARG}},
       reachable: true,
     });
     return posts;
@@ -76,7 +76,7 @@ export async function listReachablePosts(): Promise<PostMeta[]> {
  * full corpus rendered (RSS, `llms-full.txt`).
  */
 export async function getPosts(): Promise<Post[]> {
-  return memo("getPosts", () => coreGetPosts({ collection: "blog" }));
+  return memo("getPosts", () => coreGetPosts({{COLLECTION_ARG}}));
 }
 
 /**
@@ -89,7 +89,7 @@ export async function getPostsPage(
   limit: number,
 ): Promise<Post[]> {
   return memo(`getPostsPage:${JSON.stringify([offset, limit])}`, () =>
-    coreGetPosts({ ...{ collection: "blog" }, offset, limit }),
+    coreGetPosts({ ...{{COLLECTION_ARG}}, offset, limit }),
   );
 }
 
@@ -103,7 +103,7 @@ export async function getPost(slug: string): Promise<Post | null> {
     // Returns null only when no slug matches; a render or config failure still
     // throws, so a genuine 404 stays distinct from a broken post.
     coreGetPostOrNull(slug, {
-      ...{ collection: "blog" },
+      ...{{COLLECTION_ARG}},
       reachable: true,
     }),
   );
