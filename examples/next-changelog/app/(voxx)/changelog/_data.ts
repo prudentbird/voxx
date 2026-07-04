@@ -25,6 +25,9 @@ export interface ListOptions {
 // the same guarantee `"use cache"` plus a content version gave the Cache
 // Components variant, without the whole-app rendering-mode requirement.
 // Development bypasses the cache so markdown edits show up on the next request.
+// The size cap bounds keys minted from request query params (offsets, tags),
+// which would otherwise grow the map without limit; oldest entries evict first.
+const MAX_CACHE_ENTRIES = 256;
 const cache = new Map<string, Promise<unknown>>();
 
 function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
@@ -37,6 +40,9 @@ function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
     cache.delete(key);
     throw error;
   });
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    cache.delete(cache.keys().next().value as string);
+  }
   cache.set(key, promise);
   return promise;
 }

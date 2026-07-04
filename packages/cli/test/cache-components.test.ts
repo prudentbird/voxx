@@ -39,6 +39,13 @@ describe("detectCacheComponents", () => {
     expect(await detectCacheComponents(dir)).toBe(true);
   });
 
+  it("returns false when the flag only appears in comments", async () => {
+    await writeNextConfig(
+      "const nextConfig = {\n  // cacheComponents: true,\n  /* cacheComponents: true */\n};\nexport default nextConfig;\n",
+    );
+    expect(await detectCacheComponents(dir)).toBe(false);
+  });
+
   it("returns false when the flag is disabled", async () => {
     await writeNextConfig(
       "const nextConfig = { cacheComponents: false };\nexport default nextConfig;\n",

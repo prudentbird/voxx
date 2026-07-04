@@ -19,12 +19,16 @@ export const NEXT_CONFIG_FILES = [
 ];
 
 const CACHE_COMPONENTS_RE = /cacheComponents["']?\s*:\s*true\b/;
+const LINE_COMMENT_RE = /\/\/[^\n]*/g;
+const BLOCK_COMMENT_RE = /\/\*[\s\S]*?\*\//g;
 
 /**
  * Detects whether the host next.config opts into Cache Components. Scans the
  * recognized config files for a `cacheComponents: true` flag so init and add
- * scaffold the matching data layer. Voxx does not enable the flag itself, so
- * this reflects only what the host already chose.
+ * scaffold the matching data layer. Comments are stripped first so a
+ * commented-out flag does not select the "use cache" data layer in an app that
+ * cannot build it. Voxx does not enable the flag itself, so this reflects only
+ * what the host already chose.
  *
  * @param cwd - Project root.
  */
@@ -32,7 +36,10 @@ export async function detectCacheComponents(cwd: string): Promise<boolean> {
   for (const name of NEXT_CONFIG_FILES) {
     const path = join(cwd, name);
     if (!(await exists(path))) continue;
-    return CACHE_COMPONENTS_RE.test(await readFile(path, "utf8"));
+    const source = (await readFile(path, "utf8"))
+      .replace(BLOCK_COMMENT_RE, "")
+      .replace(LINE_COMMENT_RE, "");
+    return CACHE_COMPONENTS_RE.test(source);
   }
   return false;
 }
