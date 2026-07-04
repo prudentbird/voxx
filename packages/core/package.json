@@ -43,6 +43,10 @@
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
     },
+    "./util": {
+      "types": "./dist/util.d.mts",
+      "default": "./dist/util.mjs"
+    },
     "./effect": {
       "types": "./dist/effect.d.mts",
       "default": "./dist/effect.mjs"
