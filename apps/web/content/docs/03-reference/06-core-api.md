@@ -137,9 +137,11 @@ names, titles, error messages, or content. Opt out with `VOXX_TELEMETRY_DISABLED
 `registerContentWatcher(options?)` powers [live reload](/docs/getting-started/docs#live-reload)
 for Next.js. Call it from `instrumentation.ts`; it watches every content
 directory and `voxx.json` and bumps the generated `_voxx/content-version.ts`
-module on each change, which `data.ts` feeds into its `"use cache"` key to
-refresh the page and invalidate the cache. It is a no-op outside the Node.js
-runtime and outside development. Options:
+module on each change, which the cached `data.ts` feeds into its `"use cache"`
+key to refresh the page and invalidate the cache. Cache Components mode is what
+scaffolds those version modules; the static data layer reads fresh content in
+development on its own, so the watcher has nothing to bump there. It is a no-op
+outside the Node.js runtime and outside development. Options:
 
 - `versionModules` — explicit paths to bump; by default it finds every
   `_voxx/content-version.ts` under the project

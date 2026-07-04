@@ -62,9 +62,15 @@ is a convenience, never a requirement.
 
 Editing a `.md` file updates the page in `next dev` without a manual refresh.
 Voxx reads content off the filesystem rather than importing it, so Next's HMR
-can't see those edits on its own. The scaffolded `instrumentation.ts` fixes
-that — it starts a dev-only watcher (shipped in `@prudentbird/voxx-core`) that bumps
-`_voxx/content-version.ts` whenever content or `voxx.json` changes:
+does not see those edits on its own.
+
+The default static data layer reads fresh content in development, so edits show
+up on the next request with nothing extra to run.
+
+Cache Components mode holds content in the cache across requests, so the
+scaffolded `instrumentation.ts` starts a dev-only watcher (shipped in
+`@prudentbird/voxx-core`) that bumps `_voxx/content-version.ts` whenever content
+or `voxx.json` changes:
 
 ```ts
 export async function register() {
@@ -74,9 +80,10 @@ export async function register() {
 }
 ```
 
-`data.ts` threads that version into its `"use cache"` calls, so a bump both
-refreshes the open page and busts the content cache. It runs in development
-only; production builds are untouched. Delete `instrumentation.ts` to opt out.
+The cached `data.ts` threads that version into its `"use cache"` calls, so a
+bump both refreshes the open page and busts the content cache. It runs in
+development only; production builds are untouched. Delete `instrumentation.ts`
+to opt out.
 
 ## What docs get by default
 

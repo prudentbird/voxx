@@ -15,7 +15,7 @@ npx @prudentbird/voxx init changelog  # a release-notes page
 
 - **Next.js app detected** — it scaffolds routes under `app/` (or `src/app/`),
   writes a `voxx.json` and sample content, and wraps your `next.config` with
-  [`withVoxx`](#cache-components) when it can do so safely. The generated
+  [`withVoxx`](#rendering-modes) when it can do so safely. The generated
   components live in a `_voxx/` folder inside the mounted route — they're plain
   files you own and restyle.
 - **No Next.js** — it asks whether you want a static site (rendered with
@@ -43,13 +43,17 @@ Every preset accepts the same flags:
 | `--app src/app` | auto-detected | The Next.js app directory                |
 | `--force`       | off           | Overwrite files that already exist       |
 
-## Cache Components
+## Rendering modes
 
-The scaffolded data layer uses Next's `"use cache"` directive, so your pages
-prerender statically and content reads cost nothing at request time. The
-`withVoxx` helper sets everything that makes this work — Cache Components
-enabled, `@prudentbird/voxx-core` kept external, and `voxx.json` plus your
-content directories traced into the serverless bundle so runtime reads resolve:
+Voxx adapts to the host app instead of reconfiguring it. The default data layer
+memoizes filesystem reads for the life of each deploy, so pages prerender and
+content reads cost nothing at request time. No whole-app rendering switch comes
+with it, and existing routes keep behaving exactly as they did.
+
+`withVoxx` wires only the serverless plumbing every Voxx app needs. It keeps
+`@prudentbird/voxx-core` external and traces `voxx.json` plus your content
+directories into the serverless bundle so runtime reads resolve. It never sets
+`cacheComponents`, so how the rest of your app renders stays your call:
 
 ```ts
 import type { NextConfig } from "next";
@@ -60,11 +64,14 @@ const nextConfig: NextConfig = {};
 export default withVoxx(nextConfig);
 ```
 
-On Next 16+, `voxx init` wraps your config for you when it has a recognizable
-shape; otherwise it prints the snippet to add yourself.
+Apps that already enable Next's Cache Components get a matching data layer built
+on the `"use cache"` directive, pinned to the `max` lifetime so it refreshes
+only on rebuild. `voxx init` detects `cacheComponents: true` in your
+`next.config` and scaffolds that variant automatically. Pass
+`--cache-components` or `--no-cache-components` to choose the variant yourself.
 
-Content only changes on deploy, so the cached data uses the `max` lifetime and
-refreshes only when you rebuild — no needless revalidation at runtime.
+On Next 16+, `voxx init` wraps your config when it has a recognizable shape.
+Otherwise it prints the snippet to add yourself.
 
 ## Pick your surface
 

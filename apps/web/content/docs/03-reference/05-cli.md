@@ -20,12 +20,14 @@ with files and [`@prudentbird/voxx-core`](/docs/reference/core-api).
 Scaffolds a surface. The preset (default `blog`) picks the sample content
 and routes; the flags place them:
 
-| Flag            | Default       | What it does                                  |
-| --------------- | ------------- | --------------------------------------------- |
-| `--base /notes` | `/<preset>`   | Mount path — scaffolded routes follow it      |
-| `--dir content` | `content`     | Content folder written into `voxx.json`       |
-| `--app src/app` | auto-detected | The Next.js app directory                     |
-| `--force`       | off           | Overwrite existing files (default: skip them) |
+| Flag                    | Default       | What it does                                  |
+| ----------------------- | ------------- | --------------------------------------------- |
+| `--base /notes`         | `/<preset>`   | Mount path — scaffolded routes follow it      |
+| `--dir content`         | `content`     | Content folder written into `voxx.json`       |
+| `--app src/app`         | auto-detected | The Next.js app directory                     |
+| `--cache-components`    | auto-detected | Force the Cache Components data layer          |
+| `--no-cache-components` | auto-detected | Force the static data layer                   |
+| `--force`               | off           | Overwrite existing files (default: skip them) |
 
 With a Next.js app detected, `init` writes the routes for the preset, the
 `_voxx/` data layer and components, `llms.txt` and `llms-full.txt` routes,
@@ -33,6 +35,11 @@ plus a sitemap and `robots.ts` (blog, docs) and an RSS route at
 `<base>/rss.xml` (blog, changelog) where the type calls for them. On Next 16+ it also wraps
 your `next.config` with `withVoxx` (from `@prudentbird/voxx-core/next`) when the config's shape is
 unambiguous — otherwise it tells you what to add.
+
+`init` scaffolds the static data layer by default, which needs no rendering-mode
+changes. When your `next.config` already enables `cacheComponents: true`, it
+scaffolds the Cache Components data layer instead. Pass `--cache-components` or
+`--no-cache-components` to pick the variant directly.
 
 If your app already defines design tokens (`--background` and friends in a
 `globals.css`), Voxx inherits them; if not, `init` adds a starter

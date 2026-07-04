@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { PostMeta, VoxxConfig } from "@prudentbird/voxx-core";
-import { formatDate } from "@prudentbird/voxx-core";
+import { formatDate } from "@prudentbird/voxx-core/util";
 
 export function PostCard({
   post,

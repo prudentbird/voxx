@@ -10,6 +10,7 @@ const posthogCredentialed = Boolean(
 );
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   reactCompiler: true,
   productionBrowserSourceMaps: posthogCredentialed,
 };

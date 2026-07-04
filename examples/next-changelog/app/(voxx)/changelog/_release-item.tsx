@@ -1,4 +1,4 @@
-import { formatDate } from "@prudentbird/voxx-core";
+import { formatDate } from "@prudentbird/voxx-core/util";
 import type { VoxxConfig } from "@prudentbird/voxx-core";
 
 /** The minimal release shape the timeline renders — server posts and the
