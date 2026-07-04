@@ -22,13 +22,24 @@ afterEach(() => {
 
 describe("voxx init scaffold output typechecks", () => {
   for (const preset of ["blog", "docs", "changelog"] as const) {
-    it(`scaffolded ${preset} routes typecheck`, async () => {
+    it(`scaffolded ${preset} routes typecheck (static variant)`, async () => {
       await writeFile(
         join(dir, "package.json"),
         JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
       );
       await mkdir(join(dir, "app"), { recursive: true });
       await init([preset]);
+      const diagnostics = await typecheckDir(join(dir, "app"));
+      expect(diagnostics).toEqual([]);
+    });
+
+    it(`scaffolded ${preset} routes typecheck (cached variant)`, async () => {
+      await writeFile(
+        join(dir, "package.json"),
+        JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
+      );
+      await mkdir(join(dir, "app"), { recursive: true });
+      await init([preset, "--cache-components"]);
       const diagnostics = await typecheckDir(join(dir, "app"));
       expect(diagnostics).toEqual([]);
     });

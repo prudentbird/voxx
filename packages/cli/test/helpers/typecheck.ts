@@ -6,6 +6,7 @@ import { exists } from "../../src/util";
 const ROOT = join(import.meta.dirname, "../../../..");
 const WEB_NM = join(ROOT, "apps/web/node_modules");
 const CORE_TYPES = join(ROOT, "packages/core/dist/index.d.mts");
+const CORE_UTIL_TYPES = join(ROOT, "packages/core/dist/util.d.mts");
 
 function compilerOptions(): ts.CompilerOptions {
   return {
@@ -23,6 +24,7 @@ function compilerOptions(): ts.CompilerOptions {
       "react/jsx-runtime": [join(WEB_NM, "@types/react/jsx-runtime")],
       "react-dom": [join(WEB_NM, "@types/react-dom")],
       "@prudentbird/voxx-core": [CORE_TYPES],
+      "@prudentbird/voxx-core/util": [CORE_UTIL_TYPES],
       "@prudentbird/voxx-core/*": [join(ROOT, "packages/core/*")],
     },
   };

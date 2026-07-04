@@ -9,6 +9,34 @@ import { exists } from "./util";
 import { type PlannedCollection } from "./collections";
 
 const APP_DIR_CANDIDATES = ["app", "src/app"];
+
+/** Recognized Next.js config filenames, in resolution order. */
+export const NEXT_CONFIG_FILES = [
+  "next.config.ts",
+  "next.config.mjs",
+  "next.config.js",
+  "next.config.cjs",
+];
+
+const CACHE_COMPONENTS_RE = /cacheComponents["']?\s*:\s*true\b/;
+
+/**
+ * Detects whether the host next.config opts into Cache Components. Scans the
+ * recognized config files for a `cacheComponents: true` flag so init and add
+ * scaffold the matching data layer. Voxx does not enable the flag itself, so
+ * this reflects only what the host already chose.
+ *
+ * @param cwd - Project root.
+ */
+export async function detectCacheComponents(cwd: string): Promise<boolean> {
+  for (const name of NEXT_CONFIG_FILES) {
+    const path = join(cwd, name);
+    if (!(await exists(path))) continue;
+    return CACHE_COMPONENTS_RE.test(await readFile(path, "utf8"));
+  }
+  return false;
+}
+
 const GLOBALS_CANDIDATES = [
   "app/globals.css",
   "src/app/globals.css",
