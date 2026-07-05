@@ -18,9 +18,8 @@ export default function AboutPage() {
       <p>
         Most content management systems put a database and an admin dashboard
         between you and your content. Voxx removes that layer. Every page is a
-        plain <code>.md</code> file that lives next to your code, so you can
-        version, diff, and review your content with the same tools you already
-        use for software.
+        markdown file that lives next to your code, so you can version, diff,
+        and review your content with the same tools you already use for software.
       </p>
 
       <h2>Why files</h2>
