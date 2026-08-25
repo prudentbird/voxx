@@ -78,7 +78,7 @@ export async function listReachablePosts(): Promise<PostMeta[]> {
  */
 export async function getPosts(): Promise<Post[]> {
   return memo("getPosts", () => coreGetPosts({
-    collection: "changelog",
+    ...{ collection: "changelog" },
     assetPrefix: VOXX_ASSET_PREFIX,
   }));
 }
@@ -94,7 +94,7 @@ export async function getPostsPage(
 ): Promise<Post[]> {
   return memo(`getPostsPage:${JSON.stringify([offset, limit])}`, () =>
     coreGetPosts({
-      collection: "changelog",
+      ...{ collection: "changelog" },
       assetPrefix: VOXX_ASSET_PREFIX,
       offset,
       limit,

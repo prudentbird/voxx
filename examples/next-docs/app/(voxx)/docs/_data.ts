@@ -65,7 +65,7 @@ async function getPostsCached(version: number): Promise<Post[]> {
   cacheLife("max");
   void version;
   return coreGetPosts({
-    collection: "docs",
+    ...{ collection: "docs" },
     assetPrefix: VOXX_ASSET_PREFIX,
   });
 }
@@ -87,7 +87,7 @@ async function getPostsPageCached(
   cacheLife("max");
   void version;
   return coreGetPosts({
-    collection: "docs",
+    ...{ collection: "docs" },
     assetPrefix: VOXX_ASSET_PREFIX,
     offset,
     limit,
