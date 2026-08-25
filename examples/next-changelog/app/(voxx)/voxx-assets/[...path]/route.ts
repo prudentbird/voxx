@@ -16,11 +16,16 @@ import {
  */
 // A page can reference dozens of images; parse `voxx.json` once instead of
 // per request. Development bypasses the cache so config edits apply live.
+// A rejected load is dropped rather than pinned: a transient config failure
+// on one request must not turn into 500s until the process restarts.
 let cachedConfig: Promise<VoxxConfig> | undefined;
 
 function getConfig(): Promise<VoxxConfig> {
   if (process.env.NODE_ENV === "development") return loadConfig();
-  return (cachedConfig ??= loadConfig());
+  return (cachedConfig ??= loadConfig().catch((error: unknown) => {
+    cachedConfig = undefined;
+    throw error;
+  }));
 }
 
 export async function GET(request: Request) {
