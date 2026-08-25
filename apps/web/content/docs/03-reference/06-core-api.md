@@ -130,6 +130,10 @@ Markdown sources regardless of case (`secret.MD` included), paths outside an
 custom Next.js integration. Accepts `config`, `cwd`, or `path` like the
 content readers.
 
+Note that the `/voxx-assets` prefix assumes deployment at the domain root —
+a Next.js `basePath` is not prepended to rendered asset URLs (see
+[Images and assets](/docs/writing/images)).
+
 ## Helpers
 
 The small utilities the engine uses are exported too: `slugify`,

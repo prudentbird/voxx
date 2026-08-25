@@ -43,6 +43,12 @@ query strings pass through untouched.
 Either way, authoring looks identical: `./assets/architecture.png`, right
 next to the markdown.
 
+One limitation to know: the `/voxx-assets` prefix assumes the site is
+served from the domain root. If your Next.js app sets a `basePath` in
+`next.config.ts`, rendered asset URLs won't include it and will 404 —
+deploy Voxx apps at the root, or rewrite `<basePath>/voxx-assets/*` to
+`/voxx-assets/*` at your edge/proxy until this is supported natively.
+
 ## Organizing assets
 
 Nested folders give each page its own namespace:
@@ -55,7 +61,7 @@ content/docs/
       diagram.png        → referenced from install.md as ./assets/diagram.png
   02-writing/
     assets/
-      logo.svg           → referenced from a sibling page as ../writing/assets/logo.svg
+      logo.svg           → referenced from install.md as ../02-writing/assets/logo.svg
 ```
 
 ## Blog's flat namespace

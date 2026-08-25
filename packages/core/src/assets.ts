@@ -106,11 +106,14 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
       if (segments.length <= baseSegments.length) continue;
       if (baseSegments.some((s, i) => s !== segments[i])) continue;
 
+      // The longest matching basePath owns this URL outright: if the file
+      // doesn't resolve within it, answer null instead of letting a shorter
+      // collection substitute its own file.
       const rel = segments.slice(baseSegments.length);
       // Only files inside an `assets/` directory are served — everything else
       // in the content tree is page material, not a downloadable asset.
       const assetsIndex = rel.indexOf(ASSET_DIR);
-      if (assetsIndex === -1 || assetsIndex === rel.length - 1) continue;
+      if (assetsIndex === -1 || assetsIndex === rel.length - 1) return null;
       const filePath = path.join(collection.dir, ...rel);
       // Belt-and-braces containment check: the segment validation above
       // should make this unreachable, but never serve from outside the
@@ -119,12 +122,36 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
       // duplicate separators), then compare with separators unified — the
       // raw dir string may not match the join output's shape otherwise.
       const root = normalizeSeparators(path.join(collection.dir));
-      const prefix = root.endsWith("/") ? root : `${root}/`;
-      if (!normalizeSeparators(filePath).startsWith(prefix)) continue;
+      const rawPrefix = root.endsWith("/") ? root : `${root}/`;
+      if (!normalizeSeparators(filePath).startsWith(rawPrefix)) return null;
       if (SOURCE_RE.test(filePath)) return null;
 
+      // Resolve through any symlinks: a link inside assets/ could point
+      // outside the collection directory, so containment is enforced on the
+      // resolved target rather than the requested path.
+      const [rootReal, real] = yield* Effect.all([
+        fs.realPath(collection.dir).pipe(Effect.option),
+        fs.realPath(filePath).pipe(Effect.option),
+      ]);
+      const realRoot =
+        Option.isSome(rootReal)
+          ? normalizeSeparators(rootReal.value)
+          : undefined;
+      const prefix =
+        realRoot === undefined
+          ? undefined
+          : realRoot.endsWith("/")
+            ? realRoot
+            : `${realRoot}/`;
+      if (
+        Option.isNone(real) ||
+        prefix === undefined ||
+        !normalizeSeparators(real.value).startsWith(prefix)
+      )
+        return null;
+
       const info = yield* fs.stat(filePath).pipe(Effect.option);
-      if (Option.isNone(info) || info.value.type !== "File") continue;
+      if (Option.isNone(info) || info.value.type !== "File") return null;
 
       const mime = MIME_TYPES[rel[rel.length - 1]!.split(".").pop() ?? ""];
       const body = yield* fs.readFile(filePath);

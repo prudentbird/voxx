@@ -264,9 +264,12 @@ describe("serveContentAsset", () => {
     const dir = await mkdtemp(join(tmpdir(), "voxx-serve-"));
     const { mkdir } = await import("node:fs/promises");
     await mkdir(join(dir, "assets"), { recursive: true });
-    await writeFile(join(dir, "assets", "diagram.png"), Buffer.from([0x89, 0x50]));
     await writeFile(
-      join(dir, "post.md"),
+      join(dir, "assets", "diagram.png"),
+      Buffer.from([0x89, 0x50]),
+    );
+    await writeFile(
+      join(dir, "assets", "post.md"),
       "---\ntitle: Post\ndate: 2026-01-01\n---\n\nBody.\n",
     );
     await writeFile(join(dir, ".env"), "secret");
@@ -295,7 +298,11 @@ describe("serveContentAsset", () => {
   it("rejects markdown sources, dotfiles, traversal, and misses", async () => {
     const cfg = await makeAssetConfig();
     for (const pathname of [
-      "/voxx-assets/blog/post.md",
+      // Inside assets/, so these reach the SOURCE_RE check.
+      "/voxx-assets/blog/assets/post.md",
+      "/voxx-assets/blog/assets/post.MD",
+      "/voxx-assets/blog/assets/post.Md",
+      "/voxx-assets/blog/assets/post.mdx",
       "/voxx-assets/blog/.env",
       "/voxx-assets/blog/../secret.txt",
       "/voxx-assets/blog/missing.png",
@@ -303,6 +310,51 @@ describe("serveContentAsset", () => {
     ]) {
       expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
     }
+  });
+
+  it("never serves symlinks, even to files that exist", async () => {
+    const cfg = await makeAssetConfig();
+    const { symlink } = await import("node:fs/promises");
+    const outside = await mkdtemp(join(tmpdir(), "voxx-outside-"));
+    await writeFile(join(outside, "secret.png"), "leak");
+    await symlink(
+      join(outside, "secret.png"),
+      join(cfg.content.dir, "assets", "escape.png"),
+    );
+    expect(
+      await serveContentAsset("/voxx-assets/blog/assets/escape.png", {
+        config: cfg,
+      }),
+    ).toBeNull();
+  });
+
+  it("does not fall through to a shorter collection when the longest match misses", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-leak-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "guides", "assets"), { recursive: true });
+    await writeFile(join(dir, "guides", "assets", "logo.svg"), "<svg/>");
+    const shared = { ...config.content, dir };
+    const docsDir = await mkdtemp(join(tmpdir(), "voxx-docs-"));
+    const cfg: VoxxConfig = {
+      ...config,
+      content: shared,
+      collections: [
+        { name: "blog", ...shared },
+        {
+          name: "docs",
+          ...config.content,
+          dir: docsDir,
+          basePath: "/blog/guides",
+        },
+      ],
+    };
+    // The docs collection owns /blog/guides/*; blog's file at the same
+    // relative layout must not be substituted for its missing one.
+    expect(
+      await serveContentAsset("/voxx-assets/blog/guides/assets/logo.svg", {
+        config: cfg,
+      }),
+    ).toBeNull();
   });
 
   it("only serves files below an assets/ directory", async () => {
@@ -337,15 +389,13 @@ describe("serveContentAsset", () => {
     expect(response!.headers.get("content-type")).toBe("image/png");
   });
 
-  it("rejects encoded backslash separators and case-tweaked sources", async () => {
+  it("rejects encoded backslash separators", async () => {
     const cfg = await makeAssetConfig();
-    for (const pathname of [
-      "/voxx-assets/blog/a%5C..%5C..%5C.env",
-      "/voxx-assets/blog/post.MD",
-      "/voxx-assets/blog/post.Md",
-    ]) {
-      expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
-    }
+    expect(
+      await serveContentAsset("/voxx-assets/blog/a%5C..%5C..%5C.env", {
+        config: cfg,
+      }),
+    ).toBeNull();
   });
 
   it("matches the longest basePath when collections nest", async () => {
