@@ -231,7 +231,12 @@ describe("content", () => {
       join(dir, "01-guides", "pictures.md"),
       "---\ntitle: Pics\ndate: 2026-01-01\n---\n\n![diagram](./diagram.png)\n",
     );
-    const cfg: VoxxConfig = { ...config, content: { ...config.content, dir } };
+    const content = { ...config.content, dir };
+    const cfg: VoxxConfig = {
+      ...config,
+      content,
+      collections: [{ name: "blog", ...content }],
+    };
     const posts = await getPosts({
       config: cfg,
       assetPrefix: VOXX_ASSET_PREFIX,
@@ -292,6 +297,17 @@ describe("serveContentAsset", () => {
       "/voxx-assets/blog/../secret.txt",
       "/voxx-assets/blog/missing.png",
       "/other/blog/diagram.png",
+    ]) {
+      expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
+    }
+  });
+
+  it("rejects encoded backslash separators and case-tweaked sources", async () => {
+    const cfg = await makeAssetConfig();
+    for (const pathname of [
+      "/voxx-assets/blog/a%5C..%5C..%5C.env",
+      "/voxx-assets/blog/post.MD",
+      "/voxx-assets/blog/post.Md",
     ]) {
       expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
     }

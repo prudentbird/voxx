@@ -1,6 +1,7 @@
 import { Effect, Option } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
+import { sep } from "node:path";
 import { loadConfigEffect } from "./config";
 import type { VoxxConfig } from "./types";
 
@@ -12,7 +13,7 @@ import type { VoxxConfig } from "./types";
  */
 export const VOXX_ASSET_PREFIX = "/voxx-assets";
 
-const SOURCE_RE = /\.mdx?$/;
+const SOURCE_RE = /\.mdx?$/i;
 
 const MIME_TYPES: Record<string, string> = {
   avif: "image/avif",
@@ -49,8 +50,12 @@ function decodeSegments(pathname: string): string[] | null {
   }
   const segments = decoded.split("/").filter(Boolean);
   // Hidden/dot segments are never content assets, and rejecting them up front
-  // also rules out `..` traversal outright.
-  if (segments.length === 0 || segments.some((s) => s.startsWith(".")))
+  // also rules out `..` traversal outright. A decoded `\` would act as a path
+  // separator on Windows hosts (e.g. `%5C..%5C`), so it is rejected too.
+  if (
+    segments.length === 0 ||
+    segments.some((s) => s.startsWith(".") || s.includes("\\"))
+  )
     return null;
   return segments;
 }
@@ -66,8 +71,9 @@ interface CollectionLike {
  *
  * Collections are matched by longest `basePath` first so nested base paths win
  * over shorter ones. Returns `null` for anything that is not a servable
- * content asset: wrong prefix, malformed or traversing path, Markdown source,
- * or a file that does not exist.
+ * content asset: wrong prefix, malformed or traversing path (including
+ * encoded `\` separators), dotfiles, Markdown sources (case-insensitive), or
+ * a file that does not exist.
  */
 export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
   Effect.gen(function* () {
@@ -91,6 +97,13 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
 
       const rel = segments.slice(baseSegments.length);
       const filePath = path.join(collection.dir, ...rel);
+      // Belt-and-braces containment check: the segment validation above
+      // should make this unreachable, but never serve from outside the
+      // collection directory regardless of platform path quirks.
+      const root = collection.dir.endsWith(sep)
+        ? collection.dir
+        : `${collection.dir}${sep}`;
+      if (!filePath.startsWith(root)) continue;
       if (SOURCE_RE.test(filePath)) return null;
 
       const info = yield* fs.stat(filePath).pipe(Effect.option);

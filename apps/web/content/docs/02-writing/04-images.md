@@ -43,7 +43,7 @@ the markdown.
 
 Nested folders give each page its own namespace:
 
-```
+```text
 content/docs/
   01-getting-started/
     install.md
