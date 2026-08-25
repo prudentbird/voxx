@@ -1,5 +1,13 @@
 # @prudentbird/voxx
 
+## 0.0.8
+
+### Patch Changes
+
+- Serve files in content-dir `assets/` folders through a `/voxx-assets` catch-all in Next.js mode (static builds already copied them), with `assetPrefix` support in the render pipeline and a new `serveContentAsset` core API. Path resolution rejects traversal, encoded backslash separators, dotfiles, Markdown sources regardless of case, and symlinks resolving outside `assets/` or onto Markdown; the longest-matching collection owns each URL. The scaffolded route caches its config load and recovers from transient config failures.
+- Updated dependencies
+  - @prudentbird/voxx-core@0.0.8
+
 ## 0.0.7
 
 ### Patch Changes
