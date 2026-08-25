@@ -33,6 +33,12 @@ export interface RenderResult {
 export interface RenderOptions {
   /** URL prefix used to resolve relative `src` and `poster` attributes. */
   assetBase?: string;
+  /**
+   * Prepended to every resolved asset URL. Used by Next.js hosts, where a
+   * route handler under this prefix serves the files from disk (static builds
+   * copy them instead, so they leave the prefix unset).
+   */
+  assetPrefix?: string;
 }
 
 function rehypeCollectToc() {
@@ -80,14 +86,17 @@ function rehypeExternalLinks() {
   };
 }
 
-function rehypeResolveAssets(base: string) {
+function rehypeResolveAssets(base: string, prefix?: string) {
   return (tree: Root) => {
     visit(tree, "element", (node) => {
       for (const prop of ASSET_PROPS) {
         const value = node.properties?.[prop];
         if (typeof value !== "string" || value === "") continue;
         if (ABSOLUTE_RE.test(value)) continue;
-        node.properties[prop] = resolveRelativePath(base, value);
+        const resolved = resolveRelativePath(base, value);
+        node.properties[prop] = prefix
+          ? `${prefix}${resolved}`
+          : resolved;
       }
     });
   };
@@ -168,7 +177,8 @@ async function ensureLanguages(
  *
  * @param markdown - Raw Markdown source.
  * @param config - Voxx config (used for `theme.codeTheme`).
- * @param opts - Optional `assetBase` for resolving relative image paths.
+ * @param opts - Optional `assetBase` for resolving relative image paths, and
+ *   an optional `assetPrefix` prepended to the resolved URLs.
  */
 export const renderMarkdownEffect = (
   markdown: string,
@@ -192,7 +202,8 @@ export const renderMarkdownEffect = (
           highlighter,
           shikiOptions(config.theme.codeTheme),
         );
-      if (opts.assetBase) processor.use(rehypeResolveAssets, opts.assetBase);
+      if (opts.assetBase)
+        processor.use(rehypeResolveAssets, opts.assetBase, opts.assetPrefix);
       const file = await processor
         .use(rehypeCollectToc)
         .use(rehypeStringify)

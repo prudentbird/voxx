@@ -356,7 +356,8 @@ describe("voxx add collection", () => {
       true,
     );
     const data = await readFile(join(dir, "app/(voxx)/docs/_data.ts"), "utf8");
-    expect(data).toContain('coreGetPosts({ collection: "docs" })');
+    expect(data).toContain('assetPrefix: VOXX_ASSET_PREFIX');
+    expect(data).toContain('{ collection: "docs" }');
 
     const sitemap = await readFile(join(dir, "app/(voxx)/sitemap.ts"), "utf8");
     expect(sitemap).toContain("./blog/_data");

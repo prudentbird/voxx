@@ -1,5 +1,6 @@
 import "server-only";
 import {
+  VOXX_ASSET_PREFIX,
   getPostOrNull as coreGetPostOrNull,
   getPosts as coreGetPosts,
   listPosts as coreListPosts,
@@ -76,7 +77,10 @@ export async function listReachablePosts(): Promise<PostMeta[]> {
  * full corpus rendered (RSS, `llms-full.txt`).
  */
 export async function getPosts(): Promise<Post[]> {
-  return memo("getPosts", () => coreGetPosts({{COLLECTION_ARG}}));
+  return memo("getPosts", () => coreGetPosts({
+    ...{{COLLECTION_ARG}},
+    assetPrefix: VOXX_ASSET_PREFIX,
+  }));
 }
 
 /**
@@ -89,7 +93,12 @@ export async function getPostsPage(
   limit: number,
 ): Promise<Post[]> {
   return memo(`getPostsPage:${JSON.stringify([offset, limit])}`, () =>
-    coreGetPosts({ ...{{COLLECTION_ARG}}, offset, limit }),
+    coreGetPosts({
+      ...{{COLLECTION_ARG}},
+      assetPrefix: VOXX_ASSET_PREFIX,
+      offset,
+      limit,
+    }),
   );
 }
 
@@ -105,6 +114,7 @@ export async function getPost(slug: string): Promise<Post | null> {
     coreGetPostOrNull(slug, {
       ...{{COLLECTION_ARG}},
       reachable: true,
+      assetPrefix: VOXX_ASSET_PREFIX,
     }),
   );
 }

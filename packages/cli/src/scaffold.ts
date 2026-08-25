@@ -253,6 +253,13 @@ export async function siteWideOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
       {},
       true,
     ),
+    await op(
+      cwd,
+      join(group, "voxx-assets", "[...path]", "route.ts"),
+      "shared/assets-route.ts.tpl",
+      {},
+      true,
+    ),
   );
 
   if (flags.sitemap) {

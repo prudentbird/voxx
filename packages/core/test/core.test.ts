@@ -6,6 +6,7 @@ import { join } from "node:path";
 
 import {
   DEFAULT_CONFIG,
+  VOXX_ASSET_PREFIX,
   absoluteUrl,
   buildNavTree,
   buildSeo,
@@ -24,6 +25,7 @@ import {
   renderRobotsTxt,
   renderRss,
   renderSitemap,
+  serveContentAsset,
   slugify,
   splitOrderPrefix,
   formatDate,
@@ -221,6 +223,29 @@ describe("content", () => {
     expect(posts[0]!.html).toContain('src="/blog/shared/logo.svg"');
   });
 
+  it("prepends assetPrefix to resolved assets when set", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-assets-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "01-guides"), { recursive: true });
+    await writeFile(
+      join(dir, "01-guides", "pictures.md"),
+      "---\ntitle: Pics\ndate: 2026-01-01\n---\n\n![diagram](./diagram.png)\n",
+    );
+    const content = { ...config.content, dir };
+    const cfg: VoxxConfig = {
+      ...config,
+      content,
+      collections: [{ name: "blog", ...content }],
+    };
+    const posts = await getPosts({
+      config: cfg,
+      assetPrefix: VOXX_ASSET_PREFIX,
+    });
+    expect(posts[0]!.html).toContain(
+      `src="${VOXX_ASSET_PREFIX}/blog/01-guides/diagram.png"`,
+    );
+  });
+
   it("derives slug and date from a YYYY-MM-DD- filename prefix", async () => {
     const dir = await mkdtemp(join(tmpdir(), "voxx-"));
     await writeFile(
@@ -231,6 +256,194 @@ describe("content", () => {
     const posts = await getPosts({ config: cfg });
     expect(posts[0]!.slug).toBe("my-prefixed-post");
     expect(posts[0]!.date.slice(0, 10)).toBe("2026-04-01");
+  });
+});
+
+describe("serveContentAsset", () => {
+  async function makeAssetConfig() {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-serve-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "assets"), { recursive: true });
+    await writeFile(
+      join(dir, "assets", "diagram.png"),
+      Buffer.from([0x89, 0x50]),
+    );
+    await writeFile(
+      join(dir, "assets", "post.md"),
+      "---\ntitle: Post\ndate: 2026-01-01\n---\n\nBody.\n",
+    );
+    await writeFile(join(dir, ".env"), "secret");
+    const content = { ...config.content, dir };
+    return {
+      ...config,
+      content,
+      collections: [{ name: "blog", ...content }],
+    } satisfies VoxxConfig;
+  }
+
+  it("serves a content asset from the collection's assets directory", async () => {
+    const cfg = await makeAssetConfig();
+    const response = await serveContentAsset(
+      "/voxx-assets/blog/assets/diagram.png",
+      { config: cfg },
+    );
+    expect(response).not.toBeNull();
+    expect(response!.status).toBe(200);
+    expect(response!.headers.get("content-type")).toBe("image/png");
+    expect(Buffer.from(await response!.arrayBuffer())).toEqual(
+      Buffer.from([0x89, 0x50]),
+    );
+  });
+
+  it("rejects markdown sources, dotfiles, traversal, and misses", async () => {
+    const cfg = await makeAssetConfig();
+    for (const pathname of [
+      // Inside assets/, so these reach the SOURCE_RE check.
+      "/voxx-assets/blog/assets/post.md",
+      "/voxx-assets/blog/assets/post.MD",
+      "/voxx-assets/blog/assets/post.Md",
+      "/voxx-assets/blog/assets/post.mdx",
+      "/voxx-assets/blog/.env",
+      "/voxx-assets/blog/../secret.txt",
+      "/voxx-assets/blog/missing.png",
+      "/other/blog/diagram.png",
+    ]) {
+      expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
+    }
+  });
+
+  it("never serves symlinks, even to files that exist", async () => {
+    const cfg = await makeAssetConfig();
+    const { symlink } = await import("node:fs/promises");
+    const outside = await mkdtemp(join(tmpdir(), "voxx-outside-"));
+    await writeFile(join(outside, "secret.png"), "leak");
+    await symlink(
+      join(outside, "secret.png"),
+      join(cfg.content.dir, "assets", "escape.png"),
+    );
+    expect(
+      await serveContentAsset("/voxx-assets/blog/assets/escape.png", {
+        config: cfg,
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects symlinks that resolve to non-asset files inside the collection", async () => {
+    const cfg = await makeAssetConfig();
+    const { symlink } = await import("node:fs/promises");
+    // Stays inside the collection dir but resolves to Markdown source.
+    await symlink(
+      join(cfg.content.dir, "assets", "post.md"),
+      join(cfg.content.dir, "assets", "logo.png"),
+    );
+    expect(
+      await serveContentAsset("/voxx-assets/blog/assets/logo.png", {
+        config: cfg,
+      }),
+    ).toBeNull();
+  });
+
+  it("does not fall through to a shorter collection when the longest match misses", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-leak-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "guides", "assets"), { recursive: true });
+    await writeFile(join(dir, "guides", "assets", "logo.svg"), "<svg/>");
+    const shared = { ...config.content, dir };
+    const docsDir = await mkdtemp(join(tmpdir(), "voxx-docs-"));
+    const cfg: VoxxConfig = {
+      ...config,
+      content: shared,
+      collections: [
+        { name: "blog", ...shared },
+        {
+          name: "docs",
+          ...config.content,
+          dir: docsDir,
+          basePath: "/blog/guides",
+        },
+      ],
+    };
+    // The docs collection owns /blog/guides/*; blog's file at the same
+    // relative layout must not be substituted for its missing one.
+    expect(
+      await serveContentAsset("/voxx-assets/blog/guides/assets/logo.svg", {
+        config: cfg,
+      }),
+    ).toBeNull();
+  });
+
+  it("only serves files below an assets/ directory", async () => {
+    const cfg = await makeAssetConfig();
+    for (const pathname of [
+      "/voxx-assets/blog/diagram.png",
+      "/voxx-assets/blog/assets",
+      "/voxx-assets/blog/assets/",
+      "/voxx-assets/blog/myassets/diagram.png",
+    ]) {
+      expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
+    }
+  });
+
+  it("serves assets when the configured dir has unnormalized separators", async () => {
+    const base = await mkdtemp(join(tmpdir(), "voxx-norm-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(base, "assets"), { recursive: true });
+    await writeFile(join(base, "assets", "a.png"), "png");
+    // resolveConfig passes absolute dirs through verbatim, so a raw dir like
+    // this reaches the containment check unnormalized.
+    const content = { ...config.content, dir: `${base}/./` };
+    const cfg: VoxxConfig = {
+      ...config,
+      content,
+      collections: [{ name: "blog", ...content }],
+    };
+    const response = await serveContentAsset("/voxx-assets/blog/assets/a.png", {
+      config: cfg,
+    });
+    expect(response).not.toBeNull();
+    expect(response!.headers.get("content-type")).toBe("image/png");
+  });
+
+  it("rejects encoded backslash separators", async () => {
+    const cfg = await makeAssetConfig();
+    expect(
+      await serveContentAsset("/voxx-assets/blog/a%5C..%5C..%5C.env", {
+        config: cfg,
+      }),
+    ).toBeNull();
+  });
+
+  it("matches the longest basePath when collections nest", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-nest-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "assets"), { recursive: true });
+    await writeFile(join(dir, "assets", "logo.svg"), "<svg/>");
+    const shared = { ...config.content, dir };
+    const docsDir = await mkdtemp(join(tmpdir(), "voxx-docs-"));
+    await mkdir(join(docsDir, "assets"), { recursive: true });
+    await writeFile(join(docsDir, "assets", "cover.png"), "png");
+    const cfg: VoxxConfig = {
+      ...config,
+      content: shared,
+      collections: [
+        { name: "blog", ...shared },
+        {
+          name: "docs",
+          ...config.content,
+          dir: docsDir,
+          basePath: "/blog/guides",
+        },
+      ],
+    };
+    const logo = await serveContentAsset("/voxx-assets/blog/assets/logo.svg", {
+      config: cfg,
+    });
+    expect(logo?.headers.get("content-type")).toBe("image/svg+xml");
+    const cover = await serveContentAsset(
+      "/voxx-assets/blog/guides/assets/cover.png",
+      { config: cfg },
+    );
+    expect(cover?.headers.get("content-type")).toBe("image/png");
   });
 });
 
