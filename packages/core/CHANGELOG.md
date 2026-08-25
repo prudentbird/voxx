@@ -1,5 +1,11 @@
 # @prudentbird/voxx-core
 
+## 0.0.7
+
+### Patch Changes
+
+- Restore list-style for `ol` and `ul` in `.voxx-prose`, which was reset by Tailwind v4 preflight
+
 ## 0.0.6
 
 ### Patch Changes
