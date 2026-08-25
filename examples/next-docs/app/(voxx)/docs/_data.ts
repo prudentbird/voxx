@@ -1,6 +1,7 @@
 import "server-only";
 import { cacheLife } from "next/cache";
 import {
+  VOXX_ASSET_PREFIX,
   getPostOrNull as coreGetPostOrNull,
   getPosts as coreGetPosts,
   listPosts as coreListPosts,
@@ -63,7 +64,10 @@ async function getPostsCached(version: number): Promise<Post[]> {
   "use cache";
   cacheLife("max");
   void version;
-  return coreGetPosts({ collection: "docs" });
+  return coreGetPosts({
+    collection: "docs",
+    assetPrefix: VOXX_ASSET_PREFIX,
+  });
 }
 
 /**
@@ -82,7 +86,12 @@ async function getPostsPageCached(
   "use cache";
   cacheLife("max");
   void version;
-  return coreGetPosts({ ...{ collection: "docs" }, offset, limit });
+  return coreGetPosts({
+    collection: "docs",
+    assetPrefix: VOXX_ASSET_PREFIX,
+    offset,
+    limit,
+  });
 }
 
 /**
@@ -120,6 +129,7 @@ async function getPostCached(
   return coreGetPostOrNull(slug, {
     ...{ collection: "docs" },
     reachable: true,
+    assetPrefix: VOXX_ASSET_PREFIX,
   });
 }
 

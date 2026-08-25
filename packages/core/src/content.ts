@@ -38,6 +38,12 @@ export interface GetPostsEffectOptions {
   offset?: number;
   /** Caps the result to this many posts. When unset, returns all remaining. */
   limit?: number;
+  /**
+   * Prepended to resolved asset URLs in rendered HTML (see
+   * {@link RenderOptions.assetPrefix}). Only hosts that serve content assets
+   * through a route handler need to set it.
+   */
+  assetPrefix?: string;
 }
 
 /** Result of `listPostsEffect` — a page of metadata plus the unpaginated total. */
@@ -171,13 +177,18 @@ const buildMeta = (config: VoxxConfig, absPath: string, rel: string) =>
  * file is re-read here so the metadata pass can discard raw content and stay
  * memory-light over large content sets.
  */
-const renderBuilt = (config: VoxxConfig, built: BuiltMeta) =>
+const renderBuilt = (
+  config: VoxxConfig,
+  built: BuiltMeta,
+  opts: GetPostsEffectOptions = {},
+) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const raw = yield* fs.readFileString(built.absPath);
     const { content } = yield* parseFrontmatter(built.rel, raw);
     const { html, toc } = yield* renderMarkdownEffect(content, config, {
       assetBase: built.assetBase,
+      assetPrefix: opts.assetPrefix,
     });
     return { ...built.meta, html, toc, content } satisfies Post;
   });
@@ -324,7 +335,7 @@ export const getPostsEffect = (
     const all = yield* collectMetas(config, opts);
     return yield* Effect.forEach(
       paginate(all, opts),
-      (built) => renderBuilt(config, built),
+      (built) => renderBuilt(config, built, opts),
       { concurrency: 8 },
     );
   });
@@ -362,5 +373,5 @@ export const getPostEffect = (
     const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
     const built = all.find((b) => matchesSlug(b.meta, wanted));
     if (!built) return yield* new PostNotFound({ slug });
-    return yield* renderBuilt(config, built);
+    return yield* renderBuilt(config, built, opts);
   });

@@ -24,7 +24,8 @@ Alongside the pages you get `rss.xml`, `sitemap.xml`, `robots.txt`,
 else, plus the Voxx stylesheet under `dist/_voxx/`. Images and other
 non-markdown files in your content folder are copied through, and relative
 references like `![diagram](./diagram.png)` are resolved to where they
-land. Multi-collection configs build every collection in one pass.
+land (see [Images and assets](/docs/writing/images)). Multi-collection
+configs build every collection in one pass.
 
 ```bash
 npx @prudentbird/voxx build --out public    # somewhere other than ./dist

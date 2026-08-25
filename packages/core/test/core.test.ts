@@ -6,6 +6,7 @@ import { join } from "node:path";
 
 import {
   DEFAULT_CONFIG,
+  VOXX_ASSET_PREFIX,
   absoluteUrl,
   buildNavTree,
   buildSeo,
@@ -24,6 +25,7 @@ import {
   renderRobotsTxt,
   renderRss,
   renderSitemap,
+  serveContentAsset,
   slugify,
   splitOrderPrefix,
   formatDate,
@@ -221,6 +223,24 @@ describe("content", () => {
     expect(posts[0]!.html).toContain('src="/blog/shared/logo.svg"');
   });
 
+  it("prepends assetPrefix to resolved assets when set", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-assets-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "01-guides"), { recursive: true });
+    await writeFile(
+      join(dir, "01-guides", "pictures.md"),
+      "---\ntitle: Pics\ndate: 2026-01-01\n---\n\n![diagram](./diagram.png)\n",
+    );
+    const cfg: VoxxConfig = { ...config, content: { ...config.content, dir } };
+    const posts = await getPosts({
+      config: cfg,
+      assetPrefix: VOXX_ASSET_PREFIX,
+    });
+    expect(posts[0]!.html).toContain(
+      `src="${VOXX_ASSET_PREFIX}/blog/01-guides/diagram.png"`,
+    );
+  });
+
   it("derives slug and date from a YYYY-MM-DD- filename prefix", async () => {
     const dir = await mkdtemp(join(tmpdir(), "voxx-"));
     await writeFile(
@@ -231,6 +251,79 @@ describe("content", () => {
     const posts = await getPosts({ config: cfg });
     expect(posts[0]!.slug).toBe("my-prefixed-post");
     expect(posts[0]!.date.slice(0, 10)).toBe("2026-04-01");
+  });
+});
+
+describe("serveContentAsset", () => {
+  async function makeAssetConfig() {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-serve-"));
+    await writeFile(join(dir, "diagram.png"), Buffer.from([0x89, 0x50]));
+    await writeFile(
+      join(dir, "post.md"),
+      "---\ntitle: Post\ndate: 2026-01-01\n---\n\nBody.\n",
+    );
+    await writeFile(join(dir, ".env"), "secret");
+    const content = { ...config.content, dir };
+    return {
+      ...config,
+      content,
+      collections: [{ name: "blog", ...content }],
+    } satisfies VoxxConfig;
+  }
+
+  it("serves a content asset from the collection directory", async () => {
+    const cfg = await makeAssetConfig();
+    const response = await serveContentAsset("/voxx-assets/blog/diagram.png", {
+      config: cfg,
+    });
+    expect(response).not.toBeNull();
+    expect(response!.status).toBe(200);
+    expect(response!.headers.get("content-type")).toBe("image/png");
+    expect(Buffer.from(await response!.arrayBuffer())).toEqual(
+      Buffer.from([0x89, 0x50]),
+    );
+  });
+
+  it("rejects markdown sources, dotfiles, traversal, and misses", async () => {
+    const cfg = await makeAssetConfig();
+    for (const pathname of [
+      "/voxx-assets/blog/post.md",
+      "/voxx-assets/blog/.env",
+      "/voxx-assets/blog/../secret.txt",
+      "/voxx-assets/blog/missing.png",
+      "/other/blog/diagram.png",
+    ]) {
+      expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
+    }
+  });
+
+  it("matches the longest basePath when collections nest", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-nest-"));
+    await writeFile(join(dir, "logo.svg"), "<svg/>");
+    const shared = { ...config.content, dir };
+    const docsDir = await mkdtemp(join(tmpdir(), "voxx-docs-"));
+    await writeFile(join(docsDir, "cover.png"), "png");
+    const cfg: VoxxConfig = {
+      ...config,
+      content: shared,
+      collections: [
+        { name: "blog", ...shared },
+        {
+          name: "docs",
+          ...config.content,
+          dir: docsDir,
+          basePath: "/blog/guides",
+        },
+      ],
+    };
+    const logo = await serveContentAsset("/voxx-assets/blog/logo.svg", {
+      config: cfg,
+    });
+    expect(logo?.headers.get("content-type")).toBe("image/svg+xml");
+    const cover = await serveContentAsset("/voxx-assets/blog/guides/cover.png", {
+      config: cfg,
+    });
+    expect(cover?.headers.get("content-type")).toBe("image/png");
   });
 });
 

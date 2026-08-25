@@ -1,6 +1,7 @@
 import "server-only";
 import { cacheLife } from "next/cache";
 import {
+  VOXX_ASSET_PREFIX,
   findPost,
   getPost as coreGetPost,
   getPosts as coreGetPosts,
@@ -64,7 +65,10 @@ async function getPostsCached(version: number): Promise<Post[]> {
   "use cache";
   cacheLife("max");
   void version;
-  return coreGetPosts({ collection: "docs" });
+  return coreGetPosts({
+    collection: "docs",
+    assetPrefix: VOXX_ASSET_PREFIX,
+  });
 }
 
 /**
@@ -100,7 +104,11 @@ async function getPostCached(
     reachable: true,
   });
   if (!findPost(posts, slug)) return null;
-  return coreGetPost(slug, { collection: "docs", reachable: true });
+  return coreGetPost(slug, {
+    collection: "docs",
+    reachable: true,
+    assetPrefix: VOXX_ASSET_PREFIX,
+  });
 }
 
 /** A single post rendered to HTML, or `null` when no slug matches. */

@@ -56,6 +56,12 @@ rendered. Reach for it when you need the rendered bodies of many posts at once
 — RSS, `llms-full.txt`, a single-page changelog. Accepts every `listPosts`
 option.
 
+All three renderers also accept `assetPrefix` — a string prepended to every
+relative asset URL resolved during rendering. The Next.js scaffolding passes
+`VOXX_ASSET_PREFIX` (`"/voxx-assets"`) here so images resolve to the catch-all
+asset route; static builds leave it unset. See
+[Images and assets](/docs/writing/images).
+
 ### `getPost(slug, options?)`
 
 One rendered post by slug — for docs, the slash-joined path
@@ -111,6 +117,16 @@ and returns `{ html, toc }`.
 
 All of them are pure functions over data you already have, so they slot
 into any route handler or build script.
+
+### `serveContentAsset(pathname, options?)`
+
+Resolves a `/voxx-assets/…` request pathname to a file inside a collection's
+content directory and returns a ready-to-serve `Response` — or `null` when the
+path isn't a servable content asset (wrong prefix, traversal attempt,
+markdown source, missing file). This is what the scaffolded
+`voxx-assets/[...path]/route.ts` calls; you'd only touch it when building a
+custom Next.js integration. Accepts `config`, `cwd`, or `path` like the
+content readers.
 
 ## Helpers
 

@@ -69,4 +69,6 @@ overwriting. It never touches existing files.
   when you leave it out
 - [Organizing docs](/docs/writing/organizing-docs) — folders, ordering, and
   `index.md`
+- [Images and assets](/docs/writing/images) — co-locating images and
+  downloads with your markdown
 - [Writing releases](/docs/writing/releases) — version files and the timeline
