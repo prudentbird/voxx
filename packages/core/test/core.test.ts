@@ -328,6 +328,21 @@ describe("serveContentAsset", () => {
     ).toBeNull();
   });
 
+  it("rejects symlinks that resolve to non-asset files inside the collection", async () => {
+    const cfg = await makeAssetConfig();
+    const { symlink } = await import("node:fs/promises");
+    // Stays inside the collection dir but resolves to Markdown source.
+    await symlink(
+      join(cfg.content.dir, "assets", "post.md"),
+      join(cfg.content.dir, "assets", "logo.png"),
+    );
+    expect(
+      await serveContentAsset("/voxx-assets/blog/assets/logo.png", {
+        config: cfg,
+      }),
+    ).toBeNull();
+  });
+
   it("does not fall through to a shorter collection when the longest match misses", async () => {
     const dir = await mkdtemp(join(tmpdir(), "voxx-leak-"));
     const { mkdir } = await import("node:fs/promises");

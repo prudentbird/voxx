@@ -124,11 +124,13 @@ Resolves a `/voxx-assets/…` request pathname to a file inside an `assets/`
 directory of a collection's content directory and returns a ready-to-serve
 `Response` — or `null` when the path isn't a servable content asset: wrong
 prefix, traversal attempt (including encoded `\` separators), dotfiles,
-Markdown sources regardless of case (`secret.MD` included), paths outside an
-`assets/` directory, or a missing file. This is what the scaffolded
+Markdown sources regardless of case (`secret.MD` included), symlinks whose
+resolved target leaves `assets/` or lands on a Markdown source, paths outside
+an `assets/` directory, or a missing file. This is what the scaffolded
 `voxx-assets/[...path]/route.ts` calls; you'd only touch it when building a
 custom Next.js integration. Accepts `config`, `cwd`, or `path` like the
-content readers.
+content readers — pass a cached config if you serve many assets per page,
+since the route scaffolds one anyway.
 
 Note that the `/voxx-assets` prefix assumes deployment at the domain root —
 a Next.js `basePath` is not prepended to rendered asset URLs (see

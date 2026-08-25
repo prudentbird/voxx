@@ -150,10 +150,26 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
       )
         return null;
 
+      // The resolved target must still be an asset path: a symlink such as
+      // assets/logo.png -> ../draft.md stays inside the collection but would
+      // otherwise leak unpublished Markdown through an innocuous-looking URL.
+      const realRel = normalizeSeparators(real.value)
+        .slice(prefix.length)
+        .split("/")
+        .filter(Boolean);
+      const realAssetsIndex = realRel.indexOf(ASSET_DIR);
+      if (
+        realAssetsIndex === -1 ||
+        realAssetsIndex === realRel.length - 1 ||
+        SOURCE_RE.test(real.value)
+      )
+        return null;
+
       const info = yield* fs.stat(filePath).pipe(Effect.option);
       if (Option.isNone(info) || info.value.type !== "File") return null;
 
-      const mime = MIME_TYPES[rel[rel.length - 1]!.split(".").pop() ?? ""];
+      const mime =
+        MIME_TYPES[rel[rel.length - 1]!.split(".").pop()!.toLowerCase()];
       const body = yield* fs.readFile(filePath);
       return new Response(new Uint8Array(body), {
         headers: {
