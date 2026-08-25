@@ -317,6 +317,26 @@ describe("serveContentAsset", () => {
     }
   });
 
+  it("serves assets when the configured dir has unnormalized separators", async () => {
+    const base = await mkdtemp(join(tmpdir(), "voxx-norm-"));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(base, "assets"), { recursive: true });
+    await writeFile(join(base, "assets", "a.png"), "png");
+    // resolveConfig passes absolute dirs through verbatim, so a raw dir like
+    // this reaches the containment check unnormalized.
+    const content = { ...config.content, dir: `${base}/./` };
+    const cfg: VoxxConfig = {
+      ...config,
+      content,
+      collections: [{ name: "blog", ...content }],
+    };
+    const response = await serveContentAsset("/voxx-assets/blog/assets/a.png", {
+      config: cfg,
+    });
+    expect(response).not.toBeNull();
+    expect(response!.headers.get("content-type")).toBe("image/png");
+  });
+
   it("rejects encoded backslash separators and case-tweaked sources", async () => {
     const cfg = await makeAssetConfig();
     for (const pathname of [

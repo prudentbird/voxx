@@ -1,7 +1,6 @@
 import { Effect, Option } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
-import { sep } from "node:path";
 import { loadConfigEffect } from "./config";
 import type { VoxxConfig } from "./types";
 
@@ -17,6 +16,14 @@ export const VOXX_ASSET_PREFIX = "/voxx-assets";
 export const ASSET_DIR = "assets";
 
 const SOURCE_RE = /\.mdx?$/i;
+
+/**
+ * Normalizes to forward slashes so containment checks compare like with
+ * like: `collection.dir` may arrive verbatim from config (Windows absolute
+ * dirs such as `C:/content/blog` skip normalization), while `path.join`
+ * output follows platform conventions.
+ */
+const normalizeSeparators = (p: string) => p.replaceAll("\\", "/");
 
 const MIME_TYPES: Record<string, string> = {
   avif: "image/avif",
@@ -107,11 +114,13 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
       const filePath = path.join(collection.dir, ...rel);
       // Belt-and-braces containment check: the segment validation above
       // should make this unreachable, but never serve from outside the
-      // collection directory regardless of platform path quirks.
-      const root = collection.dir.endsWith(sep)
-        ? collection.dir
-        : `${collection.dir}${sep}`;
-      if (!filePath.startsWith(root)) continue;
+      // collection directory regardless of platform path quirks. Fully
+      // normalize the root through path.join (collapsing `.`, `..`, and
+      // duplicate separators), then compare with separators unified — the
+      // raw dir string may not match the join output's shape otherwise.
+      const root = normalizeSeparators(path.join(collection.dir));
+      const prefix = root.endsWith("/") ? root : `${root}/`;
+      if (!normalizeSeparators(filePath).startsWith(prefix)) continue;
       if (SOURCE_RE.test(filePath)) return null;
 
       const info = yield* fs.stat(filePath).pipe(Effect.option);
