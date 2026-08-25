@@ -13,6 +13,9 @@ import type { VoxxConfig } from "./types";
  */
 export const VOXX_ASSET_PREFIX = "/voxx-assets";
 
+/** Directory name under which files are servable as content assets. */
+export const ASSET_DIR = "assets";
+
 const SOURCE_RE = /\.mdx?$/i;
 
 const MIME_TYPES: Record<string, string> = {
@@ -66,14 +69,15 @@ interface CollectionLike {
 }
 
 /**
- * Maps a `{@link VOXX_ASSET_PREFIX}`-prefixed URL pathname to a file inside one of
- * the configured collections' content directories.
+ * Maps a `{@link VOXX_ASSET_PREFIX}`-prefixed URL pathname to a file inside an
+ * `assets/` directory of one of the configured collections' content
+ * directories.
  *
  * Collections are matched by longest `basePath` first so nested base paths win
- * over shorter ones. Returns `null` for anything that is not a servable
- * content asset: wrong prefix, malformed or traversing path (including
- * encoded `\` separators), dotfiles, Markdown sources (case-insensitive), or
- * a file that does not exist.
+ * over shorter ones. Only files below a directory named `assets` are served;
+ * anything else maps to `null`: wrong prefix, malformed or traversing path
+ * (including encoded `\` separators), dotfiles, Markdown sources
+ * (case-insensitive), paths outside `assets/`, or a file that does not exist.
  */
 export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
   Effect.gen(function* () {
@@ -96,6 +100,10 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
       if (baseSegments.some((s, i) => s !== segments[i])) continue;
 
       const rel = segments.slice(baseSegments.length);
+      // Only files inside an `assets/` directory are served — everything else
+      // in the content tree is page material, not a downloadable asset.
+      const assetsIndex = rel.indexOf(ASSET_DIR);
+      if (assetsIndex === -1 || assetsIndex === rel.length - 1) continue;
       const filePath = path.join(collection.dir, ...rel);
       // Belt-and-braces containment check: the segment validation above
       // should make this unreachable, but never serve from outside the

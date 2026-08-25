@@ -262,7 +262,9 @@ describe("content", () => {
 describe("serveContentAsset", () => {
   async function makeAssetConfig() {
     const dir = await mkdtemp(join(tmpdir(), "voxx-serve-"));
-    await writeFile(join(dir, "diagram.png"), Buffer.from([0x89, 0x50]));
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "assets"), { recursive: true });
+    await writeFile(join(dir, "assets", "diagram.png"), Buffer.from([0x89, 0x50]));
     await writeFile(
       join(dir, "post.md"),
       "---\ntitle: Post\ndate: 2026-01-01\n---\n\nBody.\n",
@@ -276,11 +278,12 @@ describe("serveContentAsset", () => {
     } satisfies VoxxConfig;
   }
 
-  it("serves a content asset from the collection directory", async () => {
+  it("serves a content asset from the collection's assets directory", async () => {
     const cfg = await makeAssetConfig();
-    const response = await serveContentAsset("/voxx-assets/blog/diagram.png", {
-      config: cfg,
-    });
+    const response = await serveContentAsset(
+      "/voxx-assets/blog/assets/diagram.png",
+      { config: cfg },
+    );
     expect(response).not.toBeNull();
     expect(response!.status).toBe(200);
     expect(response!.headers.get("content-type")).toBe("image/png");
@@ -302,6 +305,18 @@ describe("serveContentAsset", () => {
     }
   });
 
+  it("only serves files below an assets/ directory", async () => {
+    const cfg = await makeAssetConfig();
+    for (const pathname of [
+      "/voxx-assets/blog/diagram.png",
+      "/voxx-assets/blog/assets",
+      "/voxx-assets/blog/assets/",
+      "/voxx-assets/blog/myassets/diagram.png",
+    ]) {
+      expect(await serveContentAsset(pathname, { config: cfg })).toBeNull();
+    }
+  });
+
   it("rejects encoded backslash separators and case-tweaked sources", async () => {
     const cfg = await makeAssetConfig();
     for (const pathname of [
@@ -315,10 +330,13 @@ describe("serveContentAsset", () => {
 
   it("matches the longest basePath when collections nest", async () => {
     const dir = await mkdtemp(join(tmpdir(), "voxx-nest-"));
-    await writeFile(join(dir, "logo.svg"), "<svg/>");
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(dir, "assets"), { recursive: true });
+    await writeFile(join(dir, "assets", "logo.svg"), "<svg/>");
     const shared = { ...config.content, dir };
     const docsDir = await mkdtemp(join(tmpdir(), "voxx-docs-"));
-    await writeFile(join(docsDir, "cover.png"), "png");
+    await mkdir(join(docsDir, "assets"), { recursive: true });
+    await writeFile(join(docsDir, "assets", "cover.png"), "png");
     const cfg: VoxxConfig = {
       ...config,
       content: shared,
@@ -332,13 +350,14 @@ describe("serveContentAsset", () => {
         },
       ],
     };
-    const logo = await serveContentAsset("/voxx-assets/blog/logo.svg", {
+    const logo = await serveContentAsset("/voxx-assets/blog/assets/logo.svg", {
       config: cfg,
     });
     expect(logo?.headers.get("content-type")).toBe("image/svg+xml");
-    const cover = await serveContentAsset("/voxx-assets/blog/guides/cover.png", {
-      config: cfg,
-    });
+    const cover = await serveContentAsset(
+      "/voxx-assets/blog/guides/assets/cover.png",
+      { config: cfg },
+    );
     expect(cover?.headers.get("content-type")).toBe("image/png");
   });
 });

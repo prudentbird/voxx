@@ -120,11 +120,12 @@ into any route handler or build script.
 
 ### `serveContentAsset(pathname, options?)`
 
-Resolves a `/voxx-assets/…` request pathname to a file inside a collection's
-content directory and returns a ready-to-serve `Response` — or `null` when the
-path isn't a servable content asset: wrong prefix, traversal attempt
-(including encoded `\` separators), dotfiles, Markdown sources regardless of
-case (`secret.MD` included), or a missing file. This is what the scaffolded
+Resolves a `/voxx-assets/…` request pathname to a file inside an `assets/`
+directory of a collection's content directory and returns a ready-to-serve
+`Response` — or `null` when the path isn't a servable content asset: wrong
+prefix, traversal attempt (including encoded `\` separators), dotfiles,
+Markdown sources regardless of case (`secret.MD` included), paths outside an
+`assets/` directory, or a missing file. This is what the scaffolded
 `voxx-assets/[...path]/route.ts` calls; you'd only touch it when building a
 custom Next.js integration. Accepts `config`, `cwd`, or `path` like the
 content readers.

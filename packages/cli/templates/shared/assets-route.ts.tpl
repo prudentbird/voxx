@@ -1,8 +1,8 @@
 import { serveContentAsset } from "@prudentbird/voxx-core";
 
 /**
- * Serves the non-Markdown files that live next to the Markdown sources
- * (images, fonts, downloads, …). Rendered posts reference them under
+ * Serves the files that live in an `assets/` directory next to the Markdown
+ * sources (images, fonts, downloads, …). Rendered posts reference them under
  * `/voxx-assets/…`; this handler maps those URLs back onto the content
  * directories declared in `voxx.json`.
  *

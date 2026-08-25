@@ -245,7 +245,7 @@ export {
 export type { LlmsSection } from "./llms";
 export { findPost } from "./content";
 export type { ListPostsResult } from "./content";
-export { serveContentAsset, VOXX_ASSET_PREFIX } from "./assets";
+export { serveContentAsset, VOXX_ASSET_PREFIX, ASSET_DIR } from "./assets";
 export { registerContentWatcher } from "./dev";
 export type { ContentWatcherOptions } from "./dev";
 export { buildNavTree } from "./nav";
