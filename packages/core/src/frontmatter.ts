@@ -24,19 +24,24 @@ const splitFrontmatter = (raw: string) => {
     : { yaml: "", content: raw };
 };
 
+const parseYaml = (file: string, raw: string) =>
+  Effect.try({
+    try: () => {
+      const { yaml, content } = splitFrontmatter(raw);
+      return { data: yaml ? (load(yaml) ?? {}) : {}, content };
+    },
+    catch: (cause) =>
+      new InvalidFrontmatter({
+        file,
+        message: cause instanceof Error ? cause.message : String(cause),
+        cause,
+      }),
+  });
+
 export const parseFrontmatter = (file: string, raw: string) =>
   Effect.gen(function* () {
-    const { yaml, content } = splitFrontmatter(raw);
-    const parsedYaml = yield* Effect.try({
-      try: () => (yaml ? (load(yaml) ?? {}) : {}),
-      catch: (cause) =>
-        new InvalidFrontmatter({
-          file,
-          message: cause instanceof Error ? cause.message : String(cause),
-          cause,
-        }),
-    });
-    const data = yield* Schema.decodeUnknown(Frontmatter)(parsedYaml).pipe(
+    const { data: rawData, content } = yield* parseYaml(file, raw);
+    const data = yield* Schema.decodeUnknown(Frontmatter)(rawData).pipe(
       Effect.mapError(
         (cause) =>
           new InvalidFrontmatter({
