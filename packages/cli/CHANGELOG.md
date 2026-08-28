@@ -1,5 +1,12 @@
 # @prudentbird/voxx
 
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies [8d9abd8]
+  - @prudentbird/voxx-core@0.0.10
+
 ## 0.0.9
 
 ### Patch Changes
