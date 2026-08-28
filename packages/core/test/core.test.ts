@@ -123,6 +123,17 @@ describe("frontmatter", () => {
       expect(JSON.stringify(err)).toContain("InvalidFrontmatter");
     }
   });
+
+  it("fails with a tagged error instead of throwing on malformed YAML", async () => {
+    const exit = await Effect.runPromiseExit(
+      parseFrontmatter("malformed.md", "---\ntitle: [Unclosed\n---\nbody"),
+    );
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit)) {
+      const err = exit.cause;
+      expect(JSON.stringify(err)).toContain("InvalidFrontmatter");
+    }
+  });
 });
 
 beforeAll(async () => {
