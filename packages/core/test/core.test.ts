@@ -154,6 +154,22 @@ describe("frontmatter", () => {
       expect(JSON.stringify(err)).toContain("InvalidFrontmatter");
     }
   });
+
+  it("treats an empty, properly-closed frontmatter block as no data", async () => {
+    // The block has no title, so this must fail schema validation — but on
+    // a "missing title" error, not a YAML parse error. A splitter that
+    // fails to find the shared newline between the empty open/close fences
+    // would instead swallow "body" into the YAML block and throw there.
+    const exit = await Effect.runPromiseExit(
+      parseFrontmatter("empty-block.md", "---\n---\nbody"),
+    );
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit)) {
+      const json = JSON.stringify(exit.cause);
+      expect(json).toContain("InvalidFrontmatter");
+      expect(json).toContain("title");
+    }
+  });
 });
 
 beforeAll(async () => {
