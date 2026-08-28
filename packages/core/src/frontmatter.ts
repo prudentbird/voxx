@@ -8,24 +8,37 @@ export interface ParsedFile {
   content: string;
 }
 
-/**
- * Matches a leading `---` YAML block: the opening `---` and the newline
- * after it (so a line like `---title: Hi` isn't mistaken for frontmatter),
- * the YAML body, and either a closing `---` (plus the single newline that
- * follows it) or, if there's no closing fence, the end of the string —
- * gray-matter treats an unterminated block as YAML through the end of input
- * rather than as content. Mirrors gray-matter's splitting behavior without
- * depending on the unmaintained gray-matter package, whose bundled js-yaml
- * usage (`yaml.safeLoad`) breaks under js-yaml v4.
- */
-const FRONTMATTER_RE =
-  /^\uFEFF?-{3}\r?\n([\s\S]*?)(?:\r?\n-{3}\r?\n?|$)([\s\S]*)$/;
+const BOM = "\uFEFF";
+const FENCE = "---";
+const OPEN_RE = /^-{3}\r?\n/;
+const CLOSE_RE = /\r?\n-{3}\r?\n?/;
 
+/**
+ * Splits a leading `---` YAML frontmatter block from the rest of the file,
+ * mirroring gray-matter's index-based splitting (rather than gray-matter
+ * itself, whose bundled js-yaml usage — `yaml.safeLoad` — breaks under
+ * js-yaml v4):
+ *  - the opening `---` must be immediately followed by a newline, or the
+ *    whole input is treated as plain content (no frontmatter);
+ *  - the closing `---` is the first `\n---` found after that; if none
+ *    exists, the rest of the input is YAML (an unterminated block), not
+ *    content — this also makes an empty, properly-closed block (`---\n---`)
+ *    resolve correctly, since the opening and closing fences share that one
+ *    newline instead of each requiring their own;
+ *  - a single newline right after the closing fence is swallowed.
+ */
 const splitFrontmatter = (raw: string) => {
-  const match = FRONTMATTER_RE.exec(raw);
-  return match
-    ? { yaml: match[1] ?? "", content: match[2] ?? "" }
-    : { yaml: "", content: raw };
+  const stripped = raw.startsWith(BOM) ? raw.slice(BOM.length) : raw;
+  if (!OPEN_RE.test(stripped)) return { yaml: "", content: raw };
+
+  const body = stripped.slice(FENCE.length);
+  const close = CLOSE_RE.exec(body);
+  return close
+    ? {
+        yaml: body.slice(0, close.index),
+        content: body.slice(close.index + close[0].length),
+      }
+    : { yaml: body, content: "" };
 };
 
 const parseYaml = (file: string, raw: string) =>
