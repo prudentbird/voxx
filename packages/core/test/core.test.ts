@@ -143,6 +143,17 @@ describe("frontmatter", () => {
     expect(parsed.data.date).toMatch(/^2026-01-02/);
     expect(parsed.content).toBe("");
   });
+
+  it("does not treat a `---` line without a following newline as frontmatter", async () => {
+    const exit = await Effect.runPromiseExit(
+      parseFrontmatter("dashes.md", "---title: Hi\nbody"),
+    );
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit)) {
+      const err = exit.cause;
+      expect(JSON.stringify(err)).toContain("InvalidFrontmatter");
+    }
+  });
 });
 
 beforeAll(async () => {
