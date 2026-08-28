@@ -134,6 +134,15 @@ describe("frontmatter", () => {
       expect(JSON.stringify(err)).toContain("InvalidFrontmatter");
     }
   });
+
+  it("parses an unterminated frontmatter block as YAML through the end of input", async () => {
+    const parsed = await Effect.runPromise(
+      parseFrontmatter("unterminated.md", "---\ntitle: Hi\ndate: 2026-01-02"),
+    );
+    expect(parsed.data.title).toBe("Hi");
+    expect(parsed.data.date).toMatch(/^2026-01-02/);
+    expect(parsed.content).toBe("");
+  });
 });
 
 beforeAll(async () => {

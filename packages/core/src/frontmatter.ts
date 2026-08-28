@@ -9,13 +9,15 @@ export interface ParsedFile {
 }
 
 /**
- * Matches a leading `---` YAML block: `---`, the YAML body, a closing `---`,
- * and (if present) the single newline that follows it. Mirrors gray-matter's
- * splitting behavior without depending on the unmaintained gray-matter
- * package, whose bundled js-yaml usage (`yaml.safeLoad`) breaks under
- * js-yaml v4.
+ * Matches a leading `---` YAML block: the opening `---`, the YAML body, and
+ * either a closing `---` (plus the single newline that follows it) or, if
+ * there's no closing fence, the end of the string \u2014 gray-matter treats an
+ * unterminated block as YAML through the end of input rather than as
+ * content. Mirrors gray-matter's splitting behavior without depending on the
+ * unmaintained gray-matter package, whose bundled js-yaml usage
+ * (`yaml.safeLoad`) breaks under js-yaml v4.
  */
-const FRONTMATTER_RE = /^\uFEFF?-{3}\r?\n([\s\S]*?)\r?\n-{3}\r?\n?([\s\S]*)$/;
+const FRONTMATTER_RE = /^\uFEFF?-{3}([\s\S]*?)(?:\r?\n-{3}\r?\n?|$)([\s\S]*)$/;
 
 const splitFrontmatter = (raw: string) => {
   const match = FRONTMATTER_RE.exec(raw);
