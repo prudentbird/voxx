@@ -1,5 +1,5 @@
 import { Effect, ParseResult, Schema } from "effect";
-import matter from "gray-matter";
+import { load } from "js-yaml";
 import { Frontmatter, type FrontmatterData } from "./schema";
 import { InvalidFrontmatter } from "./errors";
 
@@ -8,10 +8,35 @@ export interface ParsedFile {
   content: string;
 }
 
+/**
+ * Matches a leading `---` YAML block: `---`, the YAML body, a closing `---`,
+ * and (if present) the single newline that follows it. Mirrors gray-matter's
+ * splitting behavior without depending on the unmaintained gray-matter
+ * package, whose bundled js-yaml usage (`yaml.safeLoad`) breaks under
+ * js-yaml v4.
+ */
+const FRONTMATTER_RE = /^\uFEFF?-{3}\r?\n([\s\S]*?)\r?\n-{3}\r?\n?([\s\S]*)$/;
+
+const splitFrontmatter = (raw: string) => {
+  const match = FRONTMATTER_RE.exec(raw);
+  return match
+    ? { yaml: match[1] ?? "", content: match[2] ?? "" }
+    : { yaml: "", content: raw };
+};
+
 export const parseFrontmatter = (file: string, raw: string) =>
   Effect.gen(function* () {
-    const parsed = matter(raw);
-    const data = yield* Schema.decodeUnknown(Frontmatter)(parsed.data).pipe(
+    const { yaml, content } = splitFrontmatter(raw);
+    const parsedYaml = yield* Effect.try({
+      try: () => (yaml ? (load(yaml) ?? {}) : {}),
+      catch: (cause) =>
+        new InvalidFrontmatter({
+          file,
+          message: cause instanceof Error ? cause.message : String(cause),
+          cause,
+        }),
+    });
+    const data = yield* Schema.decodeUnknown(Frontmatter)(parsedYaml).pipe(
       Effect.mapError(
         (cause) =>
           new InvalidFrontmatter({
@@ -21,5 +46,5 @@ export const parseFrontmatter = (file: string, raw: string) =>
           }),
       ),
     );
-    return { data, content: parsed.content } satisfies ParsedFile;
+    return { data, content } satisfies ParsedFile;
   });
