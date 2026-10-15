@@ -1,11 +1,36 @@
 import { Schema } from "effect";
 
+// Require a timezone on datetimes so decoding never depends on the build host.
+const ISO_DATE_RE =
+  /^\d{4}-\d{2}-\d{2}(?:T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):?[0-5]\d))?$/;
+
+const isValidDate = (value: string | Date): boolean => {
+  if (value instanceof Date) return Number.isFinite(value.getTime());
+  if (!ISO_DATE_RE.test(value)) return false;
+  // Date.parse rolls impossible days (e.g. February 30) into the next month.
+  const day = value.slice(0, 10);
+  const midnight = new Date(`${day}T00:00:00.000Z`);
+  return (
+    Number.isFinite(midnight.getTime()) &&
+    midnight.toISOString().slice(0, 10) === day &&
+    Number.isFinite(Date.parse(value))
+  );
+};
+
 const DateLike = Schema.transform(
-  Schema.Union(Schema.String, Schema.DateFromSelf),
+  Schema.Union(Schema.String, Schema.DateFromSelf).pipe(
+    Schema.filter(isValidDate, {
+      message: () =>
+        "Expected a valid ISO 8601 date (YYYY-MM-DD or a datetime with timezone), or a valid Date object",
+    }),
+  ),
   Schema.String,
   {
     strict: false,
-    decode: (value) => (value instanceof Date ? value.toISOString() : value),
+    decode: (value) =>
+      typeof value === "string" && value.length === 10
+        ? value
+        : new Date(value).toISOString(),
     encode: (value) => value,
   },
 );

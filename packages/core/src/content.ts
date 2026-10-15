@@ -308,7 +308,7 @@ const collectMetas = (config: VoxxConfig, opts: GetPostsEffectOptions) =>
 
     const isChangelog = config.content.type === "changelog";
     return visible.sort((a, b) => {
-      const byDate = b.meta.date.localeCompare(a.meta.date);
+      const byDate = Date.parse(b.meta.date) - Date.parse(a.meta.date);
       if (byDate !== 0) return byDate;
       if (isChangelog && a.meta.version && b.meta.version) {
         return compareVersions(b.meta.version, a.meta.version);

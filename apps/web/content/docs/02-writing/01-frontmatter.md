@@ -49,6 +49,13 @@ Invalid values fail loudly with the file's name in the message.
 
 ## How dates are resolved
 
+`date` and `updated` accept YAML dates, `YYYY-MM-DD` strings, or full ISO
+8601 datetimes with a timezone, such as `"2026-06-10T14:30:00Z"` or
+`"2026-06-10T16:30:00+02:00"`. Invalid values fail frontmatter validation
+with the field and filename. Datetimes are normalized to UTC; quoted
+date-only strings keep their `YYYY-MM-DD` form. Posts are sorted by the
+instant represented by the date (date-only values use midnight UTC).
+
 Voxx tries three sources, in order:
 
 1. `date:` in frontmatter
