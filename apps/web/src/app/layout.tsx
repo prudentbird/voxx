@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider, PostHogPageView } from "@posthog/next";
 import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { env } from "~/env";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -99,15 +100,19 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <PostHogProvider
-            clientOptions={{
-              api_host: "/ingest",
-              capture_performance: { web_vitals: true },
-            }}
-          >
-            <PostHogPageView />
-            {children}
-          </PostHogProvider>
+          {env.NEXT_PUBLIC_POSTHOG_KEY ? (
+            <PostHogProvider
+              clientOptions={{
+                api_host: "/ingest",
+                capture_performance: { web_vitals: true },
+              }}
+            >
+              <PostHogPageView />
+              {children}
+            </PostHogProvider>
+          ) : (
+            children
+          )}
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />
