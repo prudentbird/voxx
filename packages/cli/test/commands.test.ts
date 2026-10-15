@@ -9,6 +9,7 @@ import { add } from "../src/commands/add";
 import { remove } from "../src/commands/remove";
 import { exists, log } from "../src/util";
 import * as prompts from "../src/prompts";
+import * as project from "../src/project";
 
 const originalCwd = process.cwd();
 let dir: string;
@@ -511,6 +512,43 @@ describe("voxx init feature gating (Next.js)", () => {
 });
 
 describe("voxx add / remove feature", () => {
+  it.each(["confirm", "--yes"])(
+    "preserves routes when config cannot be written after %s",
+    async (approval) => {
+      await nextApp();
+      await writeConfig({ features: { llmsTxt: true } });
+      const paths = [
+        "voxx.json",
+        "app/(voxx)/llms.txt/route.ts",
+        "app/(voxx)/llms-full.txt/route.ts",
+      ];
+      for (const path of paths.slice(1)) {
+        await mkdir(join(dir, path, ".."), { recursive: true });
+        await writeFile(join(dir, path), `// custom ${path}\n`);
+      }
+      const before = await Promise.all(
+        paths.map((path) => readFile(join(dir, path), "utf8")),
+      );
+      vi.spyOn(prompts, "canPrompt").mockReturnValue(approval === "confirm");
+      const confirm = vi
+        .spyOn(prompts, "promptConfirm")
+        .mockResolvedValue(true);
+      const error = new Error("voxx.json is not writable");
+      vi.spyOn(project, "writeConfig").mockRejectedValue(error);
+
+      await expect(
+        remove(["llms", ...(approval === "confirm" ? [] : [approval])]),
+      ).rejects.toBe(error);
+
+      expect(confirm).toHaveBeenCalledTimes(approval === "confirm" ? 1 : 0);
+      expect(
+        await Promise.all(
+          paths.map((path) => readFile(join(dir, path), "utf8")),
+        ),
+      ).toEqual(before);
+    },
+  );
+
   it.each(["cancel", "decline", "non-interactive"])(
     "leaves config and route contents untouched on remove %s",
     async (mode) => {

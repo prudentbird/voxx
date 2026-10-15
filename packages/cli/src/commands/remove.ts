@@ -61,7 +61,7 @@ export async function remove(argv: string[]): Promise<void> {
   }
 
   const configLabel = `voxx.json (features.${key} = false)`;
-  const deletions: WriteOutcome[] = [];
+  const present: string[] = [];
 
   if (FEATURES[key].ownsFiles && project.hasNext && project.appDir) {
     const candidates = featureFilePaths(
@@ -70,7 +70,6 @@ export async function remove(argv: string[]): Promise<void> {
       project.collections,
       key,
     );
-    const present: string[] = [];
     for (const path of candidates) {
       if (await exists(path)) present.push(path);
     }
@@ -103,9 +102,7 @@ export async function remove(argv: string[]): Promise<void> {
           throw err;
         }
       }
-      if (proceed) {
-        deletions.push(...(await deleteFiles(present, project.cwd)));
-      } else {
+      if (!proceed) {
         log.info("Removal declined; config and files left unchanged.");
         return;
       }
@@ -117,5 +114,6 @@ export async function remove(argv: string[]): Promise<void> {
   project.raw["features"] = features;
   await writeConfig(project.cwd, project.raw);
 
+  const deletions = await deleteFiles(present, project.cwd);
   printDeletions(`voxx remove ${key}`, configLabel, deletions);
 }
