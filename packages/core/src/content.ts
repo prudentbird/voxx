@@ -22,6 +22,8 @@ const MD_RE = /\.md$/;
 
 /** Options for filtering and paginating posts returned by the content readers. */
 export interface GetPostsEffectOptions {
+  /** Project directory used for relative diagnostic paths. Defaults to `process.cwd()`. */
+  cwd?: string;
   /** When `true`, includes posts whose frontmatter sets `draft: true`, regardless of the `drafts` config. */
   includeDrafts?: boolean;
   /**
@@ -78,11 +80,16 @@ const buildMeta = (
   absPath: string,
   rel: string,
   assetPrefix?: string,
+  cwd = ".",
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const filePath = yield* Path.Path;
     const raw = yield* fs.readFileString(absPath);
-    const { data, content } = yield* parseFrontmatter(rel, raw);
+    const { data, content } = yield* parseFrontmatter(
+      filePath.relative(cwd, absPath),
+      raw,
+    );
     const isDocs = config.content.type === "docs";
     const isChangelog = config.content.type === "changelog";
 
@@ -205,8 +212,12 @@ const renderBuilt = (
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const filePath = yield* Path.Path;
     const raw = yield* fs.readFileString(built.absPath);
-    const { content } = yield* parseFrontmatter(built.rel, raw);
+    const { content } = yield* parseFrontmatter(
+      filePath.relative(opts.cwd ?? ".", built.absPath),
+      raw,
+    );
     const { html, toc } = yield* renderMarkdownEffect(content, config, {
       assetBase: built.assetBase,
       assetPrefix: opts.assetPrefix,
@@ -278,7 +289,8 @@ const collectMetas = (config: VoxxConfig, opts: GetPostsEffectOptions) =>
 
     const built = yield* Effect.forEach(
       files,
-      (rel) => buildMeta(config, path.join(dir, rel), rel, opts.assetPrefix),
+      (rel) =>
+        buildMeta(config, path.join(dir, rel), rel, opts.assetPrefix, opts.cwd),
       { concurrency: 8 },
     );
 

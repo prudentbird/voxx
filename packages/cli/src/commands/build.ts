@@ -600,6 +600,7 @@ export async function buildSite(
       config: view,
       reachable: true,
       includeDrafts: opts.includeDrafts,
+      cwd,
     });
     const listed = opts.includeDrafts
       ? reachable
