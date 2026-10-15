@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dev, serveFile } from "../src/commands/dev";
@@ -121,6 +121,34 @@ describe("voxx dev", () => {
         `http://127.0.0.1:${handle!.port}/blog/nope/`,
       );
       expect(missing.status).toBe(404);
+    } finally {
+      await handle!.close();
+    }
+  });
+
+  it("stops serving deleted posts after rebuilding while keeping current pages available", async () => {
+    await writeConfig();
+    await writePost("hello.md", "title: Hello\ndate: 2026-01-01", "Hello.");
+    await writePost("keep.md", "title: Keep\ndate: 2026-01-01", "Keep.");
+    const handle = await startDev();
+    expect(handle).toBeDefined();
+    const base = `http://127.0.0.1:${handle!.port}`;
+    try {
+      const initial = await fetch(`${base}/blog/hello/`);
+      expect(initial.status).toBe(200);
+      await initial.text();
+      await rm(join(dir, "content/hello.md"));
+      await vi.waitFor(
+        async () => {
+          const current = await fetch(`${base}/blog/keep/`);
+          expect(current.status).toBe(200);
+          await current.text();
+          const deleted = await fetch(`${base}/blog/hello/`);
+          await deleted.text();
+          expect(deleted.status).toBe(404);
+        },
+        { timeout: 60000, interval: 100 },
+      );
     } finally {
       await handle!.close();
     }
