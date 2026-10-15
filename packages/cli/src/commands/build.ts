@@ -5,6 +5,7 @@ import {
   readdir,
   readlink,
   realpath,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import type { Dirent } from "node:fs";
@@ -31,6 +32,7 @@ import {
   renderRobotsTxt,
   renderRss,
   renderSitemap,
+  resolveContentAsset,
   rssPath,
   sectionHeading,
   serializeJsonLd,
@@ -398,33 +400,56 @@ async function writePage(
   await writeFile(path, out);
 }
 
-const SOURCE_RE = /\.mdx?$/;
-
 async function copyContentAssets(
   contentDir: string,
   targetDir: string,
 ): Promise<number> {
+  const root = await realpath(contentDir).catch(() => null);
+  if (root === null) return 0;
+  const rootPath = root;
   let copied = 0;
-  let entries: Dirent[];
-  try {
-    entries = await readdir(contentDir, {
-      recursive: true,
-      withFileTypes: true,
-    });
-  } catch {
-    return 0;
+
+  async function walk(
+    dir: string,
+    ancestors: ReadonlySet<string>,
+  ): Promise<void> {
+    const realDir = await realpath(dir).catch(() => null);
+    if (realDir === null || ancestors.has(realDir)) return;
+    // Never traverse outside the collection, including directory symlinks.
+    const relDir = relative(rootPath, realDir);
+    if (relDir.startsWith(`..${sep}`) || relDir === ".." || isAbsolute(relDir))
+      return;
+    const nextAncestors = new Set([...ancestors, realDir]);
+    let entries: Dirent[];
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const source = join(dir, entry.name);
+      const info = entry.isSymbolicLink()
+        ? await stat(source).catch(() => null)
+        : entry;
+      if (info?.isDirectory()) {
+        await walk(source, nextAncestors);
+      } else if (info?.isFile()) {
+        const rel = relative(contentDir, source);
+        const asset = await resolveContentAsset(
+          contentDir,
+          rel.split(sep).join("/"),
+        );
+        if (asset === null) continue;
+        const target = join(targetDir, rel);
+        await mkdir(dirname(target), { recursive: true });
+        await copyFile(asset, target);
+        copied++;
+      }
+    }
   }
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    const name = entry.name;
-    if (SOURCE_RE.test(name) || name.startsWith(".")) continue;
-    const rel = relative(contentDir, join(entry.parentPath, name));
-    const source = join(contentDir, rel);
-    const target = join(targetDir, rel);
-    await mkdir(dirname(target), { recursive: true });
-    await copyFile(source, target);
-    copied++;
-  }
+
+  await walk(contentDir, new Set());
   return copied;
 }
 

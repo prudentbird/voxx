@@ -68,25 +68,34 @@ describe("voxx build", () => {
     await writePost(
       "pics.md",
       "title: Pics\ndate: 2026-01-01",
-      "![d](./diagram.png)",
+      "![d](./assets/diagram.png)",
     );
-    await writeFile(join(dir, "content", "diagram.png"), "not-a-real-png");
+    await mkdir(join(dir, "content/assets"), { recursive: true });
+    await writeFile(
+      join(dir, "content", "assets/diagram.png"),
+      "not-a-real-png",
+    );
     await build([]);
 
-    expect(await exists(join(dir, "dist/blog/diagram.png"))).toBe(true);
+    expect(await exists(join(dir, "dist/blog/assets/diagram.png"))).toBe(true);
     const html = await readFile(join(dir, "dist/blog/pics/index.html"), "utf8");
-    expect(html).toContain('src="../../blog/diagram.png"');
+    expect(html).toContain('src="../../blog/assets/diagram.png"');
   });
 
   it("copies nested content assets preserving their relative path", async () => {
     await writeConfig({
       content: { type: "docs", dir: "content", basePath: "/docs" },
     });
-    await writePost("guides/page.md", "title: Guide", "![i](./img.png)");
-    await mkdir(join(dir, "content/guides"), { recursive: true });
-    await writeFile(join(dir, "content/guides/img.png"), "not-a-real-png");
+    await writePost("guides/page.md", "title: Guide", "![i](./assets/img.png)");
+    await mkdir(join(dir, "content/guides/assets"), { recursive: true });
+    await writeFile(
+      join(dir, "content/guides/assets/img.png"),
+      "not-a-real-png",
+    );
     await build([]);
-    expect(await exists(join(dir, "dist/docs/guides/img.png"))).toBe(true);
+    expect(await exists(join(dir, "dist/docs/guides/assets/img.png"))).toBe(
+      true,
+    );
   });
 
   it("hides drafts by default but honors drafts:true in config", async () => {

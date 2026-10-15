@@ -22,9 +22,11 @@ Alongside the pages you get `rss.xml`, `sitemap.xml`, `robots.txt`,
 `llms.txt`, and `llms-full.txt`, following the same
 [feature flags](/docs/reference/configuration#features) as everything
 else, plus the Voxx stylesheet under `dist/_voxx/`. Images and other
-non-markdown files in your content folder are copied through, and relative
-references like `![diagram](./diagram.png)` are resolved to where they
-land (see [Images and assets](/docs/writing/images)). Multi-collection
+non-Markdown files below an `assets/` directory in your content folder are
+copied through. Dot-files and dot-directories at any depth are excluded,
+and symlink targets must stay inside the collection and satisfy the same
+asset rules. Relative references like `![diagram](./assets/diagram.png)`
+are resolved to where they land (see [Images and assets](/docs/writing/images)). Multi-collection
 configs build every collection in one pass.
 
 ```bash
