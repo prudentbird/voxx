@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { init } from "../src/commands/init";
+import { buildSite } from "../src/commands/build";
 
 describe("voxx build frontmatter diagnostics", () => {
   it.each([
@@ -35,6 +36,32 @@ describe("voxx build frontmatter diagnostics", () => {
       process.exitCode = 0;
       error.mockRestore();
       await rm(cwd, { recursive: true, force: true, maxRetries: 3 });
+    }
+  });
+
+  it("reports project-relative paths for an external project cwd", async () => {
+    const projectDir = await mkdtemp(join(tmpdir(), "voxx-cli-frontmatter-ext-"));
+    try {
+      await writeFile(
+        join(projectDir, "voxx.json"),
+        JSON.stringify({
+          site: {
+            title: "Test Site",
+            description: "A test site",
+            url: "https://test.dev",
+          },
+          content: { type: "blog", dir: "content", basePath: "/blog" },
+        }),
+      );
+      const file = "content/blog/2026-10-15-404.md";
+      await mkdir(join(projectDir, "content/blog"), { recursive: true });
+      await writeFile(join(projectDir, file), "---\ntitle: [Unclosed\n---\nbody");
+
+      await expect(
+        buildSite({ cwd: projectDir, outDir: join(projectDir, "dist") }),
+      ).rejects.toThrow(`${file}: invalid frontmatter — `);
+    } finally {
+      await rm(projectDir, { recursive: true, force: true, maxRetries: 3 });
     }
   });
 });
