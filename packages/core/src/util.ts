@@ -112,7 +112,7 @@ export const ABSOLUTE_RE = /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i;
 /**
  * Resolves a relative asset reference against a base URL path, collapsing
  * `../` escapes the way a browser would. Used for both inline Markdown asset
- * references (`src`/`poster`) and relative `image:` frontmatter.
+ * references (`src`/`poster`/asset anchor `href`) and relative `image:` frontmatter.
  *
  * @param base - Base URL path the reference is relative to, e.g. `/blog/my-post`.
  * @param rel - Relative reference, e.g. `./assets/cover.png`.

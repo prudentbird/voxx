@@ -35,6 +35,7 @@ import {
   type VoxxConfig,
 } from "../src/index";
 import { parseFrontmatter } from "../src/frontmatter";
+import { renderMarkdownEffect } from "../src/render";
 import { withVoxx } from "../src/next";
 
 const config: VoxxConfig = {
@@ -178,6 +179,75 @@ beforeAll(async () => {
 });
 
 describe("render", () => {
+  describe.each([undefined, VOXX_ASSET_PREFIX])(
+    "asset links with prefix %s",
+    (assetPrefix) => {
+      it.each([
+        ["./assets/b.pdf", "/blog/assets/b.pdf"],
+        ["assets/data.csv", "/blog/assets/data.csv"],
+        ["../shared/archive.zip", "/shared/archive.zip"],
+        ["../../assets/file.pdf", "/assets/file.pdf"],
+        [
+          "./assets/b.pdf?download=1#page=2",
+          "/blog/assets/b.pdf?download=1#page=2",
+        ],
+        ["./assets/b.pdf#page=2", "/blog/assets/b.pdf#page=2"],
+        ["./assets/guide.md.pdf", "/blog/assets/guide.md.pdf"],
+        ["./assets/download", "/blog/assets/download"],
+      ])("resolves %s against the source directory", async (href, resolved) => {
+        const { html } = await Effect.runPromise(
+          renderMarkdownEffect(`[download](${href})`, config, {
+            assetBase: "/blog",
+            assetPrefix,
+          }),
+        );
+        expect(html).toContain(`href="${assetPrefix ?? ""}${resolved}"`);
+      });
+
+      it.each([
+        "./guide.md",
+        "../guide.MD?download=1#intro",
+        "./guide.mdx#intro",
+        "../guide.MDX?raw=1",
+        "#intro",
+        "?download=1",
+        "https://example.com/file.pdf",
+        "//cdn.example.com/file.pdf",
+        "/assets/file.pdf",
+        "mailto:hello@example.com",
+        "custom+asset:download.pdf",
+        "",
+      ])("preserves href %s", async (href) => {
+        const { html } = await Effect.runPromise(
+          renderMarkdownEffect(`<a href="${href}">link</a>`, config, {
+            assetBase: "/blog",
+            assetPrefix,
+          }),
+        );
+        expect(html).toContain(`href="${href}"`);
+      });
+    },
+  );
+
+  it("resolves raw HTML asset anchors without rewriting other href attributes", async () => {
+    const { html } = await Effect.runPromise(
+      renderMarkdownEffect(
+        '<a href="../assets/b.pdf?download=1#page=2">pdf</a>\n\n<link href="./styles.css" rel="stylesheet">',
+        config,
+        { assetBase: "/docs/guides", assetPrefix: VOXX_ASSET_PREFIX },
+      ),
+    );
+    expect(html).toContain(
+      'href="/voxx-assets/docs/assets/b.pdf?download=1#page=2"',
+    );
+    expect(html).toContain('href="./styles.css"');
+  });
+
+  it("preserves relative asset links when assetBase is unset", async () => {
+    const { html } = await renderMarkdown("[pdf](./assets/b.pdf)", config);
+    expect(html).toContain('href="./assets/b.pdf"');
+  });
+
   it("adds heading ids and extracts a TOC", async () => {
     const { html, toc } = await renderMarkdown(
       "# Title\n\n## Section One\n\ntext\n\n### Nested\n\n## Section Two\n",
