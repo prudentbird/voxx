@@ -3,6 +3,7 @@ import { toString } from "mdast-util-to-string";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
+import { isValidDate } from "./dates.ts";
 import type { VoxxAuthor } from "./types";
 
 type AuthorEntryInput =
@@ -37,8 +38,8 @@ export function normalizeAuthors(input: AuthorInput): VoxxAuthor[] {
 /**
  * Converts a string to a URL-safe slug.
  *
- * Normalizes unicode, lowercases, trims, and replaces non-alphanumeric
- * characters with hyphens.
+ * Normalizes Unicode, lowercases, trims, and replaces characters other than
+ * letters, numbers, and marks with hyphens.
  */
 export function slugify(input: string): string {
   return input
@@ -46,7 +47,7 @@ export function slugify(input: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
 }
 
@@ -359,11 +360,13 @@ export function serializeJsonLd(data: unknown): string {
 /** Formats an ISO 8601 date string as RFC 822 (used in RSS feeds). */
 export function rfc822(date: string): string {
   const d = new Date(date);
-  return (isNaN(d.getTime()) ? new Date() : d).toUTCString();
+  if (!isValidDate(date)) throw new RangeError(`Invalid date: ${date}`);
+  return d.toUTCString();
 }
 
 /** Formats an ISO 8601 date string as `YYYY-MM-DD` (used in sitemaps). */
 export function isoDate(date: string): string {
   const d = new Date(date);
-  return (isNaN(d.getTime()) ? new Date() : d).toISOString().slice(0, 10);
+  if (!isValidDate(date)) throw new RangeError(`Invalid date: ${date}`);
+  return d.toISOString().slice(0, 10);
 }

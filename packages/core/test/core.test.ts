@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Effect, Exit } from "effect";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -73,6 +73,18 @@ describe("util", () => {
   it("slugifies", () => {
     expect(slugify("Hello, World!")).toBe("hello-world");
     expect(slugify("  Café déjà vu  ")).toBe("cafe-deja-vu");
+  });
+  it.each([
+    ["Привет мир", "привет-мир"],
+    ["你好 世界", "你好-世界"],
+    ["বাংলা ভাষা", "বাংলা-ভাষা"],
+    ["हिन्दी भाषा", "हिन्दी-भाषा"],
+    ["مرحبا بالعالم ١٢٣", "مرحبا-بالعالم-١٢٣"],
+    ["Γειά σου", "γεια-σου"],
+    ["Hello_ WORLD...123 / test", "hello-world-123-test"],
+    [" -- !!! -- ", ""],
+  ])("slugifies %s as %s", (input, expected) => {
+    expect(slugify(input)).toBe(expected);
   });
   it("joins paths and resolves urls", () => {
     expect(joinPath("/blog", "hi")).toBe("/blog/hi");
@@ -293,6 +305,47 @@ describe("render", () => {
 });
 
 describe("content", () => {
+  it.each(["blog", "docs"] as const)(
+    "preserves Unicode filenames and resolves raw/encoded %s paths",
+    async (type) => {
+      const dir = await mkdtemp(join(tmpdir(), "voxx-unicode-"));
+      const section = type === "docs" ? "指南" : "";
+      await mkdir(join(dir, section), { recursive: true });
+      await writeFile(
+        join(dir, section, "index.md"),
+        "---\ntitle: Index\n---\nIndex body.",
+      );
+      for (const name of ["привет", "你好", "বাংলা", "हिन्दी"]) {
+        await writeFile(
+          join(dir, section, `${name}.md`),
+          `---\ntitle: ${name}\n---\nUnicode body.`,
+        );
+      }
+      const cfg: VoxxConfig = {
+        ...config,
+        content: { ...config.content, type, dir, basePath: `/${type}` },
+      };
+      const { posts } = await listPosts({ config: cfg });
+      for (const name of ["привет", "你好", "বাংলা", "हिन्दी"]) {
+        const path = [section, name].filter(Boolean);
+        const expected = {
+          slug: name,
+          path,
+          url: `/${type}/${path.join("/")}`,
+        };
+        for (const incoming of [
+          path.join("/"),
+          path.map(encodeURIComponent).join("/"),
+        ]) {
+          expect(findPost(posts, incoming)).toMatchObject(expected);
+          expect(await getPost(incoming, { config: cfg })).toMatchObject(
+            expected,
+          );
+        }
+      }
+    },
+  );
+
   it("lists posts newest-first and hides drafts", async () => {
     const cfg = await makeContentDir();
     const posts = await getPosts({ config: cfg });
@@ -942,6 +995,90 @@ const samplePost: Post = {
 };
 
 describe("seo", () => {
+  it.each([false, "unlisted", true] as const)(
+    "uses the secondary collection policy for drafts: %s",
+    (drafts) => {
+      const primary = {
+        name: "blog",
+        ...config.content,
+        drafts: drafts !== true,
+      };
+      const secondary = {
+        ...primary,
+        name: "docs",
+        type: "docs" as const,
+        basePath: "/docs",
+        drafts,
+      };
+      const multi = {
+        ...config,
+        content: primary,
+        collections: [primary, secondary],
+      };
+      const seo = buildSeo(
+        { ...samplePost, url: "/docs/hello", draft: true },
+        multi,
+      );
+      expect(seo.noindex).toBe(drafts !== true);
+      expect(
+        buildSeo({ ...samplePost, url: "/docs/hello" }, multi).noindex,
+      ).toBe(false);
+      expect(seo.jsonLd?.["@type"]).toBe("TechArticle");
+    },
+  );
+
+  it("matches the most specific collection at URL boundaries", () => {
+    const primary = {
+      name: "root",
+      ...config.content,
+      basePath: "/",
+      drafts: true,
+    };
+    const secondary = {
+      ...primary,
+      name: "docs",
+      basePath: "/docs/",
+      drafts: "unlisted" as const,
+    };
+    const nested = {
+      ...primary,
+      name: "api",
+      basePath: "/docs/api",
+      drafts: true,
+    };
+    const multi = {
+      ...config,
+      content: primary,
+      collections: [primary, secondary, nested],
+    };
+    const seo = (url: string) =>
+      buildSeo({ ...samplePost, url, draft: true }, multi);
+    expect(seo("/docs/hello").noindex).toBe(true);
+    expect(seo("/docs").noindex).toBe(true);
+    expect(seo("/docs#release").noindex).toBe(true);
+    expect(seo("/docs/api/method").noindex).toBe(false);
+    expect(seo("/docs-other/hello").noindex).toBe(false);
+    expect(
+      buildSeo(
+        { ...samplePost, url: "/docs/hello", draft: true },
+        {
+          ...multi,
+          content: { ...secondary, drafts: true },
+        },
+      ).noindex,
+    ).toBe(false);
+  });
+
+  it.each([false, "unlisted", true] as const)(
+    "sets noindex for preview drafts with drafts: %s",
+    (drafts) => {
+      const view = { ...config, content: { ...config.content, drafts } };
+      const seo = buildSeo({ ...samplePost, draft: true }, view);
+      expect(seo).toHaveProperty("noindex", drafts !== true);
+      expect(buildSeo(samplePost, view)).toHaveProperty("noindex", false);
+    },
+  );
+
   it("builds canonical, open graph, and json-ld", () => {
     const seo = buildSeo(samplePost, config);
     expect(seo.canonical).toBe("https://example.com/blog/hello");
