@@ -15,7 +15,7 @@ export const BUILD_MARKER_CONTENT = "Voxx static output v1\n";
 
 // Resolve existing ancestors too, since the output's final directories may not
 // exist yet. Follow dangling links so they cannot hide a future content path.
-async function canonical(path: string): Promise<string> {
+export async function canonicalPath(path: string): Promise<string> {
   const absolute = resolve(path);
   try {
     return await realpath(absolute);
@@ -24,12 +24,12 @@ async function canonical(path: string): Promise<string> {
   }
   try {
     if ((await lstat(absolute)).isSymbolicLink()) {
-      return canonical(resolve(dirname(absolute), await readlink(absolute)));
+      return canonicalPath(resolve(dirname(absolute), await readlink(absolute)));
     }
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
   }
-  return join(await canonical(dirname(absolute)), basename(absolute));
+  return join(await canonicalPath(dirname(absolute)), basename(absolute));
 }
 
 function contains(parent: string, child: string): boolean {
@@ -46,10 +46,10 @@ export async function validateOutput(
   contentDirs: string[],
   force = false,
 ): Promise<void> {
-  const output = await canonical(outDir);
-  const project = await canonical(cwd);
-  const home = await canonical(homedir());
-  const content = await Promise.all(contentDirs.map(canonical));
+  const output = await canonicalPath(outDir);
+  const project = await canonicalPath(cwd);
+  const home = await canonicalPath(homedir());
+  const content = await Promise.all(contentDirs.map(canonicalPath));
   const refuse = (reason: string): never => {
     throw new Error(
       `Refusing to replace output directory "${outDir}": ${reason}.`,

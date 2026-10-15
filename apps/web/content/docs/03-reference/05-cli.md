@@ -152,7 +152,8 @@ from an older Voxx version, check its contents and run `voxx build --force` once
 This replaces **all** contents of the output directory. Even with `--force`,
 Voxx refuses filesystem roots, your home directory, the project root, directories
 containing `voxx.json` or `package.json`, and directories that contain, equal, or
-sit inside any configured content directory. Symlink destinations are refused.
+sit inside any configured content directory. A symlinked output directory is
+followed, and its target is checked and replaced.
 
 See [Static sites](/docs/getting-started/static-sites) for what each
 content type produces.

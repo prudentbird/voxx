@@ -46,6 +46,7 @@ import { c, exists, log, resolveCoreAsset } from "../util";
 import {
   BUILD_MARKER,
   BUILD_MARKER_CONTENT,
+  canonicalPath,
   validateOutput,
 } from "./build-output";
 
@@ -535,7 +536,9 @@ export async function buildSite(
   opts: BuildSiteOptions,
 ): Promise<BuildSiteResult> {
   const cwd = resolve(opts.cwd);
-  const outDir = resolve(cwd, opts.outDir);
+  const requestedOut = resolve(cwd, opts.outDir);
+  // Replace the real directory so an output symlink keeps pointing at it.
+  const outDir = await canonicalPath(requestedOut);
   const config = await loadConfig({ cwd });
   const validate = () =>
     validateOutput(
@@ -572,7 +575,7 @@ export async function buildSite(
     return {
       ...result,
       indexRel: join(
-        relative(cwd, outDir),
+        relative(cwd, requestedOut),
         stripLead(config.collections[0]!.basePath),
         "index.html",
       ),
