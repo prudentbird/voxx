@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { constants } from "node:os";
 import { performance } from "node:perf_hooks";
 import {
@@ -67,6 +69,7 @@ ${c.bold("Usage:")}
   voxx build [--out <dir>] [--drafts]
   voxx dev [--port <n>] [--drafts]
   voxx telemetry [status|enable|disable]   Manage anonymous usage telemetry
+  voxx --version, -v, version             Print CLI and core versions
 
 ${c.bold("Examples:")}
   voxx init                 Set up Voxx interactively (prompts for type, name, features)
@@ -110,11 +113,19 @@ async function dispatch(
       : undefined;
   if (handler) {
     await handler(rest);
-  } else if (
-    cmd === undefined ||
-    cmd === "-h" ||
-    cmd === "--help"
-  ) {
+  } else if (cmd === "--version" || cmd === "-v" || cmd === "version") {
+    const version =
+      process.env.VOXX_VERSION ||
+      (
+        JSON.parse(
+          readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+        ) as { version: string }
+      ).version;
+    const { version: coreVersion } = createRequire(import.meta.url)(
+      "@prudentbird/voxx-core/package.json",
+    ) as { version: string };
+    log.info(`voxx ${version}\n@prudentbird/voxx-core ${coreVersion}`);
+  } else if (cmd === undefined || cmd === "-h" || cmd === "--help") {
     log.info(HELP);
   } else {
     log.error(`Unknown command: ${cmd}`);

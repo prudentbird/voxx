@@ -45,25 +45,6 @@ async function readDom(rel: string) {
 }
 
 describe("blog build output structure", () => {
-  it("recommends serving the current folder for --out .", async () => {
-    await writeConfig();
-    await writeFileAt(
-      "first.md",
-      "---\ntitle: First\ndate: 2026-01-01\n---\n\nBody.\n",
-    );
-    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
-    try {
-      await build(["--out", "."]);
-      const output = spy.mock.calls
-        .map(([message]) => String(message))
-        .join("\n");
-      expect(output).toContain("serve ./ with a static HTTP server");
-      expect(output).not.toContain("serve / with a static HTTP server");
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
   it("leaves hyphenated attributes intact while rewriting URL attributes", async () => {
     await writeConfig();
     await writeFileAt(

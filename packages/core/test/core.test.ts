@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Effect, Exit } from "effect";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -698,9 +699,46 @@ describe("changelog collections", () => {
   });
 
   it("formats dates for display", () => {
+    expect(formatDate("2024-01-15")).toBe("January 15, 2024");
     expect(formatDate("2026-01-01T00:00:00.000Z")).toBe("January 1, 2026");
     expect(formatDate("garbage")).toBe("garbage");
   });
+
+  it.each(["America/Toronto", "Pacific/Kiritimati", "Etc/GMT+12"])(
+    "formats timezone-less datetimes as UTC in %s",
+    (timeZone) => {
+      const utilUrl = new URL("../src/util.ts", import.meta.url).href;
+      const output = execFileSync(
+        process.execPath,
+        [
+          "--input-type=module",
+          "--eval",
+          `import { formatDate } from ${JSON.stringify(utilUrl)};
+console.log(JSON.stringify([
+  "2024-01-15",
+  "2024-01-15T00:00",
+  "2024-01-15T00:00:00",
+  "2024-01-15T23:59:59.999",
+  "2024-01-15T00:00:00Z",
+  "2024-01-15T00:00:00+14:00",
+  "2024-01-15T23:00:00-12:00",
+  "garbage",
+].map((date) => formatDate(date))));`,
+        ],
+        { env: { ...process.env, TZ: timeZone }, encoding: "utf8" },
+      );
+      expect(JSON.parse(output)).toEqual([
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 14, 2024",
+        "January 16, 2024",
+        "garbage",
+      ]);
+    },
+  );
 });
 
 describe("multi-collection config", () => {
