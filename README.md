@@ -35,6 +35,10 @@ pnpm typecheck
 pnpm lint
 ```
 
+No environment variables are required for development or builds. To enable the
+docs site's optional PostHog analytics, copy `apps/web/.env.example` to
+`apps/web/.env.local` and set `NEXT_PUBLIC_POSTHOG_KEY` to your `phc_…` project key.
+
 Releases are managed with [changesets](https://github.com/changesets/changesets): `pnpm changeset` to record a change, `pnpm version-packages` + `pnpm release` to publish.
 
 ## License
