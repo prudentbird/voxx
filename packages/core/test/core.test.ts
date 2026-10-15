@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Effect, Exit } from "effect";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -34,6 +35,7 @@ import {
   type VoxxConfig,
 } from "../src/index";
 import { parseFrontmatter } from "../src/frontmatter";
+import { renderMarkdownEffect } from "../src/render";
 import { withVoxx } from "../src/next";
 
 const config: VoxxConfig = {
@@ -189,6 +191,75 @@ beforeAll(async () => {
 });
 
 describe("render", () => {
+  describe.each([undefined, VOXX_ASSET_PREFIX])(
+    "asset links with prefix %s",
+    (assetPrefix) => {
+      it.each([
+        ["./assets/b.pdf", "/blog/assets/b.pdf"],
+        ["assets/data.csv", "/blog/assets/data.csv"],
+        ["../shared/archive.zip", "/shared/archive.zip"],
+        ["../../assets/file.pdf", "/assets/file.pdf"],
+        [
+          "./assets/b.pdf?download=1#page=2",
+          "/blog/assets/b.pdf?download=1#page=2",
+        ],
+        ["./assets/b.pdf#page=2", "/blog/assets/b.pdf#page=2"],
+        ["./assets/guide.md.pdf", "/blog/assets/guide.md.pdf"],
+        ["./assets/download", "/blog/assets/download"],
+      ])("resolves %s against the source directory", async (href, resolved) => {
+        const { html } = await Effect.runPromise(
+          renderMarkdownEffect(`[download](${href})`, config, {
+            assetBase: "/blog",
+            assetPrefix,
+          }),
+        );
+        expect(html).toContain(`href="${assetPrefix ?? ""}${resolved}"`);
+      });
+
+      it.each([
+        "./guide.md",
+        "../guide.MD?download=1#intro",
+        "./guide.mdx#intro",
+        "../guide.MDX?raw=1",
+        "#intro",
+        "?download=1",
+        "https://example.com/file.pdf",
+        "//cdn.example.com/file.pdf",
+        "/assets/file.pdf",
+        "mailto:hello@example.com",
+        "custom+asset:download.pdf",
+        "",
+      ])("preserves href %s", async (href) => {
+        const { html } = await Effect.runPromise(
+          renderMarkdownEffect(`<a href="${href}">link</a>`, config, {
+            assetBase: "/blog",
+            assetPrefix,
+          }),
+        );
+        expect(html).toContain(`href="${href}"`);
+      });
+    },
+  );
+
+  it("resolves raw HTML asset anchors without rewriting other href attributes", async () => {
+    const { html } = await Effect.runPromise(
+      renderMarkdownEffect(
+        '<a href="../assets/b.pdf?download=1#page=2">pdf</a>\n\n<link href="./styles.css" rel="stylesheet">',
+        config,
+        { assetBase: "/docs/guides", assetPrefix: VOXX_ASSET_PREFIX },
+      ),
+    );
+    expect(html).toContain(
+      'href="/voxx-assets/docs/assets/b.pdf?download=1#page=2"',
+    );
+    expect(html).toContain('href="./styles.css"');
+  });
+
+  it("preserves relative asset links when assetBase is unset", async () => {
+    const { html } = await renderMarkdown("[pdf](./assets/b.pdf)", config);
+    expect(html).toContain('href="./assets/b.pdf"');
+  });
+
   it("adds heading ids and extracts a TOC", async () => {
     const { html, toc } = await renderMarkdown(
       "# Title\n\n## Section One\n\ntext\n\n### Nested\n\n## Section Two\n",
@@ -582,6 +653,24 @@ describe("listing, filtering, and pagination", () => {
     expect(posts[0]).not.toHaveProperty("content");
   });
 
+  it("keeps repeated metadata excerpts fresh when a source definition changes", async () => {
+    const cfg = await makeManyPostsDir();
+    const file = join(cfg.content.dir, "post-5.md");
+    const header = "---\ntitle: Post 5\ndate: 2026-05-01\n---\n\n";
+    const body =
+      "Metadata cache [label][ref].\n\n" + "<!-- padding -->\n".repeat(100);
+    await writeFile(file, `${header}${body}\n[ref]: https://example.com`);
+    const first = await listPosts({ config: cfg });
+    expect(first.posts[0]?.excerpt).toBe("Metadata cache label.");
+    expect((await listPosts({ config: cfg })).posts[0]?.excerpt).toBe(
+      "Metadata cache label.",
+    );
+    await writeFile(file, `${header}${body}\n[other]: https://example.com`);
+    expect((await listPosts({ config: cfg })).posts[0]?.excerpt).toBe(
+      "Metadata cache [label][ref].",
+    );
+  });
+
   it("paginates with offset and limit while reporting the full total", async () => {
     const cfg = await makeManyPostsDir();
     const page1 = await listPosts({ config: cfg, limit: 2 });
@@ -751,9 +840,46 @@ describe("changelog collections", () => {
   });
 
   it("formats dates for display", () => {
+    expect(formatDate("2024-01-15")).toBe("January 15, 2024");
     expect(formatDate("2026-01-01T00:00:00.000Z")).toBe("January 1, 2026");
     expect(formatDate("garbage")).toBe("garbage");
   });
+
+  it.each(["America/Toronto", "Pacific/Kiritimati", "Etc/GMT+12"])(
+    "formats timezone-less datetimes as UTC in %s",
+    (timeZone) => {
+      const utilUrl = new URL("../src/util.ts", import.meta.url).href;
+      const output = execFileSync(
+        process.execPath,
+        [
+          "--input-type=module",
+          "--eval",
+          `import { formatDate } from ${JSON.stringify(utilUrl)};
+console.log(JSON.stringify([
+  "2024-01-15",
+  "2024-01-15T00:00",
+  "2024-01-15T00:00:00",
+  "2024-01-15T23:59:59.999",
+  "2024-01-15T00:00:00Z",
+  "2024-01-15T00:00:00+14:00",
+  "2024-01-15T23:00:00-12:00",
+  "garbage",
+].map((date) => formatDate(date))));`,
+        ],
+        { env: { ...process.env, TZ: timeZone }, encoding: "utf8" },
+      );
+      expect(JSON.parse(output)).toEqual([
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 15, 2024",
+        "January 14, 2024",
+        "January 16, 2024",
+        "garbage",
+      ]);
+    },
+  );
 });
 
 describe("multi-collection config", () => {
@@ -1066,6 +1192,88 @@ describe("feeds + llms", () => {
     expect(xml).toContain("<loc>https://example.com/blog</loc>");
     expect(xml).toContain("<loc>https://example.com/blog/hello</loc>");
     expect((xml.match(/<url>/g) ?? []).length).toBe(2);
+  });
+
+  it.each([false, true])(
+    "deduplicates changelog fragments with the index (multi: %s)",
+    (multi) => {
+      const releases = [
+        {
+          ...samplePost,
+          url: "/changelog#v1-2-0",
+          date: "2026-02-01",
+          updated: "2026-02-03",
+        },
+        { ...samplePost, url: "/changelog#v1-1-0", date: "2026-01-01" },
+      ];
+      const xml = renderSitemap(
+        multi ? [samplePost, ...releases] : releases,
+        { ...config, content: { ...config.content, basePath: "/changelog" } },
+        multi ? { indexPaths: ["/blog", "/changelog"] } : {},
+      );
+      expect(xml).not.toContain("#");
+      expect(
+        xml.match(/<loc>https:\/\/example.com\/changelog<\/loc>/g),
+      ).toHaveLength(1);
+      expect(xml).toContain(
+        "<loc>https://example.com/changelog</loc>\n    <lastmod>2026-02-03</lastmod>",
+      );
+      expect(xml.match(/<url>/g)).toHaveLength(multi ? 3 : 1);
+      if (multi) {
+        expect(xml).toContain("<loc>https://example.com/blog/hello</loc>");
+      }
+    },
+  );
+
+  it.each([
+    ["oldest first", [0, 1, 2]],
+    ["newest update first", [1, 2, 0]],
+    ["latest publication first", [2, 0, 1]],
+  ] as const)(
+    "uses the newest release lastmod regardless of input order (%s)",
+    (_label, order) => {
+      const releases = [
+        { ...samplePost, url: "/changelog#old", date: "2026-01-01" },
+        {
+          ...samplePost,
+          url: "/changelog#updated",
+          date: "2026-02-01",
+          updated: "2026-04-01",
+        },
+        { ...samplePost, url: "/changelog#latest", date: "2026-03-01" },
+      ];
+      for (const indexPaths of [["/blog", "/changelog"], []]) {
+        const xml = renderSitemap(
+          [
+            { ...samplePost, date: "2026-05-01" },
+            ...order.map((i) => releases[i]!),
+          ],
+          config,
+          { indexPaths },
+        );
+        expect(xml).not.toContain("#");
+        expect(
+          xml.match(/<loc>https:\/\/example.com\/changelog<\/loc>/g),
+        ).toHaveLength(1);
+        expect(xml).toContain(
+          "<loc>https://example.com/changelog</loc>\n    <lastmod>2026-04-01</lastmod>",
+        );
+      }
+    },
+  );
+
+  it("deduplicates fragment URLs even without explicit index paths", () => {
+    const xml = renderSitemap(
+      [
+        { ...samplePost, url: "/changelog#v1-2-0", date: "2026-02-01" },
+        { ...samplePost, url: "/changelog#v1-1-0", date: "2026-01-01" },
+      ],
+      config,
+      { indexPaths: [] },
+    );
+    expect(xml).not.toContain("#");
+    expect(xml.match(/<url>/g)).toHaveLength(1);
+    expect(xml).toContain("<lastmod>2026-02-01</lastmod>");
   });
 
   it("produces an llms.txt index", () => {

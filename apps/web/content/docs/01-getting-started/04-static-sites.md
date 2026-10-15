@@ -22,9 +22,11 @@ Alongside the pages you get `rss.xml`, `sitemap.xml`, `robots.txt`,
 `llms.txt`, and `llms-full.txt`, following the same
 [feature flags](/docs/reference/configuration#features) as everything
 else, plus the Voxx stylesheet under `dist/_voxx/`. Images and other
-non-markdown files in your content folder are copied through, and relative
-references like `![diagram](./diagram.png)` are resolved to where they
-land (see [Images and assets](/docs/writing/images)). Multi-collection
+non-Markdown files below an `assets/` directory in your content folder are
+copied through. Dot-files and dot-directories at any depth are excluded,
+and symlink targets must stay inside the collection and satisfy the same
+asset rules. Relative references like `![diagram](./assets/diagram.png)`
+are resolved to where they land (see [Images and assets](/docs/writing/images)). Multi-collection
 configs build every collection in one pass.
 
 ```bash
@@ -39,11 +41,17 @@ includes drafts by default:
 npx @prudentbird/voxx dev                   # http://localhost:4321
 ```
 
-Or serve the built folder with anything that can serve files:
+Or serve the built folder with a static HTTP server that serves `index.html`
+for directory URLs:
 
 ```bash
 npx serve dist
 ```
+
+Open the server's URL in your browser, followed by your collection's base path
+(for example, `http://localhost:3000/blog/`). Opening `dist/blog/index.html`
+directly over `file://` is not supported: internal links use directory URLs
+that need an HTTP server to resolve them to `index.html`.
 
 ## Bring your own framework
 
