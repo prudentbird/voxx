@@ -35,6 +35,9 @@ function headTags(seo: SeoData, config: VoxxConfig): string {
     `<meta name="description" content="${esc(seo.description)}">`,
     `<link rel="canonical" href="${esc(seo.canonical)}">`,
   ];
+  if (seo.noindex) {
+    tags.push('<meta name="robots" content="noindex, nofollow">');
+  }
   const og = seo.openGraph;
   if (og) {
     tags.push(

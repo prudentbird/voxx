@@ -115,6 +115,39 @@ describe("voxx build", () => {
     expect(await exists(join(dir, "dist3/blog/wip/index.html"))).toBe(true);
   });
 
+  it.each([
+    { drafts: "unlisted", args: [], noindex: true },
+    { drafts: false, args: ["--drafts"], noindex: true },
+    { drafts: true, args: [], noindex: false },
+  ])(
+    "renders draft robots with drafts: $drafts and args: $args",
+    async ({ drafts, args, noindex }) => {
+      await writeConfig({
+        content: { type: "blog", dir: "content", basePath: "/blog", drafts },
+      });
+      await writePost(
+        "wip.md",
+        "title: WIP\ndate: 2026-01-02\ndraft: true",
+        "WIP.",
+      );
+      await writePost("live.md", "title: Live\ndate: 2026-01-01", "Live.");
+      await build(args);
+
+      const draft = await readFile(
+        join(dir, "dist/blog/wip/index.html"),
+        "utf8",
+      );
+      const live = await readFile(
+        join(dir, "dist/blog/live/index.html"),
+        "utf8",
+      );
+      expect(
+        draft.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(live).not.toContain('<meta name="robots"');
+    },
+  );
+
   it("builds every collection in a multi-collection config", async () => {
     await writeConfig({
       content: undefined,

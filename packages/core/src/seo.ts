@@ -41,7 +41,12 @@ export function buildSeo(post: PostMeta, config: VoxxConfig): SeoData {
 
   const tags = config.features.tags ? post.tags : [];
 
-  const seo: SeoData = { title: post.title, description, canonical };
+  const seo: SeoData = {
+    title: post.title,
+    description,
+    canonical,
+    noindex: post.draft && config.content.drafts !== true,
+  };
 
   if (config.seo.openGraph) {
     seo.openGraph = {

@@ -816,6 +816,16 @@ const samplePost: Post = {
 };
 
 describe("seo", () => {
+  it.each([false, "unlisted", true] as const)(
+    "sets noindex for preview drafts with drafts: %s",
+    (drafts) => {
+      const view = { ...config, content: { ...config.content, drafts } };
+      const seo = buildSeo({ ...samplePost, draft: true }, view);
+      expect(seo).toHaveProperty("noindex", drafts !== true);
+      expect(buildSeo(samplePost, view)).toHaveProperty("noindex", false);
+    },
+  );
+
   it("builds canonical, open graph, and json-ld", () => {
     const seo = buildSeo(samplePost, config);
     expect(seo.canonical).toBe("https://example.com/blog/hello");

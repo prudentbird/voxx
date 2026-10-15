@@ -157,6 +157,8 @@ export interface SeoData {
   title: string;
   description: string;
   canonical: string;
+  /** Prevent indexing and following links on preview-only draft pages. */
+  noindex?: boolean;
   openGraph?: OpenGraphData;
   twitter?: TwitterData;
   /** JSON-LD structured data object — serialize with `serializeJsonLd`. */

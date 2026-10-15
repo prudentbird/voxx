@@ -8,6 +8,10 @@ export function toMetadata(seo: SeoData): Metadata {
     alternates: { canonical: seo.canonical },
   };
 
+  if (seo.noindex) {
+    metadata.robots = { index: false, follow: false };
+  }
+
   if (seo.openGraph) {
     metadata.openGraph = {
       type: "article",
