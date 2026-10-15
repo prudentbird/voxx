@@ -1,6 +1,22 @@
-import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  lstat,
+  mkdir,
+  readdir,
+  readlink,
+  realpath,
+  writeFile,
+} from "node:fs/promises";
 import type { Dirent } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { parseArgs } from "node:util";
 import {
   buildNavTree,
@@ -37,6 +53,32 @@ function isWithin(parent: string, path: string): boolean {
 
 function displayPath(cwd: string, path: string): string {
   return isWithin(cwd, path) ? relative(cwd, path) : path;
+}
+
+// Resolve existing ancestors too, since the output's final directories may not
+// exist yet. Follow dangling links so they cannot hide a future content path.
+async function canonicalPath(path: string): Promise<string> {
+  try {
+    return await realpath(path);
+  } catch (error) {
+    if (
+      !(error instanceof Error && "code" in error && error.code === "ENOENT")
+    ) {
+      throw error;
+    }
+  }
+  const entry = await lstat(path).catch((error: unknown) => {
+    if (
+      !(error instanceof Error && "code" in error && error.code === "ENOENT")
+    ) {
+      throw error;
+    }
+    return undefined;
+  });
+  if (entry?.isSymbolicLink()) {
+    return canonicalPath(resolve(dirname(path), await readlink(path)));
+  }
+  return join(await canonicalPath(dirname(path)), basename(path));
 }
 
 function headTags(seo: SeoData, config: VoxxConfig): string {
@@ -487,14 +529,21 @@ export async function buildSite(
   const config = await loadConfig({ cwd });
   const collections = config.collections;
   const multi = collections.length > 1;
+  const [canonicalOut, canonicalCwd] = await Promise.all([
+    canonicalPath(outDir),
+    canonicalPath(resolve(cwd)),
+  ]);
 
-  if (outDir === resolve(cwd)) {
+  if (outDir === resolve(cwd) || canonicalOut === canonicalCwd) {
     throw new Error(
       "Output directory must not be the project root. Choose a separate build directory with --out.",
     );
   }
   for (const collection of collections) {
-    if (isWithin(collection.dir, outDir)) {
+    if (
+      isWithin(collection.dir, outDir) ||
+      isWithin(await canonicalPath(collection.dir), canonicalOut)
+    ) {
       throw new Error(
         `Output directory must not be in content directory "${collection.dir}". Choose a separate build directory with --out.`,
       );

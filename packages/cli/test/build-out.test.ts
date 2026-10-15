@@ -5,10 +5,11 @@ import {
   readFile,
   readdir,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, normalize, resolve } from "node:path";
 import { build } from "../src/commands/build";
 import { exists, log } from "../src/util";
 
@@ -52,7 +53,9 @@ describe("voxx build --out", () => {
       expect(
         await readFile(join(cwd, rel, "blog/post/index.html"), "utf8"),
       ).toContain("Hello");
-      expect(log.success).toHaveBeenCalledWith(`Built 1 post → ${rel}/`);
+      expect(log.success).toHaveBeenCalledWith(
+        `Built 1 post → ${normalize(rel)}/`,
+      );
       expect(log.info).toHaveBeenCalledWith(
         expect.stringContaining(join(rel, "blog/index.html")),
       );
@@ -82,7 +85,7 @@ describe("voxx build --out", () => {
         build(["--out", out === "absolute" ? process.cwd() : out]),
       ).rejects.toThrow(/output directory.*project root/i);
       expect(await exists(join(cwd, "_voxx"))).toBe(false);
-      expect(await readdir(cwd)).toEqual(["content", "voxx.json"]);
+      expect((await readdir(cwd)).sort()).toEqual(["content", "voxx.json"]);
     },
   );
 
@@ -115,5 +118,47 @@ describe("voxx build --out", () => {
       /output directory.*content directory/i,
     );
     expect(await exists(external)).toBe(false);
+  });
+
+  it.each([".", "content", "content/generated"])(
+    "refuses an output symlink to %s before writing",
+    async (target) => {
+      await symlink(resolve(cwd, target), join(cwd, "out"), "junction");
+      await expect(build(["--out", "out"])).rejects.toThrow(
+        /output directory.*(project root|content directory)/i,
+      );
+      expect(await exists(join(cwd, "_voxx"))).toBe(false);
+      expect(await readdir(join(cwd, "content"))).toEqual(["post.md"]);
+      expect(await exists(join(cwd, "content/generated"))).toBe(false);
+    },
+  );
+
+  it("refuses nonexistent output beneath a symlink to content", async () => {
+    await symlink(join(cwd, "content"), join(cwd, "out"), "junction");
+    await expect(build(["--out", "out/nested/site"])).rejects.toThrow(
+      /output directory.*content directory/i,
+    );
+    expect(await readdir(join(cwd, "content"))).toEqual(["post.md"]);
+  });
+
+  it("canonicalizes configured content symlinks too", async () => {
+    const source = join(root, "sources");
+    await mkdir(source);
+    await rm(join(cwd, "content"), { recursive: true });
+    await symlink(source, join(cwd, "content"), "junction");
+    await expect(build(["--out", join(source, "generated")])).rejects.toThrow(
+      /output directory.*content directory/i,
+    );
+    expect(await readdir(source)).toEqual([]);
+  });
+
+  it("allows a symlink to a separate output directory", async () => {
+    const target = join(root, "site");
+    await mkdir(target);
+    await symlink(target, join(cwd, "out"), "junction");
+    await build(["--out", "out"]);
+    expect(
+      await readFile(join(target, "blog/post/index.html"), "utf8"),
+    ).toContain("Hello");
   });
 });
