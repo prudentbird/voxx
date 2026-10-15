@@ -144,8 +144,6 @@ async function addCollection(project: Project, rest: string[]): Promise<void> {
     return;
   }
 
-  await writeConfig(project.cwd, plan.out);
-
   const force = Boolean(values.force);
   const interactive = canPrompt() && !values.yes;
   const today = new Date().toISOString().slice(0, 10);
@@ -170,6 +168,7 @@ async function addCollection(project: Project, rest: string[]): Promise<void> {
     [`voxx.json (added collection "${plan.collection.name}")`, "written"],
     ...(await writeWithWarning(ops, project.cwd, force, interactive)),
   ];
+  await writeConfig(project.cwd, plan.out);
   printResults(`voxx add collection ${type}`, results);
   log.info(
     `  Write content in ${c.cyan(`${plan.collection.dir}/`)} (try ${c.cyan(
@@ -193,7 +192,6 @@ async function addFeature(project: Project, key: FeatureKey): Promise<void> {
   const wasEnabled = features[key] === true;
   features[key] = true;
   project.raw["features"] = features;
-  await writeConfig(project.cwd, project.raw);
 
   const results: WriteOutcome[] = [
     [`voxx.json (features.${key} = true)`, wasEnabled ? "skipped" : "written"],
@@ -216,6 +214,7 @@ async function addFeature(project: Project, key: FeatureKey): Promise<void> {
     );
   }
 
+  await writeConfig(project.cwd, project.raw);
   printResults(`voxx add ${key}`, results);
 }
 

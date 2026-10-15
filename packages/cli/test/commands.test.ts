@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,7 +7,8 @@ import { newPost } from "../src/commands/new";
 import { init } from "../src/commands/init";
 import { add } from "../src/commands/add";
 import { remove } from "../src/commands/remove";
-import { exists } from "../src/util";
+import { exists, log } from "../src/util";
+import * as prompts from "../src/prompts";
 
 const originalCwd = process.cwd();
 let dir: string;
@@ -19,6 +20,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   process.chdir(originalCwd);
   process.exitCode = 0;
 });
@@ -509,6 +511,121 @@ describe("voxx init feature gating (Next.js)", () => {
 });
 
 describe("voxx add / remove feature", () => {
+  it.each(["cancel", "decline", "non-interactive"])(
+    "leaves config and route contents untouched on remove %s",
+    async (mode) => {
+      await nextApp();
+      await init(["blog", "--yes"]);
+      const paths = [
+        "voxx.json",
+        "app/(voxx)/llms.txt/route.ts",
+        "app/(voxx)/llms-full.txt/route.ts",
+      ];
+      const before = await Promise.all(
+        paths.map((path) => readFile(join(dir, path), "utf8")),
+      );
+      vi.spyOn(prompts, "canPrompt").mockReturnValue(
+        mode !== "non-interactive",
+      );
+      const confirm = vi.spyOn(prompts, "promptConfirm");
+      if (mode === "cancel") {
+        confirm.mockRejectedValue(new prompts.PromptCancelled());
+      } else {
+        confirm.mockResolvedValue(false);
+      }
+      const error = vi.spyOn(log, "error").mockImplementation(() => {});
+      const info = vi.spyOn(log, "info").mockImplementation(() => {});
+
+      await remove(["llms"]);
+
+      expect(
+        await Promise.all(
+          paths.map((path) => readFile(join(dir, path), "utf8")),
+        ),
+      ).toEqual(before);
+      expect(process.exitCode).toBe(mode === "decline" ? 0 : 1);
+      if (mode === "non-interactive") {
+        expect(confirm).not.toHaveBeenCalled();
+        expect(error.mock.calls.flat().join(" ")).toContain("--yes");
+        for (const path of [
+          "app/(voxx)/llms.txt",
+          "app/(voxx)/llms-full.txt",
+        ]) {
+          expect(info.mock.calls.flat().join(" ")).toContain(path);
+        }
+      } else {
+        expect(confirm).toHaveBeenCalledWith({
+          message: "Delete them?",
+          initialValue: false,
+        });
+      }
+    },
+  );
+
+  it.each(["confirm", "--force", "--yes", "-y"])(
+    "removes routes and updates config with %s",
+    async (approval) => {
+      await nextApp();
+      await init(["blog", "--yes"]);
+      const before = await readFile(join(dir, "voxx.json"), "utf8");
+      vi.spyOn(prompts, "canPrompt").mockReturnValue(approval === "confirm");
+      const confirm = vi
+        .spyOn(prompts, "promptConfirm")
+        .mockImplementation(async () => {
+          expect(await readFile(join(dir, "voxx.json"), "utf8")).toBe(before);
+          expect(await exists(join(dir, "app/(voxx)/sitemap.ts"))).toBe(true);
+          return true;
+        });
+
+      await remove(["sitemap", ...(approval === "confirm" ? [] : [approval])]);
+
+      expect(process.exitCode).toBe(0);
+      expect(await exists(join(dir, "app/(voxx)/sitemap.ts"))).toBe(false);
+      const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+      expect(cfg.features.sitemap).toBe(false);
+      expect(confirm).toHaveBeenCalledTimes(approval === "confirm" ? 1 : 0);
+    },
+  );
+
+  it("updates config without confirmation when no route files exist", async () => {
+    await nextApp();
+    await writeConfig({ features: { sitemap: true } });
+    vi.spyOn(prompts, "canPrompt").mockReturnValue(false);
+    await remove(["sitemap"]);
+    expect(process.exitCode).toBe(0);
+    const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
+    expect(cfg.features.sitemap).toBe(false);
+  });
+
+  it.each(["feature", "collection"])(
+    "leaves config and files untouched when add %s overwrite is cancelled",
+    async (target) => {
+      await nextApp();
+      await init(["blog", "--no-sitemap", "--yes"]);
+      const route = join(
+        dir,
+        target === "feature"
+          ? "app/(voxx)/sitemap.ts"
+          : "app/(voxx)/docs/[[...slug]]/page.tsx",
+      );
+      await mkdir(join(route, ".."), { recursive: true });
+      await writeFile(route, "// user route\n");
+      const before = await readFile(join(dir, "voxx.json"), "utf8");
+      vi.spyOn(prompts, "canPrompt").mockReturnValue(true);
+      const confirm = vi
+        .spyOn(prompts, "promptConfirm")
+        .mockRejectedValue(new prompts.PromptCancelled());
+
+      await add(target === "feature" ? ["sitemap"] : ["collection", "docs"]);
+
+      expect(confirm).toHaveBeenCalled();
+      expect(process.exitCode).toBe(1);
+      expect(await readFile(join(dir, "voxx.json"), "utf8")).toBe(before);
+      expect(await readFile(route, "utf8")).toBe("// user route\n");
+      expect(await exists(join(dir, "app/(voxx)/docs/_data.ts"))).toBe(false);
+    },
+  );
+
   it("enables a disabled feature and scaffolds its route", async () => {
     await nextApp();
     await init(["blog", "--no-sitemap", "--yes"]);
