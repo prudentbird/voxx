@@ -64,7 +64,7 @@ ${c.bold("Usage:")}
   voxx add <feature>        Enable a feature (rss, sitemap, robots, llms, toc, tags, reading-time)
   voxx remove <feature>     Disable a feature and delete its generated route files
   voxx new "Title" [--collection <name>] [--slug <slug>] [--dir <content>] [--date <YYYY-MM-DD>] [--flat] [--section <path>] [--order <n>] [--index]
-  voxx build [--out <dir>] [--drafts]
+  voxx build [--out <dir>] [--drafts] [--force]
   voxx dev [--port <n>] [--drafts]
   voxx telemetry [status|enable|disable]   Manage anonymous usage telemetry
 

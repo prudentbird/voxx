@@ -130,8 +130,14 @@ export async function dev(argv: string[]): Promise<DevHandle | undefined> {
   }
 
   const server = createServer((req, res) => {
-    building
-      .then(() => serveFile(outDir, req.url ?? "/"))
+    // Serialize file reads with rebuilds. Once readFile has returned its
+    // buffer, an in-flight response no longer depends on the output directory.
+    const read = building.then(() => serveFile(outDir, req.url ?? "/"));
+    building = read.then(
+      () => {},
+      () => {},
+    );
+    read
       .then(({ status, type, body }) => {
         res.writeHead(status, {
           "Content-Type": type,

@@ -1,6 +1,14 @@
-import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import type { Dirent } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import {
   buildNavTree,
@@ -25,6 +33,11 @@ import {
   type VoxxConfig,
 } from "@prudentbird/voxx-core";
 import { c, exists, log, resolveCoreAsset } from "../util";
+import {
+  BUILD_MARKER,
+  BUILD_MARKER_CONTENT,
+  validateOutput,
+} from "./build-output";
 
 function stripLead(path: string): string {
   return path.replace(/^\/+/, "");
@@ -461,6 +474,7 @@ export interface BuildSiteOptions {
   outDir: string;
   includeDrafts?: boolean | undefined;
   quiet?: boolean;
+  force?: boolean;
 }
 
 export interface BuildSiteResult {
@@ -473,8 +487,61 @@ export interface BuildSiteResult {
 export async function buildSite(
   opts: BuildSiteOptions,
 ): Promise<BuildSiteResult> {
-  const { cwd, outDir } = opts;
+  const cwd = resolve(opts.cwd);
+  const outDir = resolve(opts.outDir);
   const config = await loadConfig({ cwd });
+  const validate = () =>
+    validateOutput(
+      cwd,
+      outDir,
+      config.collections.map((col) => col.dir),
+      opts.force,
+    );
+  await validate();
+  await mkdir(dirname(outDir), { recursive: true });
+  const staging = await mkdtemp(join(dirname(outDir), ".voxx-build-"));
+  let backup: string | undefined;
+  let removeBackup = true;
+  try {
+    const result = await renderSite({ ...opts, cwd, outDir: staging }, config);
+    await writeFile(join(staging, BUILD_MARKER), BUILD_MARKER_CONTENT);
+    // Check again before replacing, in case the destination changed during rendering.
+    await validate();
+    if (await exists(outDir)) {
+      backup = await mkdtemp(join(dirname(outDir), ".voxx-previous-"));
+      await rename(outDir, join(backup, "site"));
+      removeBackup = false;
+    }
+    try {
+      await rename(staging, outDir);
+      removeBackup = true;
+    } catch (err) {
+      if (backup) {
+        await rename(join(backup, "site"), outDir);
+        removeBackup = true;
+      }
+      throw err;
+    }
+    return {
+      ...result,
+      indexRel: join(
+        relative(cwd, outDir),
+        stripLead(config.collections[0]!.basePath),
+        "index.html",
+      ),
+    };
+  } finally {
+    await rm(staging, { recursive: true, force: true });
+    if (backup && removeBackup)
+      await rm(backup, { recursive: true, force: true });
+  }
+}
+
+async function renderSite(
+  opts: BuildSiteOptions,
+  config: VoxxConfig,
+): Promise<BuildSiteResult> {
+  const { cwd, outDir } = opts;
   const collections = config.collections;
   const multi = collections.length > 1;
 
@@ -568,6 +635,7 @@ export async function build(argv: string[]): Promise<void> {
     options: {
       out: { type: "string" },
       drafts: { type: "boolean" },
+      force: { type: "boolean" },
     },
     allowPositionals: true,
   });
@@ -584,6 +652,7 @@ export async function build(argv: string[]): Promise<void> {
     cwd,
     outDir,
     includeDrafts: values.drafts ? true : undefined,
+    force: values.force ?? false,
   });
 
   const { config } = result;
