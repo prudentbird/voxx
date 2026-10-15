@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { Effect } from "effect";
+import { FileSystem } from "@effect/platform";
+import { NodeContext } from "@effect/platform-node";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
-import { getPosts } from "../src/index";
+import { join } from "node:path";
+import { getPost, getPosts, listPosts } from "../src/index";
+import { getPostsEffect } from "../src/content";
+import { DEFAULT_CONFIG } from "../src/types";
 import { parseFrontmatter } from "../src/frontmatter";
 
 const file = "content/blog/2026-10-15-404.md";
@@ -32,7 +36,7 @@ describe.each(cases)("%s frontmatter errors", (_kind, yaml, detail) => {
     ).rejects.toThrow(`${file}: invalid frontmatter — `);
   });
 
-  it("includes the working-directory-relative path in core API rejections", async () => {
+  it("includes the supplied-project-relative path in core API rejections", async () => {
     const cwd = await mkdtemp(join(tmpdir(), "voxx-frontmatter-"));
     try {
       await mkdir(join(cwd, "content/blog"), { recursive: true });
@@ -44,11 +48,47 @@ describe.each(cases)("%s frontmatter errors", (_kind, yaml, detail) => {
           content: { type: "blog", dir: "content/blog", basePath: "/blog" },
         }),
       );
-      await expect(getPosts({ cwd })).rejects.toThrow(
-        `${relative(process.cwd(), join(cwd, file))}: invalid frontmatter — `,
-      );
+      for (const read of [
+        () => getPosts({ cwd }),
+        () => listPosts({ cwd }),
+        () => getPost("404", { cwd }),
+      ]) {
+        await expect(read()).rejects.toMatchObject({
+          message: expect.stringMatching(
+            /^content\/blog\/2026-10-15-404\.md: invalid frontmatter — /,
+          ),
+        });
+      }
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
+  });
+
+  it("keeps the supplied project root when a file becomes invalid in the rendering pass", async () => {
+    const cwd = join(tmpdir(), "voxx-external-project");
+    const config = {
+      ...DEFAULT_CONFIG,
+      content: { ...DEFAULT_CONFIG.content, dir: join(cwd, "content/blog") },
+    };
+    let reads = 0;
+    const fs = FileSystem.makeNoop({
+      exists: () => Effect.succeed(true),
+      readDirectory: () => Effect.succeed(["2026-10-15-404.md"]),
+      readFileString: () =>
+        Effect.succeed(++reads === 1 ? "---\ntitle: Valid\n---\nbody" : raw),
+    });
+    await expect(
+      Effect.runPromise(
+        getPostsEffect(config, { cwd }).pipe(
+          Effect.provideService(FileSystem.FileSystem, fs),
+          Effect.provide(NodeContext.layer),
+        ),
+      ),
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(
+        /^content\/blog\/2026-10-15-404\.md: invalid frontmatter — /,
+      ),
+    });
+    expect(reads).toBe(2);
   });
 });
