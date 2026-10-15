@@ -128,6 +128,147 @@ describe("voxx build", () => {
     expect(await exists(join(dir, "dist3/blog/wip/index.html"))).toBe(true);
   });
 
+  it.each([
+    { drafts: "unlisted", args: [], noindex: true },
+    { drafts: false, args: ["--drafts"], noindex: true },
+    { drafts: true, args: [], noindex: false },
+  ])(
+    "renders draft robots with drafts: $drafts and args: $args",
+    async ({ drafts, args, noindex }) => {
+      await writeConfig({
+        content: { type: "blog", dir: "content", basePath: "/blog", drafts },
+      });
+      await writePost(
+        "wip.md",
+        "title: WIP\ndate: 2026-01-02\ndraft: true",
+        "WIP.",
+      );
+      await writePost("live.md", "title: Live\ndate: 2026-01-01", "Live.");
+      await build(args);
+
+      const draft = await readFile(
+        join(dir, "dist/blog/wip/index.html"),
+        "utf8",
+      );
+      const live = await readFile(
+        join(dir, "dist/blog/live/index.html"),
+        "utf8",
+      );
+      expect(
+        draft.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(live).not.toContain('<meta name="robots"');
+    },
+  );
+
+  it.each([
+    { drafts: false, args: ["--drafts"], containsDraft: true, noindex: true },
+    {
+      drafts: "unlisted",
+      args: ["--drafts"],
+      containsDraft: true,
+      noindex: true,
+    },
+    { drafts: true, args: [], containsDraft: true, noindex: false },
+    { drafts: "unlisted", args: [], containsDraft: false, noindex: false },
+    { drafts: false, args: [], containsDraft: false, noindex: false },
+  ])(
+    "sets changelog index robots for drafts: $drafts and args: $args",
+    async ({ drafts, args, containsDraft, noindex }) => {
+      await writeConfig({
+        content: {
+          type: "changelog",
+          dir: "content",
+          basePath: "/changelog",
+          drafts,
+        },
+      });
+      await writePost(
+        "1.0.0.md",
+        "title: Live release\ndate: 2026-01-01",
+        "Released content.",
+      );
+      await writePost(
+        "2.0.0.md",
+        "title: Preview release\ndate: 2026-01-02\ndraft: true",
+        "Preview release content.",
+      );
+      await build(args);
+      const html = await readFile(
+        join(dir, "dist/changelog/index.html"),
+        "utf8",
+      );
+      expect(html.includes("Preview release content.")).toBe(containsDraft);
+      expect(
+        html.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(html).toContain("Released content.");
+    },
+  );
+
+  it.each([
+    { drafts: false, args: ["--drafts"], containsDraft: true, noindex: true },
+    {
+      drafts: "unlisted",
+      args: ["--drafts"],
+      containsDraft: true,
+      noindex: true,
+    },
+    { drafts: true, args: [], containsDraft: true, noindex: false },
+    { drafts: "unlisted", args: [], containsDraft: false, noindex: false },
+    { drafts: false, args: [], containsDraft: false, noindex: false },
+  ])(
+    "sets blog index robots for drafts: $drafts and args: $args",
+    async ({ drafts, args, containsDraft, noindex }) => {
+      await writeConfig({
+        content: { type: "blog", dir: "content", basePath: "/blog", drafts },
+      });
+      await writePost("live.md", "title: Live\ndate: 2026-01-01", "Live.");
+      await writePost(
+        "wip.md",
+        "title: WIP\ndate: 2026-01-02\ndraft: true",
+        "WIP.",
+      );
+      await build(args);
+      const html = await readFile(join(dir, "dist/blog/index.html"), "utf8");
+      expect(html.includes("WIP")).toBe(containsDraft);
+      expect(
+        html.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(html).toContain("Live");
+    },
+  );
+
+  it.each([
+    { drafts: false, args: ["--drafts"], containsDraft: true, noindex: true },
+    { drafts: true, args: [], containsDraft: true, noindex: false },
+    { drafts: "unlisted", args: [], containsDraft: false, noindex: false },
+  ])(
+    "sets docs index robots for drafts: $drafts and args: $args",
+    async ({ drafts, args, containsDraft, noindex }) => {
+      await writeConfig({
+        content: { type: "docs", dir: "content", basePath: "/docs", drafts },
+      });
+      await writePost(
+        "guide.md",
+        "title: Guide\ndate: 2026-01-01",
+        "Guide.",
+      );
+      await writePost(
+        "wip.md",
+        "title: WIP\ndate: 2026-01-02\ndraft: true",
+        "WIP.",
+      );
+      await build(args);
+      const html = await readFile(join(dir, "dist/docs/index.html"), "utf8");
+      expect(html.includes(">WIP<")).toBe(containsDraft);
+      expect(
+        html.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(html).toContain(">Guide<");
+    },
+  );
+
   it("builds every collection in a multi-collection config", async () => {
     await writeConfig({
       content: undefined,
