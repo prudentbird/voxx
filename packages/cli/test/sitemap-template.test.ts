@@ -29,7 +29,7 @@ describe("Next sitemap template", () => {
           join(dir, "data.ts"),
           `
           export const getConfig = async () => (${JSON.stringify({ site: { url: "https://test.dev" }, content: { basePath } })});
-          export const listPosts = async () => (${JSON.stringify({ posts })});
+          export const listCollections = async () => (${JSON.stringify([{ collection: { basePath }, posts }])});
         `,
         );
         const template = await readFile(

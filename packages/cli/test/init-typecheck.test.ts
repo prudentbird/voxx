@@ -45,17 +45,26 @@ describe("voxx init scaffold output typechecks", () => {
     });
   }
 
-  it("a multi-collection app typechecks", async () => {
-    await writeFile(
-      join(dir, "package.json"),
-      JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
-    );
-    await mkdir(join(dir, "app"), { recursive: true });
-    await init(["blog", "docs", "changelog", "--yes"]);
-    expect(process.exitCode).not.toBe(1);
-    const diagnostics = await typecheckDir(join(dir, "app"));
-    expect(diagnostics).toEqual([]);
-  });
+  it.each([false, true])(
+    "a multi-collection app typechecks (cacheComponents=%s)",
+    async (cached) => {
+      await writeFile(
+        join(dir, "package.json"),
+        JSON.stringify({ name: "my-app", dependencies: { next: "16.0.0" } }),
+      );
+      await mkdir(join(dir, "app"), { recursive: true });
+      await init([
+        "blog",
+        "docs",
+        "changelog",
+        "--yes",
+        ...(cached ? ["--cache-components"] : []),
+      ]);
+      expect(process.exitCode).not.toBe(1);
+      const diagnostics = await typecheckDir(join(dir, "app"));
+      expect(diagnostics).toEqual([]);
+    },
+  );
 
   it("an app augmented via `add collection` typechecks", async () => {
     await writeFile(

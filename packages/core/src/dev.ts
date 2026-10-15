@@ -39,6 +39,16 @@ const SKIP_DIRS = new Set([
 ]);
 const VERSION_FILE = "content-version.ts";
 
+function nearestExistingAncestor(path: string): string {
+  let dir = path;
+  while (!existsSync(dir)) {
+    const parent = dirname(dir);
+    if (parent === dir) return dir;
+    dir = parent;
+  }
+  return dir;
+}
+
 function writeVersion(file: string, value: number): void {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, `export const CONTENT_VERSION = ${value};\n`);
@@ -75,7 +85,8 @@ let registered = false;
  * file to trigger Next.js hot reload.
  *
  * No-ops outside `NODE_ENV=development` and in non-Node runtimes (e.g. Edge).
- * Safe to call multiple times — only the first call registers watchers.
+ * Safe to call multiple times — only the first call registers watchers. New
+ * version modules and collection directories are discovered on subsequent edits.
  *
  * @param opts - Optional cwd, explicit version module paths, and debounce delay.
  */
@@ -91,38 +102,50 @@ export async function registerContentWatcher(
 
   const cwd = opts.cwd ?? process.cwd();
 
-  const versionModules =
-    opts.versionModules && opts.versionModules.length > 0
-      ? opts.versionModules
-      : findVersionModules(cwd);
-  if (versionModules.length === 0) return;
-
-  const dirs = new Set<string>();
-  try {
-    const config = await run(loadConfigEffect({ cwd }));
-    for (const collection of config.collections) dirs.add(collection.dir);
-  } catch (error) {
-    recordCoreIssue("content_watcher_config_load_failed", error);
-  }
-
-  const paths = new Set<string>([join(cwd, "voxx.json"), ...dirs]);
-
+  const watchers = new Map<string, FSWatcher>();
   let timer: ReturnType<typeof setTimeout> | undefined;
+
+  // Discover on each edit: feature-add may create the first version module
+  // after instrumentation has already registered this watcher.
   const bump = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => {
+    timer = setTimeout(async () => {
+      await watchContentDirs();
+      const versionModules = opts.versionModules?.length
+        ? opts.versionModules
+        : findVersionModules(cwd);
       const value = Date.now();
       for (const file of versionModules) writeVersion(file, value);
     }, opts.debounceMs ?? 80);
   };
 
-  const watchers: FSWatcher[] = [];
-  for (const path of paths) {
-    if (!existsSync(path)) continue;
+  function watchPath(path: string): void {
+    if (watchers.has(path) || !existsSync(path)) return;
     try {
-      watchers.push(watch(path, { recursive: true }, bump));
+      watchers.set(path, watch(path, { recursive: true }, bump));
     } catch (error) {
       recordCoreIssue("content_watcher_register_failed", error);
     }
   }
+
+  async function watchContentDirs(): Promise<void> {
+    try {
+      const config = await run(loadConfigEffect({ cwd }));
+      for (const collection of config.collections) {
+        watchPath(collection.dir);
+        // The collection dir may not exist yet (e.g. created after this
+        // config load); watch its nearest existing ancestor so creating it
+        // is observed and retried on the next bump.
+        if (!existsSync(collection.dir)) {
+          watchPath(nearestExistingAncestor(collection.dir));
+        }
+      }
+    } catch (error) {
+      recordCoreIssue("content_watcher_config_load_failed", error);
+    }
+  }
+
+  // Keep listening even when no version modules existed at startup.
+  watchPath(join(cwd, "voxx.json"));
+  await watchContentDirs();
 }

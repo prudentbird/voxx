@@ -11,6 +11,7 @@ import {
   absoluteUrl,
   buildNavTree,
   buildSeo,
+  scopeConfig,
   deriveExcerpt,
   findPost,
   getPost,
@@ -995,6 +996,29 @@ const samplePost: Post = {
 };
 
 describe("seo", () => {
+  it("uses a non-first collection's type and basePath through a scoped config", () => {
+    const docs = {
+      ...config.content,
+      name: "docs",
+      type: "docs" as const,
+      basePath: "/docs",
+    };
+    const multi = {
+      ...config,
+      collections: [{ ...config.content, name: "blog" }, docs],
+    };
+    const scoped = scopeConfig(multi, "docs");
+    const post = { ...samplePost, url: "/docs/hello" };
+    expect(buildSeo(post, scoped).jsonLd?.["@type"]).toBe("TechArticle");
+    expect(renderRss([post], scoped)).toContain(
+      'href="https://example.com/docs/rss.xml" rel="self"',
+    );
+    expect(renderLlmsTxt([post], scoped)).toContain("## Pages");
+    expect(multi.content.type).toBe("blog");
+    expect(scoped.collections).toBe(multi.collections);
+    expect(() => scopeConfig(multi, "missing")).toThrow(/Unknown collection/);
+  });
+
   it.each([false, "unlisted", true] as const)(
     "uses the secondary collection policy for drafts: %s",
     (drafts) => {
@@ -1252,6 +1276,18 @@ describe("feeds + llms", () => {
     expect(robots).toContain("User-agent: *");
     expect(robots).toContain("Sitemap: https://example.com/sitemap.xml");
   });
+
+  it.each(["\n\n", "\r", "\r\n"])(
+    "collapses %j in collection section headings",
+    (lineBreak) => {
+      const txt = renderLlmsTxtSections(
+        [{ heading: `Docs${lineBreak}## Injected`, posts: [] }],
+        config,
+      );
+      expect(txt).toContain("## Docs ## Injected\n");
+      expect(txt).not.toContain("\n## Injected");
+    },
+  );
 
   it("renders sectioned llms.txt for multiple collections", () => {
     const txt = renderLlmsTxtSections(

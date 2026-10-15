@@ -212,3 +212,10 @@ export const loadConfigEffect = (opts: LoadConfigOptions = {}) =>
 
     return yield* resolveConfig(data, cwd);
   });
+
+/** Returns a config view whose content settings belong to the named collection. */
+export function scopeConfig(config: VoxxConfig, name: string): VoxxConfig {
+  const collection = config.collections.find((entry) => entry.name === name);
+  if (!collection) throw new Error(`Unknown collection: ${name}`);
+  return { ...config, content: { ...collection } };
+}

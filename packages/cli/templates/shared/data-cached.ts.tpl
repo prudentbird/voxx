@@ -6,6 +6,7 @@ import {
   getPosts as coreGetPosts,
   listPosts as coreListPosts,
   loadConfig as coreLoadConfig,
+  scopeConfig,
   type ListPostsResult,
   type Post,
   type PostMeta,
@@ -110,7 +111,7 @@ async function getConfigCached(version: number): Promise<VoxxConfig> {
   "use cache";
   cacheLife("max");
   void version;
-  return coreLoadConfig();
+  return scopeConfig(await coreLoadConfig(), {{COLLECTION_ARG}}.collection);
 }
 
 export async function getConfig(): Promise<VoxxConfig> {

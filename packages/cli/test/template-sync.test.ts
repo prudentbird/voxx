@@ -27,6 +27,17 @@ const PAIRS: Array<[tpl: string, file: string, vars?: Record<string, string>]> =
       { COLLECTION_ARG: '{ collection: "docs" }' },
     ],
     ["shared/content-version.ts.tpl", "(voxx)/docs/_content-version.ts"],
+    ["shared/content-version.ts.tpl", "(voxx)/_voxx/content-version.ts"],
+    [
+      "shared/site-data.ts.tpl",
+      "(voxx)/_voxx/data.ts",
+      {
+        CACHE_IMPORT:
+          'import { cacheLife } from "next/cache";\nimport { CONTENT_VERSION } from "./content-version";',
+        CACHE_START: '  "use cache";\n  cacheLife("max");',
+        VERSION_ARG: "CONTENT_VERSION",
+      },
+    ],
     ["shared/instrumentation.ts.tpl", "../instrumentation.ts"],
     ["shared/on-this-page.tsx.tpl", "(voxx)/docs/_on-this-page.tsx"],
     ["shared/metadata.ts.tpl", "(voxx)/docs/_metadata.ts"],
@@ -38,22 +49,22 @@ const PAIRS: Array<[tpl: string, file: string, vars?: Record<string, string>]> =
     [
       "shared/llms-route.ts.tpl",
       "(voxx)/llms.txt/route.ts",
-      { DATA_IMPORT: "../docs/_data" },
+      { DATA_IMPORT: "../_voxx/data" },
     ],
     [
       "shared/llms-full-route.ts.tpl",
       "(voxx)/llms-full.txt/route.ts",
-      { DATA_IMPORT: "../docs/_data" },
+      { DATA_IMPORT: "../_voxx/data" },
     ],
     [
       "shared/robots.ts.tpl",
       "(voxx)/robots.ts",
-      { DATA_IMPORT: "./docs/_data" },
+      { DATA_IMPORT: "./_voxx/data" },
     ],
     [
       "shared/sitemap.ts.tpl",
       "(voxx)/sitemap.ts",
-      { DATA_IMPORT: "./docs/_data" },
+      { DATA_IMPORT: "./_voxx/data" },
     ],
   ];
 
@@ -74,6 +85,7 @@ describe("templates stay in sync with the generated example app", () => {
 const BLOG_PAIRS: Array<
   [tpl: string, file: string, vars?: Record<string, string>]
 > = [
+  ["shared/site-data.ts.tpl", "(voxx)/_voxx/data.ts", { VERSION_ARG: "0" }],
   ["shared/metadata.ts.tpl", "(voxx)/blog/_metadata.ts"],
   [
     "shared/data-static.ts.tpl",
@@ -88,12 +100,12 @@ const BLOG_PAIRS: Array<
   [
     "shared/llms-route.ts.tpl",
     "(voxx)/llms.txt/route.ts",
-    { DATA_IMPORT: "../blog/_data", STATIC_EXPORT: FORCE_STATIC },
+    { DATA_IMPORT: "../_voxx/data", STATIC_EXPORT: FORCE_STATIC },
   ],
   [
     "shared/llms-full-route.ts.tpl",
     "(voxx)/llms-full.txt/route.ts",
-    { DATA_IMPORT: "../blog/_data", STATIC_EXPORT: FORCE_STATIC },
+    { DATA_IMPORT: "../_voxx/data", STATIC_EXPORT: FORCE_STATIC },
   ],
 ];
 

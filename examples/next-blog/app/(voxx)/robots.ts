@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@prudentbird/voxx-core";
-import { getConfig } from "./blog/_data";
+import { getConfig } from "./_voxx/data";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const config = await getConfig();

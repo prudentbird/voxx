@@ -5,6 +5,7 @@ import {
   getPosts as coreGetPosts,
   listPosts as coreListPosts,
   loadConfig as coreLoadConfig,
+  scopeConfig,
   type ListPostsResult,
   type Post,
   type PostMeta,
@@ -103,7 +104,9 @@ export async function getPostsPage(
 }
 
 export async function getConfig(): Promise<VoxxConfig> {
-  return memo("getConfig", () => coreLoadConfig());
+  return memo("getConfig", async () =>
+    scopeConfig(await coreLoadConfig(), { collection: "changelog" }.collection),
+  );
 }
 
 /** A single post rendered to HTML, or `null` when no slug matches. */
