@@ -10,10 +10,18 @@ voxx new "Title" [--collection <name>] [--dir <content>] [--date <YYYY-MM-DD>] [
 voxx build [--out <dir>] [--drafts]
 voxx dev [--port <n>]
 voxx telemetry [status|enable|disable]
+voxx [--version|-v|version]
 ```
 
 The CLI is a convenience layer — everything it does, you could do by hand
 with files and [`@prudentbird/voxx-core`](/docs/reference/core-api).
+
+## `voxx --version`
+
+Prints the CLI version and the resolved `@prudentbird/voxx-core` version,
+then exits successfully. `-v` and `voxx version` are aliases. Version requests
+do not show the telemetry notice or send a telemetry event. When running from
+source without a build-time version, the CLI reads its own `package.json`.
 
 ## `voxx init [preset]`
 
