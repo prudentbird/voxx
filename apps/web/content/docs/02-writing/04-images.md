@@ -3,11 +3,10 @@ title: Images and assets
 description: Keep images next to your markdown — no public folder juggling.
 ---
 
-Non-markdown files that live in a content folder are first-class citizens:
-images, PDFs, fonts, downloads — anything that isn't `.md` ships with your
-site. There's no separate `public/` directory to keep in sync; drop the file
-into an `assets/` folder next to the post that uses it and reference it
-relatively.
+Files inside an `assets/` directory in a content folder ship with your
+site: images, PDFs, fonts, and downloads. There's no separate `public/`
+directory to keep in sync; drop the file into an `assets/` folder next to
+the post that uses it and reference it relatively.
 
 ```markdown
 ---
@@ -28,7 +27,7 @@ query strings pass through untouched.
 
 ## Where files land
 
-- **Static builds** — every non-markdown file is copied into the output,
+- **Static builds** — files below an `assets/` directory are copied into the output,
   preserving its path relative to the content folder. A file at
   `content/blog/assets/architecture.png` serves at
   `/blog/assets/architecture.png`.
@@ -74,7 +73,12 @@ collections nest naturally and don't have this issue.
 
 ## What counts as an asset
 
-Anything inside an `assets/` directory except `.md` sources, `.mdx`
-(ignored entirely), and dotfiles. Markdown sources are never served as
-static files — they become pages, not downloads — and files outside
-`assets/` are treated as page material, not downloads.
+Files below an `assets/` directory, excluding Markdown sources (`.md` and
+`.mdx`, case-insensitive) and any path with a dot-file or dot-directory at
+any depth. Symlinks are allowed only when their resolved targets stay
+inside the collection directory and are also visible, non-Markdown files
+below an `assets/` directory. Markdown sources are never served as
+static files. Files outside `assets/` are not published as downloads by
+either target. If you previously relied on static builds copying files
+elsewhere in the content tree, move them into `assets/` and update their
+references.
