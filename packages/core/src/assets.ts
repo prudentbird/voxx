@@ -75,6 +75,66 @@ interface CollectionLike {
   basePath: string;
 }
 
+/** A collection-relative file path must be visible and below assets/. */
+function isAssetPath(relativePath: string): boolean {
+  const segments = relativePath.split("/");
+  const assetsIndex = segments.indexOf(ASSET_DIR);
+  return (
+    assetsIndex !== -1 &&
+    assetsIndex < segments.length - 1 &&
+    segments.every(
+      (s) => s.length > 0 && !s.startsWith(".") && !s.includes("\\"),
+    ) &&
+    !SOURCE_RE.test(relativePath)
+  );
+}
+
+/** Resolve a visible asset file, checking both its requested and real paths. */
+const resolveContentAssetEffect = (
+  collectionDir: string,
+  relativePath: string,
+) =>
+  Effect.gen(function* () {
+    if (!isAssetPath(relativePath)) return null;
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const filePath = path.join(collectionDir, ...relativePath.split("/"));
+    const root = normalizeSeparators(path.join(collectionDir));
+    const rawPrefix = root.endsWith("/") ? root : `${root}/`;
+    if (!normalizeSeparators(filePath).startsWith(rawPrefix)) return null;
+
+    const [rootReal, real] = yield* Effect.all([
+      fs.realPath(collectionDir).pipe(Effect.option),
+      fs.realPath(filePath).pipe(Effect.option),
+    ]);
+    if (Option.isNone(rootReal) || Option.isNone(real)) return null;
+    const realRelative = path.relative(rootReal.value, real.value);
+    if (path.isAbsolute(realRelative)) return null;
+    // Symlinks cannot disguise hidden files, Markdown, non-asset targets,
+    // or paths outside the collection (which contain a leading .. segment).
+    if (!isAssetPath(realRelative.split(path.sep).join("/"))) return null;
+    const info = yield* fs.stat(real.value).pipe(Effect.option);
+    if (Option.isNone(info) || info.value.type !== "File") return null;
+    return real.value;
+  });
+
+/**
+ * Returns the real path of a servable collection asset, or null. The input is
+ * a collection-relative path with forward slashes, not a URL (no decoding).
+ * Used by static builds and the Next.js route to enforce the same boundary.
+ */
+export function resolveContentAsset(
+  collectionDir: string,
+  relativePath: string,
+): Promise<string | null> {
+  return Effect.runPromise(
+    Effect.provide(
+      resolveContentAssetEffect(collectionDir, relativePath),
+      NodeContext.layer,
+    ),
+  );
+}
+
 /**
  * Maps a `{@link VOXX_ASSET_PREFIX}`-prefixed URL pathname to a file inside an
  * `assets/` directory of one of the configured collections' content
@@ -100,7 +160,6 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
     );
 
     const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     for (const collection of candidates) {
       const baseSegments = collection.basePath.split("/").filter(Boolean);
       if (segments.length <= baseSegments.length) continue;
@@ -110,63 +169,11 @@ export const serveContentAssetEffect = (pathname: string, config: VoxxConfig) =>
       // doesn't resolve within it, answer null instead of letting a shorter
       // collection substitute its own file.
       const rel = segments.slice(baseSegments.length);
-      // Only files inside an `assets/` directory are served — everything else
-      // in the content tree is page material, not a downloadable asset.
-      const assetsIndex = rel.indexOf(ASSET_DIR);
-      if (assetsIndex === -1 || assetsIndex === rel.length - 1) return null;
-      const filePath = path.join(collection.dir, ...rel);
-      // Belt-and-braces containment check: the segment validation above
-      // should make this unreachable, but never serve from outside the
-      // collection directory regardless of platform path quirks. Fully
-      // normalize the root through path.join (collapsing `.`, `..`, and
-      // duplicate separators), then compare with separators unified — the
-      // raw dir string may not match the join output's shape otherwise.
-      const root = normalizeSeparators(path.join(collection.dir));
-      const rawPrefix = root.endsWith("/") ? root : `${root}/`;
-      if (!normalizeSeparators(filePath).startsWith(rawPrefix)) return null;
-      if (SOURCE_RE.test(filePath)) return null;
-
-      // Resolve through any symlinks: a link inside assets/ could point
-      // outside the collection directory, so containment is enforced on the
-      // resolved target rather than the requested path.
-      const [rootReal, real] = yield* Effect.all([
-        fs.realPath(collection.dir).pipe(Effect.option),
-        fs.realPath(filePath).pipe(Effect.option),
-      ]);
-      const realRoot =
-        Option.isSome(rootReal)
-          ? normalizeSeparators(rootReal.value)
-          : undefined;
-      const prefix =
-        realRoot === undefined
-          ? undefined
-          : realRoot.endsWith("/")
-            ? realRoot
-            : `${realRoot}/`;
-      if (
-        Option.isNone(real) ||
-        prefix === undefined ||
-        !normalizeSeparators(real.value).startsWith(prefix)
-      )
-        return null;
-
-      // The resolved target must still be an asset path: a symlink such as
-      // assets/logo.png -> ../draft.md stays inside the collection but would
-      // otherwise leak unpublished Markdown through an innocuous-looking URL.
-      const realRel = normalizeSeparators(real.value)
-        .slice(prefix.length)
-        .split("/")
-        .filter(Boolean);
-      const realAssetsIndex = realRel.indexOf(ASSET_DIR);
-      if (
-        realAssetsIndex === -1 ||
-        realAssetsIndex === realRel.length - 1 ||
-        SOURCE_RE.test(real.value)
-      )
-        return null;
-
-      const info = yield* fs.stat(filePath).pipe(Effect.option);
-      if (Option.isNone(info) || info.value.type !== "File") return null;
+      const filePath = yield* resolveContentAssetEffect(
+        collection.dir,
+        rel.join("/"),
+      );
+      if (filePath === null) return null;
 
       const mime =
         MIME_TYPES[rel[rel.length - 1]!.split(".").pop()!.toLowerCase()];
