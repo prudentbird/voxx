@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     { ...index, changeFrequency: "weekly", priority: 0.9 },
     ...posts
-      .filter((post) => post.path.length > 0)
+      .filter((post) => post.path.length > 0 && !post.url.includes("#"))
       .map((post) => ({
         url: absoluteUrl(config.site.url, post.url),
         lastModified: post.updated ?? post.date,

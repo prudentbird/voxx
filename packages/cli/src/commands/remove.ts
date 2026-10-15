@@ -60,13 +60,8 @@ export async function remove(argv: string[]): Promise<void> {
     return;
   }
 
-  const features = (project.raw["features"] ?? {}) as Record<string, boolean>;
-  features[key] = false;
-  project.raw["features"] = features;
-  await writeConfig(project.cwd, project.raw);
-
   const configLabel = `voxx.json (features.${key} = false)`;
-  const deletions: WriteOutcome[] = [];
+  const present: string[] = [];
 
   if (FEATURES[key].ownsFiles && project.hasNext && project.appDir) {
     const candidates = featureFilePaths(
@@ -75,18 +70,24 @@ export async function remove(argv: string[]): Promise<void> {
       project.collections,
       key,
     );
-    const present: string[] = [];
     for (const path of candidates) {
       if (await exists(path)) present.push(path);
     }
 
     if (present.length > 0) {
       const interactive = canPrompt();
-      let proceed = force || !interactive;
-      if (interactive && !force) {
+      let proceed = force;
+      if (!force) {
         log.warn(`These files will be deleted:`);
         for (const path of present) {
           log.info(`  ${c.red("-")} ${relative(project.cwd, path)}`);
+        }
+        if (!interactive) {
+          log.error(
+            "Cannot confirm deletion in a non-interactive shell. Pass --yes to remove these files and update voxx.json.",
+          );
+          process.exitCode = 1;
+          return;
         }
         try {
           proceed = await promptConfirm({
@@ -101,15 +102,18 @@ export async function remove(argv: string[]): Promise<void> {
           throw err;
         }
       }
-      if (proceed) {
-        deletions.push(...(await deleteFiles(present, project.cwd)));
-      } else {
-        log.info(
-          `  ${c.dim(`(left ${present.length} file(s) in place — delete manually to fully remove ${key}.)`)}`,
-        );
+      if (!proceed) {
+        log.info("Removal declined; config and files left unchanged.");
+        return;
       }
     }
   }
 
+  const features = (project.raw["features"] ?? {}) as Record<string, boolean>;
+  features[key] = false;
+  project.raw["features"] = features;
+  await writeConfig(project.cwd, project.raw);
+
+  const deletions = await deleteFiles(present, project.cwd);
   printDeletions(`voxx remove ${key}`, configLabel, deletions);
 }

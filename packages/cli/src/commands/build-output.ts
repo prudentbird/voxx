@@ -1,4 +1,4 @@
-import { lstat, readFile, readdir, realpath } from "node:fs/promises";
+import { lstat, readFile, readdir, readlink, realpath } from "node:fs/promises";
 import { homedir } from "node:os";
 import {
   basename,
@@ -13,16 +13,23 @@ import {
 export const BUILD_MARKER = ".voxx-build";
 export const BUILD_MARKER_CONTENT = "Voxx static output v1\n";
 
-// Resolve existing ancestors too, so a missing destination below a symlink
-// cannot bypass the content/project protection.
+// Resolve existing ancestors too, since the output's final directories may not
+// exist yet. Follow dangling links so they cannot hide a future content path.
 async function canonical(path: string): Promise<string> {
   const absolute = resolve(path);
   try {
     return await realpath(absolute);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-    return join(await canonical(dirname(absolute)), basename(absolute));
   }
+  try {
+    if ((await lstat(absolute)).isSymbolicLink()) {
+      return canonical(resolve(dirname(absolute), await readlink(absolute)));
+    }
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+  }
+  return join(await canonical(dirname(absolute)), basename(absolute));
 }
 
 function contains(parent: string, child: string): boolean {

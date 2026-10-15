@@ -6,14 +6,23 @@ description: voxx init, voxx new, voxx build, and voxx dev — flags and behavio
 ```
 voxx init [blog|docs|changelog] [--dir <content>] [--base <path>] [--app <dir>] [--force]
 voxx init --add [blog|docs|changelog] [--name <name>] [--dir <dir>] [--base <path>] [--app <dir>]
+voxx remove <feature> [--force|--yes|-y]
 voxx new "Title" [--collection <name>] [--dir <content>] [--date <YYYY-MM-DD>] [--slug <slug>] [--flat] [--section <path>] [--order <n>]
 voxx build [--out <dir>] [--drafts] [--force]
 voxx dev [--port <n>]
 voxx telemetry [status|enable|disable]
+voxx [--version|-v|version]
 ```
 
 The CLI is a convenience layer — everything it does, you could do by hand
 with files and [`@prudentbird/voxx-core`](/docs/reference/core-api).
+
+## `voxx --version`
+
+Prints the CLI version and the resolved `@prudentbird/voxx-core` version,
+then exits successfully. `-v` and `voxx version` are aliases. Version requests
+do not show the telemetry notice or send a telemetry event. When running from
+source without a build-time version, the CLI reads its own `package.json`.
 
 ## `voxx init [preset]`
 
@@ -79,6 +88,27 @@ or `basePath` collides with an existing one. Pass `--name`, `--dir`, or
 Note that feature defaults (`rss`, `toc`, …) follow the _first_ collection's
 type — review `features` in `voxx.json` after adding a collection of a
 different type.
+
+## `voxx remove <feature>`
+
+Disables a feature in `voxx.json` and removes its generated Next.js route
+files. Features: `toc`, `rss`, `sitemap`, `robots`, `llms`, `tags`, and
+`reading-time`.
+
+When route files exist, `remove` lists them and asks for confirmation before
+changing config or deleting files. Declining leaves both untouched; cancelling
+with Ctrl+C or Esc also leaves both untouched and exits with code 1.
+
+In a non-interactive shell (CI, agents, or piped stdin), existing route files
+require `--yes` (aliases: `-y`, `--force`). Without it, the command lists the
+files, exits with code 1, and leaves config and files untouched. For example:
+
+```sh
+voxx remove rss --yes
+```
+
+Runtime-only features and features with no existing route files update only
+the config and do not require confirmation.
 
 ## `voxx new "Title"`
 

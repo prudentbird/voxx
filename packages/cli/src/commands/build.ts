@@ -3,12 +3,21 @@ import {
   mkdir,
   mkdtemp,
   readdir,
+  realpath,
   rename,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import type { Dirent } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import {
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { parseArgs } from "node:util";
 import {
   buildNavTree,
@@ -23,6 +32,7 @@ import {
   renderRobotsTxt,
   renderRss,
   renderSitemap,
+  resolveContentAsset,
   rssPath,
   sectionHeading,
   serializeJsonLd,
@@ -41,6 +51,15 @@ import {
 
 function stripLead(path: string): string {
   return path.replace(/^\/+/, "");
+}
+
+function isWithin(parent: string, path: string): boolean {
+  const rel = relative(parent, path);
+  return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+}
+
+function displayPath(cwd: string, path: string): string {
+  return isWithin(cwd, path) ? relative(cwd, path) : path;
 }
 
 function headTags(seo: SeoData, config: VoxxConfig): string {
@@ -328,11 +347,13 @@ ${posts
 }
 
 /**
- * Rewrite root-absolute internal links (`href`/`src` beginning with a single
+ * Rewrite root-absolute internal links (`href`/`src`/`poster` beginning with a single
  * `/`) to paths relative to the page's own location. This keeps navigation and
  * asset links working whether the generated site is served from the domain
- * root, a subpath, or opened directly from the filesystem. Protocol-relative
- * (`//host`) and external URLs are left untouched.
+ * root or a subpath. Directory URLs require an HTTP server that serves index.html;
+ * opening pages over file:// is not supported. Protocol-relative (`//host`) and
+ * external URLs are left untouched. `srcset` needs candidate parsing and is not
+ * rewritten here.
  */
 function relativizeLinks(
   html: string,
@@ -340,7 +361,10 @@ function relativizeLinks(
   outDir: string,
 ): string {
   const prefix = relative(fromDir, outDir).split(sep).join("/") || ".";
-  return html.replace(/\b(href|src)="\/(?!\/)([^"]*)"/g, `$1="${prefix}/$2"`);
+  return html.replace(
+    /(\s)(href|src|poster)="\/(?!\/)([^"]*)"/g,
+    `$1$2="${prefix}/$3"`,
+  );
 }
 
 async function writePage(
@@ -355,33 +379,56 @@ async function writePage(
   await writeFile(path, out);
 }
 
-const SOURCE_RE = /\.mdx?$/;
-
 async function copyContentAssets(
   contentDir: string,
   targetDir: string,
 ): Promise<number> {
+  const root = await realpath(contentDir).catch(() => null);
+  if (root === null) return 0;
+  const rootPath = root;
   let copied = 0;
-  let entries: Dirent[];
-  try {
-    entries = await readdir(contentDir, {
-      recursive: true,
-      withFileTypes: true,
-    });
-  } catch {
-    return 0;
+
+  async function walk(
+    dir: string,
+    ancestors: ReadonlySet<string>,
+  ): Promise<void> {
+    const realDir = await realpath(dir).catch(() => null);
+    if (realDir === null || ancestors.has(realDir)) return;
+    // Never traverse outside the collection, including directory symlinks.
+    const relDir = relative(rootPath, realDir);
+    if (relDir.startsWith(`..${sep}`) || relDir === ".." || isAbsolute(relDir))
+      return;
+    const nextAncestors = new Set([...ancestors, realDir]);
+    let entries: Dirent[];
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const source = join(dir, entry.name);
+      const info = entry.isSymbolicLink()
+        ? await stat(source).catch(() => null)
+        : entry;
+      if (info?.isDirectory()) {
+        await walk(source, nextAncestors);
+      } else if (info?.isFile()) {
+        const rel = relative(contentDir, source);
+        const asset = await resolveContentAsset(
+          contentDir,
+          rel.split(sep).join("/"),
+        );
+        if (asset === null) continue;
+        const target = join(targetDir, rel);
+        await mkdir(dirname(target), { recursive: true });
+        await copyFile(asset, target);
+        copied++;
+      }
+    }
   }
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    const name = entry.name;
-    if (SOURCE_RE.test(name) || name.startsWith(".")) continue;
-    const rel = relative(contentDir, join(entry.parentPath, name));
-    const source = join(contentDir, rel);
-    const target = join(targetDir, rel);
-    await mkdir(dirname(target), { recursive: true });
-    await copyFile(source, target);
-    copied++;
-  }
+
+  await walk(contentDir, new Set());
   return copied;
 }
 
@@ -488,7 +535,7 @@ export async function buildSite(
   opts: BuildSiteOptions,
 ): Promise<BuildSiteResult> {
   const cwd = resolve(opts.cwd);
-  const outDir = resolve(opts.outDir);
+  const outDir = resolve(cwd, opts.outDir);
   const config = await loadConfig({ cwd });
   const validate = () =>
     validateOutput(
@@ -617,10 +664,9 @@ async function renderSite(
     config,
     pageCount,
     collectionCount: collections.length,
-    indexRel: join(
-      relative(cwd, outDir),
-      stripLead(collections[0]!.basePath),
-      "index.html",
+    indexRel: displayPath(
+      cwd,
+      join(outDir, stripLead(collections[0]!.basePath), "index.html"),
     ),
   };
 }
@@ -647,7 +693,7 @@ export async function build(argv: string[]): Promise<void> {
     return;
   }
 
-  const outDir = join(cwd, values.out ?? "dist");
+  const outDir = resolve(cwd, values.out ?? "dist");
   const result = await buildSite({
     cwd,
     outDir,
@@ -691,8 +737,9 @@ export async function build(argv: string[]): Promise<void> {
     result.collectionCount > 1
       ? `${result.pageCount} pages across ${result.collectionCount} collections`
       : `${result.pageCount} ${noun}${result.pageCount === 1 ? "" : "s"}`;
-  log.success(`Built ${what} → ${relative(cwd, outDir)}/`);
+  const outputRel = displayPath(cwd, outDir);
+  log.success(`Built ${what} → ${outputRel}/`);
   log.info(
-    `  Open ${c.cyan(result.indexRel)} in a browser, or run ${c.cyan("voxx dev")} to preview with a local server.`,
+    `  Run ${c.cyan("voxx dev")} to preview, or serve ${c.cyan(`${outputRel}/`)} with a static HTTP server.`,
   );
 }

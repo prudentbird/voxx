@@ -32,7 +32,7 @@ export interface RenderResult {
 
 /** Options passed to the Markdown renderer. */
 export interface RenderOptions {
-  /** URL prefix used to resolve relative `src` and `poster` attributes. */
+  /** URL prefix used to resolve relative `src`, `poster`, and asset anchor `href` attributes. */
   assetBase?: string;
   /**
    * Prepended to every resolved asset URL. Used by Next.js hosts, where a
@@ -82,10 +82,16 @@ function rehypeResolveAssets(base: string, prefix?: string) {
         if (typeof value !== "string" || value === "") continue;
         if (ABSOLUTE_RE.test(value)) continue;
         const resolved = resolveRelativePath(base, value);
-        node.properties[prop] = prefix
-          ? `${prefix}${resolved}`
-          : resolved;
+        node.properties[prop] = prefix ? `${prefix}${resolved}` : resolved;
       }
+      if (node.tagName !== "a") return;
+      const href = node.properties["href"];
+      if (typeof href !== "string" || href === "" || ABSOLUTE_RE.test(href))
+        return;
+      const path = href.split(/[?#]/, 1)[0]!;
+      if (/\.mdx?$/i.test(path)) return;
+      const resolved = resolveRelativePath(base, href);
+      node.properties["href"] = prefix ? `${prefix}${resolved}` : resolved;
     });
   };
 }
@@ -165,7 +171,7 @@ async function ensureLanguages(
  *
  * @param markdown - Raw Markdown source.
  * @param config - Voxx config (used for `theme.codeTheme`).
- * @param opts - Optional `assetBase` for resolving relative image paths, and
+ * @param opts - Optional `assetBase` for resolving relative asset paths, and
  *   an optional `assetPrefix` prepended to the resolved URLs.
  */
 export const renderMarkdownEffect = (

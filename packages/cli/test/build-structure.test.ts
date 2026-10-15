@@ -45,6 +45,81 @@ async function readDom(rel: string) {
 }
 
 describe("blog build output structure", () => {
+  it("leaves hyphenated attributes intact while rewriting URL attributes", async () => {
+    await writeConfig();
+    await writeFileAt(
+      "media.md",
+      `---\ntitle: Media\ndate: 2026-01-01\n---\n
+<video data-poster="/blog/cover.png" poster="/blog/cover.png" data-src="/blog/clip.mp4" src="/blog/clip.mp4"></video>
+<a data-href="/blog/other" href="/blog/other">Other</a>
+`,
+    );
+    await build([]);
+    const page = await readDom("dist/blog/media/index.html");
+    const video = page.querySelector("video")!;
+    expect(video.getAttribute("data-poster")).toBe("/blog/cover.png");
+    expect(video.getAttribute("data-src")).toBe("/blog/clip.mp4");
+    expect(video.getAttribute("poster")).toBe("../../blog/cover.png");
+    expect(video.getAttribute("src")).toBe("../../blog/clip.mp4");
+    const link = page.querySelector("a[data-href]")!;
+    expect(link.getAttribute("data-href")).toBe("/blog/other");
+    expect(link.getAttribute("href")).toBe("../../blog/other");
+  });
+
+  it("recommends a local server and preserves directory URLs", async () => {
+    await writeConfig();
+    await writeFileAt("first.md", "---\ntitle: First\n---\n\nBody.\n");
+    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await build(["--out", "public"]);
+      const output = spy.mock.calls
+        .map(([message]) => String(message))
+        .join("\n");
+      expect(output).toContain("voxx dev");
+      expect(output).toContain("serve public");
+      expect(output).not.toContain("Open public/blog/index.html");
+    } finally {
+      spy.mockRestore();
+    }
+
+    const index = await readDom("public/blog/index.html");
+    expect(
+      index.querySelector(".voxx-postcard__link")?.getAttribute("href"),
+    ).toBe("../blog/first");
+    const post = await readDom("public/blog/first/index.html");
+    expect(
+      post.querySelector(".voxx-article__back")?.getAttribute("href"),
+    ).toBe("../../blog");
+  });
+
+  it("relativizes video posters without changing external poster URLs", async () => {
+    await writeConfig();
+    await writeFileAt(
+      "media.md",
+      `---\ntitle: Media\n---\n
+<video poster="./cover.png" src="./clip.mp4"></video>
+<video poster="/blog/root.png"></video>
+<video poster="//cdn.test.dev/cover.png"></video>
+<video poster="https://cdn.test.dev/cover.png"></video>
+`,
+    );
+    await build([]);
+    const page = await readDom("dist/blog/media/index.html");
+    expect(
+      page
+        .querySelectorAll("video")
+        .map((video) => video.getAttribute("poster")),
+    ).toEqual([
+      "../../blog/cover.png",
+      "../../blog/root.png",
+      "//cdn.test.dev/cover.png",
+      "https://cdn.test.dev/cover.png",
+    ]);
+    expect(page.querySelector("video")?.getAttribute("src")).toBe(
+      "../../blog/clip.mp4",
+    );
+  });
+
   it("emits a well-formed article head and post list", async () => {
     await writeConfig();
     await writeFileAt(

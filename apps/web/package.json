@@ -13,7 +13,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache && echo Prettier Format successfully completed!",
     "code-quality": "npm run lint && npm run typecheck && npm run build && echo Code Quality successfully completed!",
     "typecheck": "SKIP_ENV_VALIDATION=1 next typegen && tsgo --pretty --noEmit && echo Type Checks successfuly completed!",
-    "postbuild": "[ -z \"$POSTHOG_CLI_API_KEY\" ] || [ -z \"$POSTHOG_CLI_ENV_ID\" ] && echo 'Skipping sourcemap upload (no credentials)' || posthog-cli sourcemap process --directory .next --delete-after"
+    "postbuild": "if [ -n \"$NEXT_PUBLIC_POSTHOG_KEY\" ] && [ -n \"$POSTHOG_CLI_API_KEY\" ] && [ -n \"$POSTHOG_CLI_ENV_ID\" ]; then posthog-cli sourcemap process --directory .next --delete-after; else echo 'Skipping sourcemap upload (PostHog disabled or no credentials)'; fi"
   },
   "dependencies": {
     "@posthog/next": "^0.7.0",
