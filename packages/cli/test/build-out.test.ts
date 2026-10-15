@@ -57,7 +57,7 @@ describe("voxx build --out", () => {
         `Built 1 post → ${normalize(rel)}/`,
       );
       expect(log.info).toHaveBeenCalledWith(
-        expect.stringContaining(join(rel, "blog/index.html")),
+        expect.stringContaining(`serve ${normalize(rel)}/`),
       );
     },
   );
@@ -73,7 +73,7 @@ describe("voxx build --out", () => {
       expect(await exists(join(cwd, outDir))).toBe(false);
       expect(log.success).toHaveBeenCalledWith(`Built 1 post → ${outDir}/`);
       expect(log.info).toHaveBeenCalledWith(
-        expect.stringContaining(join(outDir, "blog/index.html")),
+        expect.stringContaining(`serve ${outDir}/`),
       );
     },
   );
