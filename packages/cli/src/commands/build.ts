@@ -562,8 +562,11 @@ export async function buildSite(
     await validate();
     // mkdtemp creates 0700; keep the previous output's mode, or a normal
     // directory mode, so servers and deploy tools running as others can read it.
+    // Always keep owner write+search so renaming and cleanup cannot get stuck.
     const previous = await stat(outDir).catch(() => undefined);
-    await chmod(staging, previous ? previous.mode & 0o7777 : 0o755);
+    const mode = previous ? (previous.mode & 0o7777) | 0o700 : 0o755;
+    await chmod(staging, mode);
+    if (previous) await chmod(outDir, mode);
     if (previous) {
       backup = await mkdtemp(join(dirname(outDir), ".voxx-previous-"));
       await rename(outDir, join(backup, "site"));
@@ -588,10 +591,19 @@ export async function buildSite(
       ),
     };
   } finally {
-    await rm(staging, { recursive: true, force: true });
-    if (backup && removeBackup)
-      await rm(backup, { recursive: true, force: true });
+    await discard(staging);
+    if (backup && removeBackup) {
+      await discard(join(backup, "site"));
+      await discard(backup);
+    }
   }
+}
+
+// Best-effort cleanup: a read-only previous output (copied mode) must not stop
+// removal or mask the build's own error.
+async function discard(dir: string): Promise<void> {
+  await chmod(dir, 0o700).catch(() => {});
+  await rm(dir, { recursive: true, force: true }).catch(() => {});
 }
 
 async function renderSite(

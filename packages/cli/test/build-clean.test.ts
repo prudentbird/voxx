@@ -209,3 +209,16 @@ it.skipIf(process.platform === "win32")(
     expect((await stat(outDir)).mode & 0o777).toBe(0o750);
   },
 );
+
+it.skipIf(process.platform === "win32")(
+  "replaces read-only output and leaves no temporary directories",
+  async () => {
+    await buildSite({ cwd, outDir });
+    await chmod(outDir, 0o555);
+    await buildSite({ cwd, outDir });
+    expect((await stat(outDir)).mode & 0o777).toBe(0o755);
+    expect((await readdir(cwd)).filter((n) => n.startsWith(".voxx-"))).toEqual(
+      [],
+    );
+  },
+);
