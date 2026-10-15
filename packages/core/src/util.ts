@@ -118,7 +118,10 @@ export const ABSOLUTE_RE = /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i;
  * @param rel - Relative reference, e.g. `./assets/cover.png`.
  */
 export function resolveRelativePath(base: string, rel: string): string {
-  const segments = [...base.split("/"), ...rel.split("/")].filter(
+  const suffixStart = rel.search(/[?#]/);
+  const relPath = suffixStart < 0 ? rel : rel.slice(0, suffixStart);
+  const suffix = suffixStart < 0 ? "" : rel.slice(suffixStart);
+  const segments = [...base.split("/"), ...relPath.split("/")].filter(
     (s) => s !== "" && s !== ".",
   );
   const out: string[] = [];
@@ -126,7 +129,7 @@ export function resolveRelativePath(base: string, rel: string): string {
     if (segment === "..") out.pop();
     else out.push(segment);
   }
-  return `/${out.join("/")}`;
+  return `/${out.join("/")}${suffix}`;
 }
 
 /**
