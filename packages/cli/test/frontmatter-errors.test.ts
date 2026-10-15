@@ -53,8 +53,8 @@ describe("voxx build frontmatter diagnostics", () => {
           content: { type: "blog", dir: "content", basePath: "/blog" },
         }),
       );
-      const file = "content/blog/2026-10-15-404.md";
-      await mkdir(join(projectDir, "content/blog"), { recursive: true });
+      const file = join("content", "blog", "2026-10-15-404.md");
+      await mkdir(join(projectDir, "content", "blog"), { recursive: true });
       await writeFile(join(projectDir, file), "---\ntitle: [Unclosed\n---\nbody");
 
       await expect(
