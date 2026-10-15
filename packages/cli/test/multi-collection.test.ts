@@ -6,7 +6,10 @@ import {
   featureAddOps,
   type ScaffoldContext,
 } from "../src/scaffold";
-import { defaultCollection } from "../src/collections";
+import { mkdir, mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { buildVoxxJson, defaultCollection } from "../src/collections";
 import { recommendedFlags } from "../src/features";
 import type { WriteOp } from "../src/util";
 
@@ -145,6 +148,76 @@ for (const cacheComponents of [false, true]) {
         });
       });
     }
+    it("preserves a custom single collection name through config loading in both data variants", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "voxx-custom-name-"));
+      try {
+        const collection = {
+          ...defaultCollection("blog", "posts"),
+          dir: "content",
+        };
+        await mkdir(join(dir, "content"));
+        await writeFile(
+          join(dir, "voxx.json"),
+          JSON.stringify(buildVoxxJson(config.site, [collection])),
+        );
+        const loaded = await core.loadConfig({ cwd: dir });
+        const ops = await nextScaffoldOps({
+          ...ctx,
+          collections: [collection],
+        });
+        const imports = modules(ops);
+        imports["@prudentbird/voxx-core"] = {
+          ...core,
+          loadConfig: async () => loaded,
+        };
+        const scoped = (await evaluate(
+          ops.find((op) => op.path.endsWith("/posts/_data.ts"))!.content!,
+          imports,
+        ).getConfig()) as core.VoxxConfig;
+        expect(scoped.content.basePath).toBe("/posts");
+        expect(loaded.collections[0]?.name).toBe("posts");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    it.each([false, true])(
+      "uses the newest dates across manually ordered posts (empty first=%s)",
+      async (emptyFirst) => {
+        const ops = await nextScaffoldOps(ctx);
+        const docsPosts = [
+          posts[1]!,
+          { ...posts[1]!, date: "2026-02-01", updated: "2026-06-01" },
+        ];
+        const module = evaluate(
+          ops.find((op) => op.path.endsWith("/sitemap.ts"))!.content!,
+          {
+            "@prudentbird/voxx-core": core,
+            "./_voxx/data": {
+              getConfig: async () => config,
+              listCollections: async () => [
+                {
+                  collection: collections[0],
+                  posts: emptyFirst ? [] : [posts[0]],
+                },
+                { collection: collections[1], posts: docsPosts },
+              ],
+            },
+          },
+        );
+        const entries = (await module.default()) as {
+          url: string;
+          lastModified?: string;
+        }[];
+        expect(
+          entries.find((entry) => entry.url === config.site.url)?.lastModified,
+        ).toBe("2026-06-01");
+        expect(
+          entries.find((entry) => entry.url.endsWith("/docs"))?.lastModified,
+        ).toBe("2026-06-01");
+      },
+    );
+
     it("scopes the second collection's config for SEO and feeds", async () => {
       const ops = await nextScaffoldOps(ctx);
       const scoped = (await evaluate(

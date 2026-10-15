@@ -1014,6 +1014,15 @@ describe("feeds + llms", () => {
     expect(robots).toContain("Sitemap: https://example.com/sitemap.xml");
   });
 
+  it("collapses line breaks in collection section headings", () => {
+    const txt = renderLlmsTxtSections(
+      [{ heading: "Docs\n\n## Injected", posts: [] }],
+      config,
+    );
+    expect(txt).toContain("## Docs ## Injected\n");
+    expect(txt).not.toContain("\n## Injected");
+  });
+
   it("renders sectioned llms.txt for multiple collections", () => {
     const txt = renderLlmsTxtSections(
       [

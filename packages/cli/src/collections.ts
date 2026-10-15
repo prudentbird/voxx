@@ -80,8 +80,8 @@ type RawConfig = Record<string, unknown>;
 
 /**
  * Builds a fresh `voxx.json` object for a set of collections. A single
- * collection is written in the compact `content` form; two or more use the
- * `collections` array.
+ * collection with its default name uses the compact `content` form; custom
+ * names and multiple collections use the `collections` array.
  *
  * @param site - Site metadata.
  * @param collections - Collections to declare.
@@ -103,7 +103,7 @@ export function buildVoxxJson(
     },
   };
 
-  if (collections.length === 1) {
+  if (collections.length === 1 && first.name === first.type) {
     out["content"] = {
       type: first.type,
       dir: first.dir,

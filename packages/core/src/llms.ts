@@ -41,7 +41,7 @@ export function renderLlmsTxtSections(
   const lines: string[] = [`# ${config.site.title}`, ""];
   if (config.site.description) lines.push(`> ${config.site.description}`, "");
   for (const section of sections) {
-    lines.push(`## ${section.heading}`, "");
+    lines.push(`## ${escHeading(section.heading)}`, "");
     for (const p of section.posts) {
       const link = absoluteUrl(config.site.url, p.url);
       const summary = p.description ?? p.excerpt;
