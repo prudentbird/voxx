@@ -1046,6 +1046,43 @@ describe("feeds + llms", () => {
     },
   );
 
+  it.each([
+    ["oldest first", [0, 1, 2]],
+    ["newest update first", [1, 2, 0]],
+    ["latest publication first", [2, 0, 1]],
+  ] as const)(
+    "uses the newest release lastmod regardless of input order (%s)",
+    (_label, order) => {
+      const releases = [
+        { ...samplePost, url: "/changelog#old", date: "2026-01-01" },
+        {
+          ...samplePost,
+          url: "/changelog#updated",
+          date: "2026-02-01",
+          updated: "2026-04-01",
+        },
+        { ...samplePost, url: "/changelog#latest", date: "2026-03-01" },
+      ];
+      for (const indexPaths of [["/blog", "/changelog"], []]) {
+        const xml = renderSitemap(
+          [
+            { ...samplePost, date: "2026-05-01" },
+            ...order.map((i) => releases[i]!),
+          ],
+          config,
+          { indexPaths },
+        );
+        expect(xml).not.toContain("#");
+        expect(
+          xml.match(/<loc>https:\/\/example.com\/changelog<\/loc>/g),
+        ).toHaveLength(1);
+        expect(xml).toContain(
+          "<loc>https://example.com/changelog</loc>\n    <lastmod>2026-04-01</lastmod>",
+        );
+      }
+    },
+  );
+
   it("deduplicates fragment URLs even without explicit index paths", () => {
     const xml = renderSitemap(
       [

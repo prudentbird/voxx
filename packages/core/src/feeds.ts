@@ -101,15 +101,17 @@ export function renderSitemap(
     entries.set(loc, { loc, lastmod });
   }
 
-  const seenPosts = new Set<string>();
+  const postLastmods = new Map<string, string>();
   for (const post of posts) {
     const loc = absoluteUrl(config.site.url, post.url).replace(/#.*$/, "");
-    if (seenPosts.has(loc)) continue;
-    seenPosts.add(loc);
-    // Releases share their index URL. Use the newest release's date even
-    // when another collection supplied the default index lastmod.
-    if (!entries.has(loc) || post.url.includes("#")) {
-      entries.set(loc, { loc, lastmod: isoDate(post.updated ?? post.date) });
+    const postLastmod = isoDate(post.updated ?? post.date);
+    const previous = postLastmods.get(loc);
+    if (previous !== undefined && previous >= postLastmod) continue;
+    postLastmods.set(loc, postLastmod);
+    // Compare release dates independently of the default index lastmod,
+    // which may come from another collection. Input order must not matter.
+    if (!entries.has(loc) || post.url.includes("#") || previous !== undefined) {
+      entries.set(loc, { loc, lastmod: postLastmod });
     }
   }
 
