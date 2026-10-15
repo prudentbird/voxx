@@ -8,7 +8,7 @@ voxx init [blog|docs|changelog] [--dir <content>] [--base <path>] [--app <dir>] 
 voxx init --add [blog|docs|changelog] [--name <name>] [--dir <dir>] [--base <path>] [--app <dir>]
 voxx remove <feature> [--force|--yes|-y]
 voxx new "Title" [--collection <name>] [--dir <content>] [--date <YYYY-MM-DD>] [--slug <slug>] [--flat] [--section <path>] [--order <n>]
-voxx build [--out <dir>] [--drafts]
+voxx build [--out <dir>] [--drafts] [--force]
 voxx dev [--port <n>]
 voxx telemetry [status|enable|disable]
 voxx [--version|-v|version]
@@ -139,6 +139,21 @@ images and other content assets, and the outputs your
 | -------------- | ------- | ------------------------------------------------------------------------------------- |
 | `--out public` | `dist`  | Output directory                                                                      |
 | `--drafts`     | off     | Include `draft: true` pages (a collection's `drafts: true` in `voxx.json` also works) |
+| `--force`      | off     | Replace a non-empty output directory without a Voxx build marker |
+
+Each build replaces the previous output with the current site, removing deleted
+pages, removed collections, assets, and disabled feature files. Voxx renders in
+a fresh sibling temporary directory first, keeping the previous output if
+rendering fails. Successful builds include a `.voxx-build` marker so later
+builds can recognise the output.
+
+An existing non-empty directory without that marker is refused. To adopt output
+from an older Voxx version, check its contents and run `voxx build --force` once.
+This replaces **all** contents of the output directory. Even with `--force`,
+Voxx refuses filesystem roots, your home directory, the project root, directories
+containing `voxx.json` or `package.json`, and directories that contain, equal, or
+sit inside any configured content directory. A symlinked output directory is
+followed, and its target is checked and replaced.
 
 See [Static sites](/docs/getting-started/static-sites) for what each
 content type produces.

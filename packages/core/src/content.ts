@@ -2,7 +2,8 @@ import { Effect, Option } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { parseFrontmatter } from "./frontmatter";
 import { renderMarkdownEffect } from "./render";
-import { ConfigError, PostNotFound } from "./errors";
+import { isValidDate } from "./dates";
+import { ConfigError, InvalidFrontmatter, PostNotFound } from "./errors";
 import {
   ABSOLUTE_RE,
   compareVersions,
@@ -22,6 +23,8 @@ const MD_RE = /\.md$/;
 
 /** Options for filtering and paginating posts returned by the content readers. */
 export interface GetPostsEffectOptions {
+  /** Project directory used for relative diagnostic paths. Defaults to `process.cwd()`. */
+  cwd?: string;
   /** When `true`, includes posts whose frontmatter sets `draft: true`, regardless of the `drafts` config. */
   includeDrafts?: boolean;
   /**
@@ -78,11 +81,16 @@ const buildMeta = (
   absPath: string,
   rel: string,
   assetPrefix?: string,
+  cwd = ".",
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const filePath = yield* Path.Path;
     const raw = yield* fs.readFileString(absPath);
-    const { data, content } = yield* parseFrontmatter(rel, raw);
+    const { data, content } = yield* parseFrontmatter(
+      filePath.relative(cwd, absPath),
+      raw,
+    );
     const isDocs = config.content.type === "docs";
     const isChangelog = config.content.type === "changelog";
 
@@ -158,6 +166,12 @@ const buildMeta = (
         : `${assetPrefix ?? ""}${resolveRelativePath(assetBase, data.image)}`
       : undefined;
 
+    if (data.date === undefined && filenameDate && !isValidDate(filenameDate)) {
+      return yield* new InvalidFrontmatter({
+        file: rel,
+        message: `Invalid filename date "${filenameDate}": expected a valid YYYY-MM-DD date`,
+      });
+    }
     let date = data.date ?? filenameDate;
     if (!date) {
       if (!isDocs) {
@@ -205,8 +219,12 @@ const renderBuilt = (
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const filePath = yield* Path.Path;
     const raw = yield* fs.readFileString(built.absPath);
-    const { content } = yield* parseFrontmatter(built.rel, raw);
+    const { content } = yield* parseFrontmatter(
+      filePath.relative(opts.cwd ?? ".", built.absPath),
+      raw,
+    );
     const { html, toc } = yield* renderMarkdownEffect(content, config, {
       assetBase: built.assetBase,
       assetPrefix: opts.assetPrefix,
@@ -278,7 +296,8 @@ const collectMetas = (config: VoxxConfig, opts: GetPostsEffectOptions) =>
 
     const built = yield* Effect.forEach(
       files,
-      (rel) => buildMeta(config, path.join(dir, rel), rel, opts.assetPrefix),
+      (rel) =>
+        buildMeta(config, path.join(dir, rel), rel, opts.assetPrefix, opts.cwd),
       { concurrency: 8 },
     );
 
@@ -308,7 +327,7 @@ const collectMetas = (config: VoxxConfig, opts: GetPostsEffectOptions) =>
 
     const isChangelog = config.content.type === "changelog";
     return visible.sort((a, b) => {
-      const byDate = b.meta.date.localeCompare(a.meta.date);
+      const byDate = Date.parse(b.meta.date) - Date.parse(a.meta.date);
       if (byDate !== 0) return byDate;
       if (isChangelog && a.meta.version && b.meta.version) {
         return compareVersions(b.meta.version, a.meta.version);
@@ -361,6 +380,22 @@ export const getPostsEffect = (
     );
   });
 
+// Next route params can contain percent-encoded segments. Decode once at the
+// lookup boundary, keeping slugify itself independent of URL encoding.
+const normalizeLookupPath = (slug: string): string =>
+  slug
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => {
+      try {
+        return slugify(decodeURIComponent(segment));
+      } catch {
+        // Preserve lookup behavior for literal or malformed percent sequences.
+        return slugify(segment);
+      }
+    })
+    .join("/");
+
 /**
  * Finds a post in an already-loaded array by slug or path.
  *
@@ -372,7 +407,7 @@ export function findPost<T extends PostMeta>(
   posts: T[],
   slug: string,
 ): T | undefined {
-  const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
+  const wanted = normalizeLookupPath(slug);
   return posts.find((p) => matchesSlug(p, wanted));
 }
 
@@ -391,7 +426,7 @@ export const getPostEffect = (
       ...opts,
       reachable: opts.reachable ?? true,
     });
-    const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
+    const wanted = normalizeLookupPath(slug);
     const built = all.find((b) => matchesSlug(b.meta, wanted));
     if (!built) return yield* new PostNotFound({ slug });
     return yield* renderBuilt(config, built, opts);

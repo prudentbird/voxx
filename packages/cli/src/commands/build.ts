@@ -1,23 +1,17 @@
 import {
+  chmod,
   copyFile,
-  lstat,
   mkdir,
+  mkdtemp,
   readdir,
-  readlink,
   realpath,
+  rename,
+  rm,
   stat,
   writeFile,
 } from "node:fs/promises";
 import type { Dirent } from "node:fs";
-import {
-  basename,
-  dirname,
-  isAbsolute,
-  join,
-  relative,
-  resolve,
-  sep,
-} from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import {
   buildNavTree,
@@ -43,6 +37,12 @@ import {
   type VoxxConfig,
 } from "@prudentbird/voxx-core";
 import { c, exists, log, resolveCoreAsset } from "../util";
+import {
+  BUILD_MARKER,
+  BUILD_MARKER_CONTENT,
+  canonicalPath,
+  validateOutput,
+} from "./build-output";
 
 function stripLead(path: string): string {
   return path.replace(/^\/+/, "");
@@ -57,37 +57,14 @@ function displayPath(cwd: string, path: string): string {
   return isWithin(cwd, path) ? relative(cwd, path) : path;
 }
 
-// Resolve existing ancestors too, since the output's final directories may not
-// exist yet. Follow dangling links so they cannot hide a future content path.
-async function canonicalPath(path: string): Promise<string> {
-  try {
-    return await realpath(path);
-  } catch (error) {
-    if (
-      !(error instanceof Error && "code" in error && error.code === "ENOENT")
-    ) {
-      throw error;
-    }
-  }
-  const entry = await lstat(path).catch((error: unknown) => {
-    if (
-      !(error instanceof Error && "code" in error && error.code === "ENOENT")
-    ) {
-      throw error;
-    }
-    return undefined;
-  });
-  if (entry?.isSymbolicLink()) {
-    return canonicalPath(resolve(dirname(path), await readlink(path)));
-  }
-  return join(await canonicalPath(dirname(path)), basename(path));
-}
-
 function headTags(seo: SeoData, config: VoxxConfig): string {
   const tags: string[] = [
     `<meta name="description" content="${esc(seo.description)}">`,
     `<link rel="canonical" href="${esc(seo.canonical)}">`,
   ];
+  if (seo.noindex) {
+    tags.push('<meta name="robots" content="noindex, nofollow">');
+  }
   const og = seo.openGraph;
   if (og) {
     tags.push(
@@ -467,12 +444,14 @@ async function buildCollection(
   );
 
   if (type === "changelog") {
+    const noindex =
+      config.content.drafts !== true && listed.some((post) => post.draft);
     await writePage(
       indexPath,
       shell({
         title: config.site.title,
         lang: config.site.locale,
-        head: `<meta name="description" content="${esc(config.site.description)}">`,
+        head: `<meta name="description" content="${esc(config.site.description)}">${noindex ? '\n    <meta name="robots" content="noindex, nofollow">' : ""}`,
         body: `${siteHeader(config)}\n${changelogBody(listed, config)}`,
       }),
       outDir,
@@ -498,24 +477,28 @@ async function buildCollection(
     const hasRootPage = (posts: Post[]) =>
       posts.some((p) => p.path.length === 0);
     if (!hasRootPage(listed) && !hasRootPage(reachable)) {
+      const noindex =
+        config.content.drafts !== true && listed.some((post) => post.draft);
       await writePage(
         indexPath,
         shell({
           title: config.site.title,
           lang: config.site.locale,
-          head: `<meta name="description" content="${esc(config.site.description)}">`,
+          head: `<meta name="description" content="${esc(config.site.description)}">${noindex ? '\n    <meta name="robots" content="noindex, nofollow">' : ""}`,
           body: docsIndexBody(nav, config),
         }),
         outDir,
       );
     }
   } else {
+    const noindex =
+      config.content.drafts !== true && listed.some((post) => post.draft);
     await writePage(
       indexPath,
       shell({
         title: config.site.title,
         lang: config.site.locale,
-        head: `<meta name="description" content="${esc(config.site.description)}">`,
+        head: `<meta name="description" content="${esc(config.site.description)}">${noindex ? '\n    <meta name="robots" content="noindex, nofollow">' : ""}`,
         body: `${siteHeader(config)}\n${indexBody(listed, config)}`,
       }),
       outDir,
@@ -542,6 +525,7 @@ export interface BuildSiteOptions {
   outDir: string;
   includeDrafts?: boolean | undefined;
   quiet?: boolean;
+  force?: boolean;
 }
 
 export interface BuildSiteResult {
@@ -554,31 +538,69 @@ export interface BuildSiteResult {
 export async function buildSite(
   opts: BuildSiteOptions,
 ): Promise<BuildSiteResult> {
-  const { cwd } = opts;
-  const outDir = resolve(cwd, opts.outDir);
+  const cwd = resolve(opts.cwd);
+  const requestedOut = resolve(cwd, opts.outDir);
+  // Replace the real directory so an output symlink keeps pointing at it.
+  const outDir = await canonicalPath(requestedOut);
   const config = await loadConfig({ cwd });
+  const validate = () =>
+    validateOutput(
+      cwd,
+      outDir,
+      config.collections.map((col) => col.dir),
+      opts.force,
+    );
+  await validate();
+  await mkdir(dirname(outDir), { recursive: true });
+  const staging = await mkdtemp(join(dirname(outDir), ".voxx-build-"));
+  let backup: string | undefined;
+  let removeBackup = true;
+  try {
+    const result = await renderSite({ ...opts, cwd, outDir: staging }, config);
+    await writeFile(join(staging, BUILD_MARKER), BUILD_MARKER_CONTENT);
+    // Check again before replacing, in case the destination changed during rendering.
+    await validate();
+    // mkdtemp creates 0700; keep the previous output's mode, or a normal
+    // directory mode, so servers and deploy tools running as others can read it.
+    const previous = await stat(outDir).catch(() => undefined);
+    await chmod(staging, previous ? previous.mode & 0o7777 : 0o755);
+    if (previous) {
+      backup = await mkdtemp(join(dirname(outDir), ".voxx-previous-"));
+      await rename(outDir, join(backup, "site"));
+      removeBackup = false;
+    }
+    try {
+      await rename(staging, outDir);
+      removeBackup = true;
+    } catch (err) {
+      if (backup) {
+        await rename(join(backup, "site"), outDir);
+        removeBackup = true;
+      }
+      throw err;
+    }
+    return {
+      ...result,
+      indexRel: join(
+        relative(cwd, requestedOut),
+        stripLead(config.collections[0]!.basePath),
+        "index.html",
+      ),
+    };
+  } finally {
+    await rm(staging, { recursive: true, force: true });
+    if (backup && removeBackup)
+      await rm(backup, { recursive: true, force: true });
+  }
+}
+
+async function renderSite(
+  opts: BuildSiteOptions,
+  config: VoxxConfig,
+): Promise<BuildSiteResult> {
+  const { cwd, outDir } = opts;
   const collections = config.collections;
   const multi = collections.length > 1;
-  const [canonicalOut, canonicalCwd] = await Promise.all([
-    canonicalPath(outDir),
-    canonicalPath(resolve(cwd)),
-  ]);
-
-  if (outDir === resolve(cwd) || canonicalOut === canonicalCwd) {
-    throw new Error(
-      "Output directory must not be the project root. Choose a separate build directory with --out.",
-    );
-  }
-  for (const collection of collections) {
-    if (
-      isWithin(collection.dir, outDir) ||
-      isWithin(await canonicalPath(collection.dir), canonicalOut)
-    ) {
-      throw new Error(
-        `Output directory must not be in content directory "${collection.dir}". Choose a separate build directory with --out.`,
-      );
-    }
-  }
 
   await mkdir(join(outDir, "_voxx"), { recursive: true });
   await copyFile(
@@ -600,6 +622,7 @@ export async function buildSite(
       config: view,
       reachable: true,
       includeDrafts: opts.includeDrafts,
+      cwd,
     });
     const listed = opts.includeDrafts
       ? reachable
@@ -669,6 +692,7 @@ export async function build(argv: string[]): Promise<void> {
     options: {
       out: { type: "string" },
       drafts: { type: "boolean" },
+      force: { type: "boolean" },
     },
     allowPositionals: true,
   });
@@ -685,6 +709,7 @@ export async function build(argv: string[]): Promise<void> {
     cwd,
     outDir,
     includeDrafts: values.drafts ? true : undefined,
+    force: values.force ?? false,
   });
 
   const { config } = result;

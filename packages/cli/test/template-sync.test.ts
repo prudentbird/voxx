@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { createJiti } from "jiti";
+import type { SeoData } from "@prudentbird/voxx-core";
 import { render } from "../src/util";
 
 const ROOT = join(import.meta.dirname, "../../..");
@@ -83,6 +86,7 @@ const BLOG_PAIRS: Array<
   [tpl: string, file: string, vars?: Record<string, string>]
 > = [
   ["shared/site-data.ts.tpl", "(voxx)/_voxx/data.ts", { VERSION_ARG: "0" }],
+  ["shared/metadata.ts.tpl", "(voxx)/blog/_metadata.ts"],
   [
     "shared/data-static.ts.tpl",
     "(voxx)/blog/_data.ts",
@@ -117,4 +121,37 @@ describe("static-variant templates stay in sync with next-blog", () => {
       expect(rendered).toBe(actual);
     },
   );
+});
+
+describe("Next metadata template", () => {
+  it("marks preview drafts noindex without changing published page robots", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "voxx-metadata-"));
+    try {
+      const file = join(dir, "metadata.ts");
+      await writeFile(
+        file,
+        render(
+          await readFile(join(TEMPLATES, "shared/metadata.ts.tpl"), "utf8"),
+        ),
+      );
+      const { toMetadata } = await createJiti(import.meta.url).import<{
+        toMetadata: (seo: SeoData) => {
+          robots?: unknown;
+        };
+      }>(file);
+      const seo = {
+        title: "Draft",
+        description: "Preview",
+        canonical: "https://test.dev/blog/draft",
+      };
+      expect(toMetadata({ ...seo, noindex: true }).robots).toEqual({
+        index: false,
+        follow: false,
+      });
+      expect(toMetadata({ ...seo, noindex: false }).robots).toBeUndefined();
+      expect(toMetadata(seo).robots).toBeUndefined();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });

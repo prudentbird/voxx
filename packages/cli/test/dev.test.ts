@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dev, serveFile } from "../src/commands/dev";
@@ -126,6 +126,34 @@ describe("voxx dev", () => {
     }
   });
 
+  it("stops serving deleted posts after rebuilding while keeping current pages available", async () => {
+    await writeConfig();
+    await writePost("hello.md", "title: Hello\ndate: 2026-01-01", "Hello.");
+    await writePost("keep.md", "title: Keep\ndate: 2026-01-01", "Keep.");
+    const handle = await startDev();
+    expect(handle).toBeDefined();
+    const base = `http://127.0.0.1:${handle!.port}`;
+    try {
+      const initial = await fetch(`${base}/blog/hello/`);
+      expect(initial.status).toBe(200);
+      await initial.text();
+      await rm(join(dir, "content/hello.md"));
+      await vi.waitFor(
+        async () => {
+          const current = await fetch(`${base}/blog/keep/`);
+          expect(current.status).toBe(200);
+          await current.text();
+          const deleted = await fetch(`${base}/blog/hello/`);
+          await deleted.text();
+          expect(deleted.status).toBe(404);
+        },
+        { timeout: 60000, interval: 100 },
+      );
+    } finally {
+      await handle!.close();
+    }
+  });
+
   it("serves drafts by default (preview behavior)", async () => {
     await writeConfig();
     await writePost(
@@ -149,6 +177,31 @@ describe("voxx dev", () => {
     expect(handle).toBeUndefined();
     expect(process.exitCode).toBe(1);
   });
+
+  it.each([
+    ["schema", "title: 404", "Expected string, actual 404"],
+    ["YAML", "title: [Unclosed", "unexpected end of the stream"],
+  ])(
+    "names the file when the initial rebuild has %s errors",
+    async (_kind, yaml, detail) => {
+      await writeConfig();
+      await writePost("nested/bad.md", yaml, "Body");
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const handle = await startDev();
+      try {
+        expect(handle).toBeDefined();
+        expect(error).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "content/nested/bad.md: invalid frontmatter — ",
+          ),
+        );
+        expect(error).toHaveBeenCalledWith(expect.stringContaining(detail));
+      } finally {
+        await handle?.close();
+        error.mockRestore();
+      }
+    },
+  );
 
   it("rejects an invalid port", async () => {
     await writeConfig();
