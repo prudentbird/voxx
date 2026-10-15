@@ -152,6 +152,60 @@ describe("voxx build", () => {
     expect(llms).toContain("## Docs");
   });
 
+  it.each([false, true])(
+    "emits only the changelog index in the sitemap (multi: %s)",
+    async (multi) => {
+      await writeConfig({
+        content: multi
+          ? undefined
+          : { type: "changelog", dir: "content", basePath: "/changelog" },
+        ...(multi
+          ? {
+              collections: [
+                { name: "blog", dir: "content/blog" },
+                {
+                  name: "changelog",
+                  type: "changelog",
+                  dir: "content/changelog",
+                },
+              ],
+            }
+          : {}),
+        features: { sitemap: true },
+      });
+      if (multi) {
+        await writePost(
+          "blog/hello.md",
+          "title: Hello\ndate: 2026-03-01",
+          "Hello.",
+        );
+      }
+      const prefix = multi ? "changelog/" : "";
+      await writePost(
+        `${prefix}v1-2-0.md`,
+        "title: v1.2.0\ndate: 2026-02-01\nupdated: 2026-02-03",
+        "Latest.",
+      );
+      await writePost(
+        `${prefix}v1-1-0.md`,
+        "title: v1.1.0\ndate: 2026-01-01",
+        "Older.",
+      );
+      await build([]);
+
+      expect(process.exitCode).toBe(0);
+      const sitemap = await readFile(join(dir, "dist/sitemap.xml"), "utf8");
+      expect(sitemap).not.toContain("#");
+      expect(
+        sitemap.match(/<loc>https:\/\/test.dev\/changelog<\/loc>/g),
+      ).toHaveLength(1);
+      expect(sitemap).toContain(
+        "<loc>https://test.dev/changelog</loc>\n    <lastmod>2026-02-03</lastmod>",
+      );
+      expect(sitemap.match(/<url>/g)).toHaveLength(multi ? 3 : 1);
+    },
+  );
+
   it("fails cleanly without voxx.json", async () => {
     await build([]);
     expect(process.exitCode).toBe(1);

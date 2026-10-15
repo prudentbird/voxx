@@ -95,18 +95,25 @@ export function renderSitemap(
   const lastmod = isoDate(
     posts[0]?.updated ?? posts[0]?.date ?? new Date().toISOString(),
   );
-  const entries = [
-    ...(opts.indexPaths ?? [config.content.basePath]).map((p) => ({
-      loc: absoluteUrl(config.site.url, p),
-      lastmod,
-    })),
-    ...posts.map((p) => ({
-      loc: absoluteUrl(config.site.url, p.url),
-      lastmod: isoDate(p.updated ?? p.date),
-    })),
-  ];
+  const entries = new Map<string, { loc: string; lastmod: string }>();
+  for (const path of opts.indexPaths ?? [config.content.basePath]) {
+    const loc = absoluteUrl(config.site.url, path).replace(/#.*$/, "");
+    entries.set(loc, { loc, lastmod });
+  }
 
-  const body = entries
+  const seenPosts = new Set<string>();
+  for (const post of posts) {
+    const loc = absoluteUrl(config.site.url, post.url).replace(/#.*$/, "");
+    if (seenPosts.has(loc)) continue;
+    seenPosts.add(loc);
+    // Releases share their index URL. Use the newest release's date even
+    // when another collection supplied the default index lastmod.
+    if (!entries.has(loc) || post.url.includes("#")) {
+      entries.set(loc, { loc, lastmod: isoDate(post.updated ?? post.date) });
+    }
+  }
+
+  const body = [...entries.values()]
     .map((u) =>
       [
         "  <url>",
