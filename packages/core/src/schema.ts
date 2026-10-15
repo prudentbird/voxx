@@ -1,11 +1,21 @@
 import { Schema } from "effect";
 
+import { isValidDate } from "./dates";
+
 const DateLike = Schema.transform(
-  Schema.Union(Schema.String, Schema.DateFromSelf),
+  Schema.Union(Schema.String, Schema.DateFromSelf).pipe(
+    Schema.filter(isValidDate, {
+      message: () =>
+        "Expected a valid ISO 8601 date (YYYY-MM-DD or a datetime with timezone), or a valid Date object",
+    }),
+  ),
   Schema.String,
   {
     strict: false,
-    decode: (value) => (value instanceof Date ? value.toISOString() : value),
+    decode: (value) =>
+      typeof value === "string" && value.length === 10
+        ? value
+        : new Date(value).toISOString(),
     encode: (value) => value,
   },
 );

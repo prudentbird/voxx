@@ -1,5 +1,6 @@
 import { Effect, ParseResult, Schema } from "effect";
-import { load } from "js-yaml";
+import { DEFAULT_SCHEMA, load, Type } from "js-yaml";
+import { isValidDate } from "./dates";
 import { Frontmatter, type FrontmatterData } from "./schema";
 import { InvalidFrontmatter } from "./errors";
 
@@ -7,6 +8,47 @@ export interface ParsedFile {
   data: FrontmatterData;
   content: string;
 }
+
+// Match js-yaml's timestamp syntax, but check its components before allowing
+// its Date coercion. Keep invalid scalars for field-aware schema errors.
+const YAML_TIMESTAMP_RE =
+  /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[Tt \t]+(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d*))?(?:[ \t]*(Z|([+-])(\d{1,2})(?::(\d{2}))?))?)?$/;
+const timestamp = new Type("tag:yaml.org,2002:timestamp", {
+  kind: "scalar",
+  resolve: (value: string | null) =>
+    value !== null && YAML_TIMESTAMP_RE.test(value),
+  construct: (value: string) => {
+    const match = YAML_TIMESTAMP_RE.exec(value)!;
+    const [
+      ,
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second,
+      fraction,
+      zone,
+      sign,
+      zoneHour,
+      zoneMinute,
+    ] = match;
+    const date = `${year}-${month!.padStart(2, "0")}-${day!.padStart(2, "0")}`;
+    const offset = sign
+      ? `${sign}${zoneHour!.padStart(2, "0")}:${zoneMinute ?? "00"}`
+      : "Z";
+    const iso =
+      hour === undefined
+        ? date
+        : `${date}T${hour.padStart(2, "0")}:${minute}:${second}${fraction ? `.${fraction}` : ""}${zone ? offset : "Z"}`;
+    // Use the original loader after validation to retain valid YAML output.
+    return isValidDate(iso) ? load(value) : value;
+  },
+});
+const frontmatterYamlSchema = DEFAULT_SCHEMA.extend({
+  implicit: [timestamp],
+  explicit: [timestamp],
+});
 
 const BOM = "\uFEFF";
 const FENCE = "---";
@@ -45,7 +87,10 @@ const parseYaml = (file: string, raw: string) =>
   Effect.try({
     try: () => {
       const { yaml, content } = splitFrontmatter(raw);
-      return { data: yaml ? (load(yaml) ?? {}) : {}, content };
+      return {
+        data: yaml ? (load(yaml, { schema: frontmatterYamlSchema }) ?? {}) : {},
+        content,
+      };
     },
     catch: (cause) =>
       new InvalidFrontmatter({
