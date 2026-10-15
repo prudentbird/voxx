@@ -220,14 +220,9 @@ export function normalizeBase(base: string): string {
   return withLead.length > 1 ? withLead.replace(/\/+$/, "") : withLead;
 }
 
-const YAML_PLAIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9 ._/()-]*[A-Za-z0-9._/()-])?$/;
-
 /**
- * Returns a YAML-safe representation of `value`.
- *
- * Plain strings that match the safe character set are returned as-is;
- * everything else is JSON-quoted.
+ * Quotes a string for YAML so scalar resolution cannot change its type.
  */
 export function yamlValue(value: string): string {
-  return YAML_PLAIN_RE.test(value) ? value : JSON.stringify(value);
+  return JSON.stringify(value);
 }
