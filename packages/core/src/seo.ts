@@ -24,10 +24,26 @@ const personLd = (author: VoxxAuthor) => ({
  * Twitter card, and JSON-LD — based on the active config flags.
  *
  * @param post - The post metadata to generate SEO data for.
- * @param config - Resolved Voxx config.
+ * @param config - Resolved Voxx config. The most specific collection URL prefix
+ * selects the post policy; a collection-scoped `content` takes precedence on ties.
  * @returns `SeoData` ready to be spread into `<head>` metadata.
  */
 export function buildSeo(post: PostMeta, config: VoxxConfig): SeoData {
+  let content = config.content;
+  let prefixLength = -1;
+  for (const collection of [config.content, ...(config.collections ?? [])]) {
+    const base = collection.basePath.replace(/\/+$/, "");
+    if (
+      base.length > prefixLength &&
+      (post.url === base ||
+        post.url.startsWith(`${base}/`) ||
+        post.url.startsWith(`${base}#`))
+    ) {
+      content = collection;
+      prefixLength = base.length;
+    }
+  }
+  config = { ...config, content };
   const canonical = absoluteUrl(config.site.url, post.url);
   const description = post.description ?? post.excerpt;
   const imgSrc = post.image ?? config.seo.defaultImage ?? undefined;

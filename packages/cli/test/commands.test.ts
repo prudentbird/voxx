@@ -148,6 +148,51 @@ describe("voxx build", () => {
     },
   );
 
+  it.each([
+    { drafts: false, args: ["--drafts"], containsDraft: true, noindex: true },
+    {
+      drafts: "unlisted",
+      args: ["--drafts"],
+      containsDraft: true,
+      noindex: true,
+    },
+    { drafts: true, args: [], containsDraft: true, noindex: false },
+    { drafts: "unlisted", args: [], containsDraft: false, noindex: false },
+    { drafts: false, args: [], containsDraft: false, noindex: false },
+  ])(
+    "sets changelog index robots for drafts: $drafts and args: $args",
+    async ({ drafts, args, containsDraft, noindex }) => {
+      await writeConfig({
+        content: {
+          type: "changelog",
+          dir: "content",
+          basePath: "/changelog",
+          drafts,
+        },
+      });
+      await writePost(
+        "1.0.0.md",
+        "title: Live release\ndate: 2026-01-01",
+        "Released content.",
+      );
+      await writePost(
+        "2.0.0.md",
+        "title: Preview release\ndate: 2026-01-02\ndraft: true",
+        "Preview release content.",
+      );
+      await build(args);
+      const html = await readFile(
+        join(dir, "dist/changelog/index.html"),
+        "utf8",
+      );
+      expect(html.includes("Preview release content.")).toBe(containsDraft);
+      expect(
+        html.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(html).toContain("Released content.");
+    },
+  );
+
   it("builds every collection in a multi-collection config", async () => {
     await writeConfig({
       content: undefined,

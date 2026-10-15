@@ -389,12 +389,14 @@ async function buildCollection(
   );
 
   if (type === "changelog") {
+    const noindex =
+      config.content.drafts !== true && listed.some((post) => post.draft);
     await writePage(
       indexPath,
       shell({
         title: config.site.title,
         lang: config.site.locale,
-        head: `<meta name="description" content="${esc(config.site.description)}">`,
+        head: `<meta name="description" content="${esc(config.site.description)}">${noindex ? '\n    <meta name="robots" content="noindex, nofollow">' : ""}`,
         body: `${siteHeader(config)}\n${changelogBody(listed, config)}`,
       }),
       outDir,
