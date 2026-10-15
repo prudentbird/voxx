@@ -179,6 +179,33 @@ describe("voxx new", () => {
     ).toBe(true);
   });
 
+  it.each([
+    ["blog", "Привет мир", "привет-мир"],
+    ["docs", "你好 世界", "你好-世界"],
+  ])("creates and builds a Unicode %s page", async (type, title, slug) => {
+    await writeConfig({
+      content: { type, dir: "content", basePath: `/${type}` },
+    });
+    await newPost([title, "--date", "2026-06-01"]);
+    expect(process.exitCode).toBe(0);
+    const filename = type === "blog" ? `2026-06-01-${slug}.md` : `${slug}.md`;
+    expect(await readFile(join(dir, "content", filename), "utf8")).toContain(
+      `slug: ${slug}`,
+    );
+    await build([]);
+    expect(process.exitCode).toBe(0);
+    const html = await readFile(
+      join(dir, `dist/${type}/${slug}/index.html`),
+      "utf8",
+    );
+    expect(html).toContain(title);
+    const index = await readFile(join(dir, `dist/${type}/index.html`), "utf8");
+    expect(index).toContain(`/${type}/${slug}"`);
+    expect(await readFile(join(dir, "dist/sitemap.xml"), "utf8")).toContain(
+      `https://test.dev/${type}/${slug}`,
+    );
+  });
+
   it("rejects an invalid --date", async () => {
     await writeConfig();
     await newPost(["Post", "--date", "junk"]);
