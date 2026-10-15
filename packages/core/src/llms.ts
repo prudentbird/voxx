@@ -7,7 +7,7 @@ const SECTION_HEADING: Record<ContentType, string> = {
   changelog: "Releases",
 };
 
-const oneLine = (s: string) => s.replace(/\s*\n\s*/g, " ").trim();
+const oneLine = (s: string) => s.replace(/\s*[\r\n]\s*/g, " ").trim();
 const escLinkText = (s: string) => oneLine(s).replace(/([[\]])/g, "\\$1");
 const escHeading = (s: string) => oneLine(s);
 
