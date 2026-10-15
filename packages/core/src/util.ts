@@ -1,3 +1,8 @@
+import type { Nodes, PhrasingContent } from "mdast";
+import { toString } from "mdast-util-to-string";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 import type { VoxxAuthor } from "./types";
 
 type AuthorEntryInput =
@@ -156,26 +161,73 @@ export function readingTimeMinutes(markdown: string): number {
   return Math.max(1, Math.round(words / 200));
 }
 
+// Reuse the processor; parsing needs no rendering, highlighting, or async plugins.
+const excerptParser = unified().use(remarkParse).use(remarkGfm).freeze();
+
+function excerptChildren(children: PhrasingContent[]): PhrasingContent[] {
+  return children.flatMap((node): PhrasingContent[] => {
+    switch (node.type) {
+      case "html":
+      case "inlineCode":
+      case "image":
+      case "imageReference":
+      case "footnoteReference":
+        return [];
+      case "break":
+        return [{ type: "text", value: " " }];
+      default:
+        return [
+          "children" in node
+            ? { ...node, children: excerptChildren(node.children) }
+            : node,
+        ];
+    }
+  });
+}
+
 /**
- * Extracts a plain-text excerpt from Markdown, stripping code blocks,
- * headings, and inline markup.
+ * Extracts plain text from the first Markdown paragraphs, omitting code,
+ * HTML, headings, images, tables, and link/footnote definitions.
  *
  * @param markdown - Raw Markdown source.
  * @param max - Maximum character length before truncation. Defaults to `180`.
  */
 export function deriveExcerpt(markdown: string, max = 180): string {
-  const text = markdown
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`[^`]*`/g, " ")
-    .replace(/^#{1,6}\s.*$/gm, " ")
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[*_>#~]/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/\s+([.,;:!?])/g, "$1")
-    .trim();
+  const tree = excerptParser.parse(markdown);
+  let text = "";
+  function collect(node: Nodes): void {
+    if (text.length > max) return;
+    switch (node.type) {
+      case "code":
+      case "html":
+      case "definition":
+      case "footnoteDefinition":
+      case "heading":
+      case "table":
+        return;
+      case "paragraph": {
+        const paragraph = toString({
+          ...node,
+          children: excerptChildren(node.children),
+        })
+          .replace(/\s+/g, " ")
+          .trim();
+        if (paragraph) text += `${text ? " " : ""}${paragraph}`;
+        return;
+      }
+      default:
+        if ("children" in node) {
+          for (const child of node.children) {
+            collect(child);
+            if (text.length > max) break;
+          }
+        }
+    }
+  }
+  collect(tree);
   if (text.length <= max) return text;
-  return `${text.slice(0, max).replace(/\s+\S*$/, "")}…`;
+  const prefix = text.slice(0, max);
+  return `${/\s/.test(text.charAt(max)) ? prefix.trimEnd() : prefix.replace(/\s+\S*$/, "")}…`;
 }
 
 /**
