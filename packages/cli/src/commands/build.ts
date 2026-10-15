@@ -315,11 +315,13 @@ ${posts
 }
 
 /**
- * Rewrite root-absolute internal links (`href`/`src` beginning with a single
+ * Rewrite root-absolute internal links (`href`/`src`/`poster` beginning with a single
  * `/`) to paths relative to the page's own location. This keeps navigation and
  * asset links working whether the generated site is served from the domain
- * root, a subpath, or opened directly from the filesystem. Protocol-relative
- * (`//host`) and external URLs are left untouched.
+ * root or a subpath. Directory URLs require an HTTP server that serves index.html;
+ * opening pages over file:// is not supported. Protocol-relative (`//host`) and
+ * external URLs are left untouched. `srcset` needs candidate parsing and is not
+ * rewritten here.
  */
 function relativizeLinks(
   html: string,
@@ -327,7 +329,10 @@ function relativizeLinks(
   outDir: string,
 ): string {
   const prefix = relative(fromDir, outDir).split(sep).join("/") || ".";
-  return html.replace(/\b(href|src)="\/(?!\/)([^"]*)"/g, `$1="${prefix}/$2"`);
+  return html.replace(
+    /\b(href|src|poster)="\/(?!\/)([^"]*)"/g,
+    `$1="${prefix}/$2"`,
+  );
 }
 
 async function writePage(
@@ -624,6 +629,6 @@ export async function build(argv: string[]): Promise<void> {
       : `${result.pageCount} ${noun}${result.pageCount === 1 ? "" : "s"}`;
   log.success(`Built ${what} → ${relative(cwd, outDir)}/`);
   log.info(
-    `  Open ${c.cyan(result.indexRel)} in a browser, or run ${c.cyan("voxx dev")} to preview with a local server.`,
+    `  Run ${c.cyan("voxx dev")} to preview, or serve ${c.cyan(`${relative(cwd, outDir)}/`)} with a static HTTP server.`,
   );
 }
