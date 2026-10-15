@@ -356,7 +356,7 @@ describe("voxx add collection", () => {
       true,
     );
     const data = await readFile(join(dir, "app/(voxx)/docs/_data.ts"), "utf8");
-    expect(data).toContain('assetPrefix: VOXX_ASSET_PREFIX');
+    expect(data).toContain("assetPrefix: VOXX_ASSET_PREFIX");
     expect(data).toContain('{ collection: "docs" }');
 
     const sitemap = await readFile(join(dir, "app/(voxx)/sitemap.ts"), "utf8");
@@ -454,11 +454,14 @@ describe("voxx init (static, non-TTY)", () => {
   it("names a single collection with --name", async () => {
     await init(["blog", "--name", "posts", "--yes"]);
     const cfg = JSON.parse(await readFile(join(dir, "voxx.json"), "utf8"));
-    expect(cfg.content).toMatchObject({
-      type: "blog",
-      dir: "content/posts",
-      basePath: "/posts",
-    });
+    expect(cfg.collections).toMatchObject([
+      {
+        name: "posts",
+        type: "blog",
+        dir: "content/posts",
+        basePath: "/posts",
+      },
+    ]);
     expect(await exists(join(dir, "content/posts"))).toBe(true);
   });
 
