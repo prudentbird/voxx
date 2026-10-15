@@ -179,16 +179,20 @@ export function deriveExcerpt(markdown: string, max = 180): string {
 }
 
 /**
- * Formats an ISO 8601 date string for display.
+ * Formats an ISO 8601 date string for display in UTC.
+ * Datetimes without an explicit timezone are interpreted as UTC.
  *
  * @param iso - ISO date string, e.g. `"2024-01-15"`.
  * @param locale - BCP 47 locale. Defaults to `"en-US"`.
  * @returns Formatted string like `"January 15, 2024"`, or the original string if invalid.
  */
 export function formatDate(iso: string, locale = "en-US"): string {
-  const d = new Date(iso);
+  const withoutTimeZone =
+    /^(?:\d{4}|[+-]\d{6})-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/i;
+  const d = new Date(withoutTimeZone.test(iso) ? `${iso}Z` : iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(locale, {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",

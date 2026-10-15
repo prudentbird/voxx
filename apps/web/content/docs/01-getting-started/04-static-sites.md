@@ -41,11 +41,17 @@ includes drafts by default:
 npx @prudentbird/voxx dev                   # http://localhost:4321
 ```
 
-Or serve the built folder with anything that can serve files:
+Or serve the built folder with a static HTTP server that serves `index.html`
+for directory URLs:
 
 ```bash
 npx serve dist
 ```
+
+Open the server's URL in your browser, followed by your collection's base path
+(for example, `http://localhost:3000/blog/`). Opening `dist/blog/index.html`
+directly over `file://` is not supported: internal links use directory URLs
+that need an HTTP server to resolve them to `index.html`.
 
 ## Bring your own framework
 

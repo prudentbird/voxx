@@ -10,7 +10,7 @@ export const env = createEnv({
     POSTHOG_CLI_API_KEY: z.string().optional(),
   },
   client: {
-    NEXT_PUBLIC_POSTHOG_KEY: z.string().startsWith("phc_"),
+    NEXT_PUBLIC_POSTHOG_KEY: z.string().startsWith("phc_").optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
   },
   emptyStringAsUndefined: true,
