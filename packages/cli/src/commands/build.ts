@@ -1,6 +1,22 @@
-import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  lstat,
+  mkdir,
+  readdir,
+  readlink,
+  realpath,
+  writeFile,
+} from "node:fs/promises";
 import type { Dirent } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { parseArgs } from "node:util";
 import {
   buildNavTree,
@@ -28,6 +44,41 @@ import { c, exists, log, resolveCoreAsset } from "../util";
 
 function stripLead(path: string): string {
   return path.replace(/^\/+/, "");
+}
+
+function isWithin(parent: string, path: string): boolean {
+  const rel = relative(parent, path);
+  return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+}
+
+function displayPath(cwd: string, path: string): string {
+  return isWithin(cwd, path) ? relative(cwd, path) : path;
+}
+
+// Resolve existing ancestors too, since the output's final directories may not
+// exist yet. Follow dangling links so they cannot hide a future content path.
+async function canonicalPath(path: string): Promise<string> {
+  try {
+    return await realpath(path);
+  } catch (error) {
+    if (
+      !(error instanceof Error && "code" in error && error.code === "ENOENT")
+    ) {
+      throw error;
+    }
+  }
+  const entry = await lstat(path).catch((error: unknown) => {
+    if (
+      !(error instanceof Error && "code" in error && error.code === "ENOENT")
+    ) {
+      throw error;
+    }
+    return undefined;
+  });
+  if (entry?.isSymbolicLink()) {
+    return canonicalPath(resolve(dirname(path), await readlink(path)));
+  }
+  return join(await canonicalPath(dirname(path)), basename(path));
 }
 
 function headTags(seo: SeoData, config: VoxxConfig): string {
@@ -473,10 +524,31 @@ export interface BuildSiteResult {
 export async function buildSite(
   opts: BuildSiteOptions,
 ): Promise<BuildSiteResult> {
-  const { cwd, outDir } = opts;
+  const { cwd } = opts;
+  const outDir = resolve(cwd, opts.outDir);
   const config = await loadConfig({ cwd });
   const collections = config.collections;
   const multi = collections.length > 1;
+  const [canonicalOut, canonicalCwd] = await Promise.all([
+    canonicalPath(outDir),
+    canonicalPath(resolve(cwd)),
+  ]);
+
+  if (outDir === resolve(cwd) || canonicalOut === canonicalCwd) {
+    throw new Error(
+      "Output directory must not be the project root. Choose a separate build directory with --out.",
+    );
+  }
+  for (const collection of collections) {
+    if (
+      isWithin(collection.dir, outDir) ||
+      isWithin(await canonicalPath(collection.dir), canonicalOut)
+    ) {
+      throw new Error(
+        `Output directory must not be in content directory "${collection.dir}". Choose a separate build directory with --out.`,
+      );
+    }
+  }
 
   await mkdir(join(outDir, "_voxx"), { recursive: true });
   await copyFile(
@@ -550,10 +622,9 @@ export async function buildSite(
     config,
     pageCount,
     collectionCount: collections.length,
-    indexRel: join(
-      relative(cwd, outDir),
-      stripLead(collections[0]!.basePath),
-      "index.html",
+    indexRel: displayPath(
+      cwd,
+      join(outDir, stripLead(collections[0]!.basePath), "index.html"),
     ),
   };
 }
@@ -579,7 +650,7 @@ export async function build(argv: string[]): Promise<void> {
     return;
   }
 
-  const outDir = join(cwd, values.out ?? "dist");
+  const outDir = resolve(cwd, values.out ?? "dist");
   const result = await buildSite({
     cwd,
     outDir,
@@ -622,7 +693,7 @@ export async function build(argv: string[]): Promise<void> {
     result.collectionCount > 1
       ? `${result.pageCount} pages across ${result.collectionCount} collections`
       : `${result.pageCount} ${noun}${result.pageCount === 1 ? "" : "s"}`;
-  log.success(`Built ${what} → ${relative(cwd, outDir)}/`);
+  log.success(`Built ${what} → ${displayPath(cwd, outDir)}/`);
   log.info(
     `  Open ${c.cyan(result.indexRel)} in a browser, or run ${c.cyan("voxx dev")} to preview with a local server.`,
   );
