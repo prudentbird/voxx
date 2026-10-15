@@ -19,6 +19,7 @@ import { toString } from "hast-util-to-string";
 import type { Root } from "hast";
 import { RenderError } from "./errors";
 import { recordCoreIssue } from "./telemetry";
+import { ABSOLUTE_RE, resolveRelativePath } from "./util";
 import type { TocItem, VoxxConfig } from "./types";
 
 /** Result returned by the Markdown renderer. */
@@ -59,20 +60,7 @@ function rehypeCollectToc() {
 }
 
 const EXTERNAL_RE = /^https?:\/\//i;
-const ABSOLUTE_RE = /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i;
 const ASSET_PROPS = ["src", "poster"] as const;
-
-function resolveRelativePath(base: string, rel: string): string {
-  const segments = [...base.split("/"), ...rel.split("/")].filter(
-    (s) => s !== "" && s !== ".",
-  );
-  const out: string[] = [];
-  for (const segment of segments) {
-    if (segment === "..") out.pop();
-    else out.push(segment);
-  }
-  return `/${out.join("/")}`;
-}
 
 function rehypeExternalLinks() {
   return (tree: Root) => {

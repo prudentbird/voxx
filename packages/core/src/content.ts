@@ -4,12 +4,14 @@ import { parseFrontmatter } from "./frontmatter";
 import { renderMarkdownEffect } from "./render";
 import { ConfigError, PostNotFound } from "./errors";
 import {
+  ABSOLUTE_RE,
   compareVersions,
   deriveExcerpt,
   joinPath,
   normalizeAuthors,
   parseVersion,
   readingTimeMinutes,
+  resolveRelativePath,
   slugify,
   splitDatePrefix,
   splitOrderPrefix,
@@ -39,9 +41,10 @@ export interface GetPostsEffectOptions {
   /** Caps the result to this many posts. When unset, returns all remaining. */
   limit?: number;
   /**
-   * Prepended to resolved asset URLs in rendered HTML (see
-   * {@link RenderOptions.assetPrefix}). Only hosts that serve content assets
-   * through a route handler need to set it.
+   * Prepended to resolved asset URLs — both inline Markdown assets in
+   * rendered HTML (see {@link RenderOptions.assetPrefix}) and a relative
+   * `image:` frontmatter value. Only hosts that serve content assets through
+   * a route handler need to set it.
    */
   assetPrefix?: string;
 }
@@ -70,7 +73,12 @@ interface BuiltMeta {
   assetBase: string;
 }
 
-const buildMeta = (config: VoxxConfig, absPath: string, rel: string) =>
+const buildMeta = (
+  config: VoxxConfig,
+  absPath: string,
+  rel: string,
+  assetPrefix?: string,
+) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const raw = yield* fs.readFileString(absPath);
@@ -137,6 +145,19 @@ const buildMeta = (config: VoxxConfig, absPath: string, rel: string) =>
       ? joinPath(config.content.basePath, dirRel)
       : config.content.basePath;
 
+    // A bare reference (no scheme, not root-relative) is resolved against the
+    // post's own directory exactly like an inline `![](./assets/cover.png)`
+    // Markdown image, so a cover image living next to its post — the pattern
+    // documented for every other asset — actually resolves to a servable URL
+    // instead of a broken one. Root-relative and absolute values (the
+    // `image: /og/hello.png` pattern) already stand on their own and pass
+    // through untouched.
+    const image = data.image
+      ? ABSOLUTE_RE.test(data.image)
+        ? data.image
+        : `${assetPrefix ?? ""}${resolveRelativePath(assetBase, data.image)}`
+      : undefined;
+
     let date = data.date ?? filenameDate;
     if (!date) {
       if (!isDocs) {
@@ -164,7 +185,7 @@ const buildMeta = (config: VoxxConfig, absPath: string, rel: string) =>
       order,
       version,
       draft: data.draft,
-      image: data.image,
+      image,
       authors: normalizeAuthors(data.author),
       excerpt: data.excerpt ?? deriveExcerpt(content),
       readingTimeMinutes: readingTimeMinutes(content),
@@ -257,7 +278,7 @@ const collectMetas = (config: VoxxConfig, opts: GetPostsEffectOptions) =>
 
     const built = yield* Effect.forEach(
       files,
-      (rel) => buildMeta(config, path.join(dir, rel), rel),
+      (rel) => buildMeta(config, path.join(dir, rel), rel, opts.assetPrefix),
       { concurrency: 8 },
     );
 
