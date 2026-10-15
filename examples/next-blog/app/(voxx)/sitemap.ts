@@ -17,12 +17,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.9,
     },
-    ...posts.filter((post) => post.path.length > 0).map((post) => ({
-      url: absoluteUrl(config.site.url, post.url),
-      lastModified: post.updated ?? post.date,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })),
+    ...posts
+      .filter((post) => post.path.length > 0 && !post.url.includes("#"))
+      .map((post) => ({
+        url: absoluteUrl(config.site.url, post.url),
+        lastModified: post.updated ?? post.date,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      })),
   ]);
 
   return [

@@ -39,6 +39,16 @@ const SKIP_DIRS = new Set([
 ]);
 const VERSION_FILE = "content-version.ts";
 
+function nearestExistingAncestor(path: string): string {
+  let dir = path;
+  while (!existsSync(dir)) {
+    const parent = dirname(dir);
+    if (parent === dir) return dir;
+    dir = parent;
+  }
+  return dir;
+}
+
 function writeVersion(file: string, value: number): void {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, `export const CONTENT_VERSION = ${value};\n`);
@@ -121,7 +131,15 @@ export async function registerContentWatcher(
   async function watchContentDirs(): Promise<void> {
     try {
       const config = await run(loadConfigEffect({ cwd }));
-      for (const collection of config.collections) watchPath(collection.dir);
+      for (const collection of config.collections) {
+        watchPath(collection.dir);
+        // The collection dir may not exist yet (e.g. created after this
+        // config load); watch its nearest existing ancestor so creating it
+        // is observed and retried on the next bump.
+        if (!existsSync(collection.dir)) {
+          watchPath(nearestExistingAncestor(collection.dir));
+        }
+      }
     } catch (error) {
       recordCoreIssue("content_watcher_config_load_failed", error);
     }
