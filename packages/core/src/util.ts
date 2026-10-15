@@ -102,6 +102,37 @@ export function joinPath(base: string, slug: string): string {
 }
 
 /**
+ * Matches a value that already stands on its own: a URI scheme (`https:`,
+ * `mailto:`, …), a root-relative path (`/…`), a fragment (`#…`), or a query
+ * (`?…`). Anything else is a bare relative reference that needs resolving
+ * against the referencing file's directory.
+ */
+export const ABSOLUTE_RE = /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i;
+
+/**
+ * Resolves a relative asset reference against a base URL path, collapsing
+ * `../` escapes the way a browser would. Used for both inline Markdown asset
+ * references (`src`/`poster`) and relative `image:` frontmatter.
+ *
+ * @param base - Base URL path the reference is relative to, e.g. `/blog/my-post`.
+ * @param rel - Relative reference, e.g. `./assets/cover.png`.
+ */
+export function resolveRelativePath(base: string, rel: string): string {
+  const suffixStart = rel.search(/[?#]/);
+  const relPath = suffixStart < 0 ? rel : rel.slice(0, suffixStart);
+  const suffix = suffixStart < 0 ? "" : rel.slice(suffixStart);
+  const segments = [...base.split("/"), ...relPath.split("/")].filter(
+    (s) => s !== "" && s !== ".",
+  );
+  const out: string[] = [];
+  for (const segment of segments) {
+    if (segment === "..") out.pop();
+    else out.push(segment);
+  }
+  return `/${out.join("/")}${suffix}`;
+}
+
+/**
  * Resolves a site-relative path to a full absolute URL.
  *
  * Returns the path unchanged if it already starts with `http(s)://`.
