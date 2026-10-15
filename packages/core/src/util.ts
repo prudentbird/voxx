@@ -1,4 +1,9 @@
-import { isValidDate } from "./dates";
+import type { Nodes, PhrasingContent } from "mdast";
+import { toString } from "mdast-util-to-string";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+import { isValidDate } from "./dates.ts";
 import type { VoxxAuthor } from "./types";
 
 type AuthorEntryInput =
@@ -113,7 +118,7 @@ export const ABSOLUTE_RE = /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i;
 /**
  * Resolves a relative asset reference against a base URL path, collapsing
  * `../` escapes the way a browser would. Used for both inline Markdown asset
- * references (`src`/`poster`) and relative `image:` frontmatter.
+ * references (`src`/`poster`/asset anchor `href`) and relative `image:` frontmatter.
  *
  * @param base - Base URL path the reference is relative to, e.g. `/blog/my-post`.
  * @param rel - Relative reference, e.g. `./assets/cover.png`.
@@ -157,39 +162,132 @@ export function readingTimeMinutes(markdown: string): number {
   return Math.max(1, Math.round(words / 200));
 }
 
+// Reuse the processor; parsing needs no rendering, highlighting, or async plugins.
+const excerptParser = unified().use(remarkParse).use(remarkGfm).freeze();
+
+// Retain source/excerpt strings, never ASTs. Bound both the number of posts and
+// source/output characters (roughly 16 MiB of UTF-16 text plus Map overhead).
+const EXCERPT_CACHE_ENTRIES = 1024;
+const EXCERPT_CACHE_CHARACTERS = 8 * 1024 * 1024;
+const excerptCache = new Map<string, { max: number; excerpt: string }>();
+let excerptCacheCharacters = 0;
+
+function cacheExcerpt(markdown: string, max: number, excerpt: string): string {
+  const previous = excerptCache.get(markdown);
+  if (previous) {
+    excerptCacheCharacters -= markdown.length + previous.excerpt.length;
+    excerptCache.delete(markdown);
+  }
+  const characters = markdown.length + excerpt.length;
+  if (characters > EXCERPT_CACHE_CHARACTERS) return excerpt;
+  while (
+    excerptCache.size >= EXCERPT_CACHE_ENTRIES ||
+    excerptCacheCharacters + characters > EXCERPT_CACHE_CHARACTERS
+  ) {
+    const oldest = excerptCache.entries().next().value;
+    if (!oldest) break;
+    excerptCacheCharacters -= oldest[0].length + oldest[1].excerpt.length;
+    excerptCache.delete(oldest[0]);
+  }
+  excerptCache.set(markdown, { max, excerpt });
+  excerptCacheCharacters += characters;
+  return excerpt;
+}
+
+function excerptChildren(children: PhrasingContent[]): PhrasingContent[] {
+  return children.flatMap((node): PhrasingContent[] => {
+    switch (node.type) {
+      case "html":
+        // The Markdown parser has already recognized a valid HTML token.
+        // Match only the tag name; quoted attributes can contain `>`.
+        return /^<br(?=[\s/>])/i.test(node.value)
+          ? [{ type: "text", value: " " }]
+          : [];
+      case "inlineCode":
+      case "image":
+      case "imageReference":
+      case "footnoteReference":
+        return [];
+      case "break":
+        return [{ type: "text", value: " " }];
+      default:
+        return [
+          "children" in node
+            ? { ...node, children: excerptChildren(node.children) }
+            : node,
+        ];
+    }
+  });
+}
+
 /**
- * Extracts a plain-text excerpt from Markdown, stripping code blocks,
- * headings, and inline markup.
+ * Extracts plain text from the first Markdown paragraphs, omitting code,
+ * HTML, headings, images, tables, and link/footnote definitions. Inline HTML
+ * line breaks become spaces. A bounded cache avoids reparsing unchanged sources.
  *
  * @param markdown - Raw Markdown source.
  * @param max - Maximum character length before truncation. Defaults to `180`.
  */
 export function deriveExcerpt(markdown: string, max = 180): string {
-  const text = markdown
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`[^`]*`/g, " ")
-    .replace(/^#{1,6}\s.*$/gm, " ")
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[*_>#~]/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/\s+([.,;:!?])/g, "$1")
-    .trim();
-  if (text.length <= max) return text;
-  return `${text.slice(0, max).replace(/\s+\S*$/, "")}…`;
+  const cached = excerptCache.get(markdown);
+  if (cached && cached.max === max) {
+    excerptCache.delete(markdown);
+    excerptCache.set(markdown, cached);
+    return cached.excerpt;
+  }
+  const tree = excerptParser.parse(markdown);
+  let text = "";
+  function collect(node: Nodes): void {
+    if (text.length > max) return;
+    switch (node.type) {
+      case "code":
+      case "html":
+      case "definition":
+      case "footnoteDefinition":
+      case "heading":
+      case "table":
+        return;
+      case "paragraph": {
+        const paragraph = toString({
+          ...node,
+          children: excerptChildren(node.children),
+        })
+          .replace(/\s+/g, " ")
+          .trim();
+        if (paragraph) text += `${text ? " " : ""}${paragraph}`;
+        return;
+      }
+      default:
+        if ("children" in node) {
+          for (const child of node.children) {
+            collect(child);
+            if (text.length > max) break;
+          }
+        }
+    }
+  }
+  collect(tree);
+  if (text.length <= max) return cacheExcerpt(markdown, max, text);
+  const prefix = text.slice(0, max);
+  const excerpt = `${/\s/.test(text.charAt(max)) ? prefix.trimEnd() : prefix.replace(/\s+\S*$/, "")}…`;
+  return cacheExcerpt(markdown, max, excerpt);
 }
 
 /**
- * Formats an ISO 8601 date string for display.
+ * Formats an ISO 8601 date string for display in UTC.
+ * Datetimes without an explicit timezone are interpreted as UTC.
  *
  * @param iso - ISO date string, e.g. `"2024-01-15"`.
  * @param locale - BCP 47 locale. Defaults to `"en-US"`.
  * @returns Formatted string like `"January 15, 2024"`, or the original string if invalid.
  */
 export function formatDate(iso: string, locale = "en-US"): string {
-  const d = new Date(iso);
+  const withoutTimeZone =
+    /^(?:\d{4}|[+-]\d{6})-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/i;
+  const d = new Date(withoutTimeZone.test(iso) ? `${iso}Z` : iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(locale, {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",

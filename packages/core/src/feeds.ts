@@ -95,18 +95,27 @@ export function renderSitemap(
   const lastmod = isoDate(
     posts[0]?.updated ?? posts[0]?.date ?? new Date().toISOString(),
   );
-  const entries = [
-    ...(opts.indexPaths ?? [config.content.basePath]).map((p) => ({
-      loc: absoluteUrl(config.site.url, p),
-      lastmod,
-    })),
-    ...posts.map((p) => ({
-      loc: absoluteUrl(config.site.url, p.url),
-      lastmod: isoDate(p.updated ?? p.date),
-    })),
-  ];
+  const entries = new Map<string, { loc: string; lastmod: string }>();
+  for (const path of opts.indexPaths ?? [config.content.basePath]) {
+    const loc = absoluteUrl(config.site.url, path).replace(/#.*$/, "");
+    entries.set(loc, { loc, lastmod });
+  }
 
-  const body = entries
+  const postLastmods = new Map<string, string>();
+  for (const post of posts) {
+    const loc = absoluteUrl(config.site.url, post.url).replace(/#.*$/, "");
+    const postLastmod = isoDate(post.updated ?? post.date);
+    const previous = postLastmods.get(loc);
+    if (previous !== undefined && previous >= postLastmod) continue;
+    postLastmods.set(loc, postLastmod);
+    // Compare release dates independently of the default index lastmod,
+    // which may come from another collection. Input order must not matter.
+    if (!entries.has(loc) || post.url.includes("#") || previous !== undefined) {
+      entries.set(loc, { loc, lastmod: postLastmod });
+    }
+  }
+
+  const body = [...entries.values()]
     .map((u) =>
       [
         "  <url>",

@@ -82,6 +82,15 @@ describe("frontmatter dates", () => {
         }),
       ).toThrow("valid ISO 8601 date");
     });
+
+    it(`rejects a ${field} whose UTC conversion leaves the four-digit year range`, () => {
+      expect(() =>
+        Schema.decodeUnknownSync(Frontmatter)({
+          title: "Invalid",
+          [field]: "9999-12-31T23:30:00-01:00",
+        }),
+      ).toThrow("valid ISO 8601 date");
+    });
   }
 
   it.each([
