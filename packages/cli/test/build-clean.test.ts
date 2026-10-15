@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, expect, it } from "vitest";
 import {
   access,
+  chmod,
   mkdir,
   mkdtemp,
   readFile,
   readdir,
   rename,
   rm,
+  stat,
   symlink,
   writeFile,
 } from "node:fs/promises";
@@ -164,7 +166,7 @@ it("refuses root and home even with force", async () => {
 });
 
 it("refuses aliases to protected content", async () => {
-  await symlink(join(cwd, "content"), outDir, "dir");
+  await symlink(join(cwd, "content"), outDir, "junction");
   await expect(buildSite({ cwd, outDir, force: true })).rejects.toThrow(
     /Refusing/,
   );
@@ -184,3 +186,26 @@ it("keeps the previous build and cleans staging directories if generation fails"
   );
   expect((await readdir(cwd)).sort()).toEqual(["content", "dist", "voxx.json"]);
 });
+
+it("rebuilds output that contains a copied package.json asset", async () => {
+  await mkdir(join(cwd, "content/assets"));
+  await writeFile(join(cwd, "content/assets/package.json"), "{}");
+  const asset = join(outDir, "blog/assets/package.json");
+  await buildSite({ cwd, outDir });
+  expect(await readFile(asset, "utf8")).toBe("{}");
+  await buildSite({ cwd, outDir, force: true });
+  await rm(join(cwd, "content/assets/package.json"));
+  await buildSite({ cwd, outDir });
+  await expect(access(asset)).rejects.toThrow();
+});
+
+it.skipIf(process.platform === "win32")(
+  "gives new output a readable directory mode and keeps an existing mode",
+  async () => {
+    await buildSite({ cwd, outDir });
+    expect((await stat(outDir)).mode & 0o755).toBe(0o755);
+    await chmod(outDir, 0o750);
+    await buildSite({ cwd, outDir });
+    expect((await stat(outDir)).mode & 0o777).toBe(0o750);
+  },
+);

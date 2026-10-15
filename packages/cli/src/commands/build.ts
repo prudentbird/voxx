@@ -1,4 +1,5 @@
 import {
+  chmod,
   copyFile,
   mkdir,
   mkdtemp,
@@ -10,14 +11,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import type { Dirent } from "node:fs";
-import {
-  dirname,
-  isAbsolute,
-  join,
-  relative,
-  resolve,
-  sep,
-} from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import {
   buildNavTree,
@@ -557,7 +551,11 @@ export async function buildSite(
     await writeFile(join(staging, BUILD_MARKER), BUILD_MARKER_CONTENT);
     // Check again before replacing, in case the destination changed during rendering.
     await validate();
-    if (await exists(outDir)) {
+    // mkdtemp creates 0700; keep the previous output's mode, or a normal
+    // directory mode, so servers and deploy tools running as others can read it.
+    const previous = await stat(outDir).catch(() => undefined);
+    await chmod(staging, previous ? previous.mode & 0o7777 : 0o755);
+    if (previous) {
       backup = await mkdtemp(join(dirname(outDir), ".voxx-previous-"));
       await rename(outDir, join(backup, "site"));
       removeBackup = false;

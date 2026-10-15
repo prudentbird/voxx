@@ -130,14 +130,18 @@ export async function dev(argv: string[]): Promise<DevHandle | undefined> {
   }
 
   const server = createServer((req, res) => {
-    // Serialize file reads with rebuilds. Once readFile has returned its
-    // buffer, an in-flight response no longer depends on the output directory.
-    const read = building.then(() => serveFile(outDir, req.url ?? "/"));
-    building = read.then(
-      () => {},
-      () => {},
-    );
-    read
+    const serve = async () => {
+      const url = req.url ?? "/";
+      const started = building;
+      await started;
+      const found = await serveFile(outDir, url);
+      // A rebuild swaps directories; a read racing the swap can miss a page
+      // that still exists, so look again once the rebuild settles.
+      if (found.status !== 404 || building === started) return found;
+      await building;
+      return serveFile(outDir, url);
+    };
+    serve()
       .then(({ status, type, body }) => {
         res.writeHead(status, {
           "Content-Type": type,

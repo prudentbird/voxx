@@ -24,7 +24,9 @@ export async function canonicalPath(path: string): Promise<string> {
   }
   try {
     if ((await lstat(absolute)).isSymbolicLink()) {
-      return canonicalPath(resolve(dirname(absolute), await readlink(absolute)));
+      return canonicalPath(
+        resolve(dirname(absolute), await readlink(absolute)),
+      );
     }
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
@@ -38,6 +40,19 @@ function contains(parent: string, child: string): boolean {
     rel === "" ||
     (rel !== ".." && !rel.startsWith(`..${sep}`) && !parse(rel).root)
   );
+}
+
+async function hasMarker(dir: string): Promise<boolean> {
+  try {
+    const marker = join(dir, BUILD_MARKER);
+    return (
+      (await lstat(marker)).isFile() &&
+      (await readFile(marker, "utf8")) === BUILD_MARKER_CONTENT
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    return false;
+  }
 }
 
 export async function validateOutput(
@@ -73,28 +88,19 @@ export async function validateOutput(
   if (stat.isSymbolicLink() || !stat.isDirectory()) {
     refuse("destination must be a directory, not a symlink or file");
   }
-  const entries = await readdir(outDir, {
-    recursive: true,
-    withFileTypes: true,
-  });
+  if ((await readdir(outDir)).length === 0) return;
+  // Previous Voxx output is safe to replace as-is: copied assets such as
+  // assets/package.json may legitimately contain these file names.
+  if (await hasMarker(outDir)) return;
+  const entries = await readdir(outDir, { recursive: true });
   if (
-    entries.some(
-      (entry) => entry.name === "voxx.json" || entry.name === "package.json",
+    entries.some((entry) =>
+      ["voxx.json", "package.json"].includes(basename(entry)),
     )
   ) {
     refuse("contains voxx.json or package.json");
   }
-  if (entries.length === 0 || force) return;
-  const marker = join(outDir, BUILD_MARKER);
-  try {
-    if (
-      (await lstat(marker)).isFile() &&
-      (await readFile(marker, "utf8")) === BUILD_MARKER_CONTENT
-    )
-      return;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-  }
+  if (force) return;
   refuse(
     "non-empty directory has no Voxx build marker; pass --force to replace its contents",
   );
