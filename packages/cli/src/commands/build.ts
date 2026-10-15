@@ -330,8 +330,8 @@ function relativizeLinks(
 ): string {
   const prefix = relative(fromDir, outDir).split(sep).join("/") || ".";
   return html.replace(
-    /\b(href|src|poster)="\/(?!\/)([^"]*)"/g,
-    `$1="${prefix}/$2"`,
+    /(\s)(href|src|poster)="\/(?!\/)([^"]*)"/g,
+    `$1$2="${prefix}/$3"`,
   );
 }
 
@@ -627,8 +627,9 @@ export async function build(argv: string[]): Promise<void> {
     result.collectionCount > 1
       ? `${result.pageCount} pages across ${result.collectionCount} collections`
       : `${result.pageCount} ${noun}${result.pageCount === 1 ? "" : "s"}`;
-  log.success(`Built ${what} → ${relative(cwd, outDir)}/`);
+  const outputRel = relative(cwd, outDir) || ".";
+  log.success(`Built ${what} → ${outputRel}/`);
   log.info(
-    `  Run ${c.cyan("voxx dev")} to preview, or serve ${c.cyan(`${relative(cwd, outDir)}/`)} with a static HTTP server.`,
+    `  Run ${c.cyan("voxx dev")} to preview, or serve ${c.cyan(`${outputRel}/`)} with a static HTTP server.`,
   );
 }

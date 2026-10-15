@@ -45,6 +45,46 @@ async function readDom(rel: string) {
 }
 
 describe("blog build output structure", () => {
+  it("recommends serving the current folder for --out .", async () => {
+    await writeConfig();
+    await writeFileAt(
+      "first.md",
+      "---\ntitle: First\ndate: 2026-01-01\n---\n\nBody.\n",
+    );
+    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await build(["--out", "."]);
+      const output = spy.mock.calls
+        .map(([message]) => String(message))
+        .join("\n");
+      expect(output).toContain("serve ./ with a static HTTP server");
+      expect(output).not.toContain("serve / with a static HTTP server");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("leaves hyphenated attributes intact while rewriting URL attributes", async () => {
+    await writeConfig();
+    await writeFileAt(
+      "media.md",
+      `---\ntitle: Media\ndate: 2026-01-01\n---\n
+<video data-poster="/blog/cover.png" poster="/blog/cover.png" data-src="/blog/clip.mp4" src="/blog/clip.mp4"></video>
+<a data-href="/blog/other" href="/blog/other">Other</a>
+`,
+    );
+    await build([]);
+    const page = await readDom("dist/blog/media/index.html");
+    const video = page.querySelector("video")!;
+    expect(video.getAttribute("data-poster")).toBe("/blog/cover.png");
+    expect(video.getAttribute("data-src")).toBe("/blog/clip.mp4");
+    expect(video.getAttribute("poster")).toBe("../../blog/cover.png");
+    expect(video.getAttribute("src")).toBe("../../blog/clip.mp4");
+    const link = page.querySelector("a[data-href]")!;
+    expect(link.getAttribute("data-href")).toBe("/blog/other");
+    expect(link.getAttribute("href")).toBe("../../blog/other");
+  });
+
   it("recommends a local server and preserves directory URLs", async () => {
     await writeConfig();
     await writeFileAt("first.md", "---\ntitle: First\n---\n\nBody.\n");
