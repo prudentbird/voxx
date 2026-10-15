@@ -268,7 +268,7 @@ export async function newPost(argv: string[]): Promise<void> {
     `title: ${yamlValue(title)}`,
     "description: ",
     `date: ${date}`,
-    `slug: ${slug}`,
+    `slug: ${yamlValue(slug)}`,
     "tags: []",
     "---",
     "",

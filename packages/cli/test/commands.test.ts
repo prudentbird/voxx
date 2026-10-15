@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { listPosts } from "@prudentbird/voxx-core";
 import { build } from "../src/commands/build";
 import { newPost } from "../src/commands/new";
 import { init } from "../src/commands/init";
@@ -159,14 +160,49 @@ describe("voxx build", () => {
 });
 
 describe("voxx new", () => {
+  it.each(["404", "Null", "true", "false", "2026-06-01", "1e3", "0xFF"])(
+    "preserves the title and derived slug for %s through a build",
+    async (title) => {
+      await writeConfig();
+      await newPost([title, "--date", "2026-06-01"]);
+      const { posts } = await listPosts();
+      expect(posts).toHaveLength(1);
+      expect(posts[0]?.title).toBe(title);
+      expect(posts[0]?.slug).toBe(title.toLowerCase());
+      await build([]);
+      expect(process.exitCode).toBe(0);
+      expect(
+        await exists(join(dir, `dist/blog/${title.toLowerCase()}/index.html`)),
+      ).toBe(true);
+    },
+  );
+
+  it.each(["404", "null", "true", "2026-06-01"])(
+    "preserves an explicit %s slug through a build",
+    async (slug) => {
+      await writeConfig();
+      await newPost(["Post", "--slug", slug, "--date", "2026-06-01"]);
+      const raw = await readFile(
+        join(dir, `content/2026-06-01-${slug}.md`),
+        "utf8",
+      );
+      expect(raw).toContain(`slug: "${slug}"`);
+      const { posts } = await listPosts();
+      expect(posts[0]?.slug).toBe(slug);
+      await build([]);
+      expect(process.exitCode).toBe(0);
+      expect(await exists(join(dir, `dist/blog/${slug}/index.html`))).toBe(true);
+    },
+  );
+
   it("creates a dated blog post", async () => {
     await writeConfig();
     await newPost(["My First Post", "--date", "2026-06-01"]);
     const file = join(dir, "content", "2026-06-01-my-first-post.md");
     expect(await exists(file)).toBe(true);
     const raw = await readFile(file, "utf8");
-    expect(raw).toContain("title: My First Post");
-    expect(raw).toContain("slug: my-first-post");
+    expect(raw).toContain('title: "My First Post"');
+    expect(raw).toContain('slug: "my-first-post"');
   });
 
   it("survives a build round-trip with a colon in the title", async () => {
@@ -198,7 +234,7 @@ describe("voxx new", () => {
     const file = join(dir, "content/docs/install-guide.md");
     expect(await exists(file)).toBe(true);
     const raw = await readFile(file, "utf8");
-    expect(raw).toContain("title: Install Guide");
+    expect(raw).toContain('title: "Install Guide"');
     expect(raw).not.toContain("date:");
     expect(raw).not.toContain("tags:");
   });
@@ -286,7 +322,7 @@ describe("voxx new", () => {
     ]);
     const file = join(dir, "content/getting-started/index.md");
     expect(await exists(file)).toBe(true);
-    expect(await readFile(file, "utf8")).toContain("title: Getting Started");
+    expect(await readFile(file, "utf8")).toContain('title: "Getting Started"');
   });
 
   it("creates a top-level index.md with --index and no section", async () => {

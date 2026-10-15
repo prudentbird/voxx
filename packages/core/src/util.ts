@@ -179,7 +179,7 @@ export function deriveExcerpt(markdown: string, max = 180): string {
 }
 
 /**
- * Formats an ISO 8601 date string for display.
+ * Formats an ISO 8601 date string for display in UTC.
  *
  * @param iso - ISO date string, e.g. `"2024-01-15"`.
  * @param locale - BCP 47 locale. Defaults to `"en-US"`.
@@ -189,6 +189,7 @@ export function formatDate(iso: string, locale = "en-US"): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(locale, {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",

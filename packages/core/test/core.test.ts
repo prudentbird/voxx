@@ -698,6 +698,7 @@ describe("changelog collections", () => {
   });
 
   it("formats dates for display", () => {
+    expect(formatDate("2024-01-15")).toBe("January 15, 2024");
     expect(formatDate("2026-01-01T00:00:00.000Z")).toBe("January 1, 2026");
     expect(formatDate("garbage")).toBe("garbage");
   });
