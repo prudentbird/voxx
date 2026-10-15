@@ -10,7 +10,7 @@ voxx new "Title" [--collection <name>] [--dir <content>] [--date <YYYY-MM-DD>] [
 voxx build [--out <dir>] [--drafts]
 voxx dev [--port <n>]
 voxx telemetry [status|enable|disable]
-voxx --version | -v | version
+voxx [--version|-v|version]
 ```
 
 The CLI is a convenience layer — everything it does, you could do by hand
