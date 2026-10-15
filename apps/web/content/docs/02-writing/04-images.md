@@ -20,11 +20,14 @@ date: 2026-08-25
 See the [full benchmark data](./assets/benchmarks.pdf) for details.
 ```
 
-Voxx resolves every relative `src` and `poster` reference against the
-post's own directory (including `../` escapes into parent folders), so
-links never break when content moves — as long as the file moves with it.
+Voxx resolves every relative `src`, `poster`, and asset link (`<a href>`)
+reference against the post's own directory (including `../` escapes into
+parent folders), so links never break when content moves — as long as the
+file moves with it.
 Absolute URLs (`https://…`), root-relative (`/logo.png`), anchors, and
 query strings pass through untouched.
+Relative links to `.md` and `.mdx` files are left unchanged. Asset URLs
+preserve any query string or fragment, such as `./assets/benchmarks.pdf#page=2`.
 
 ## Where files land
 
