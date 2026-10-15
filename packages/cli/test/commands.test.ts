@@ -293,7 +293,7 @@ describe("voxx new", () => {
     const filename = type === "blog" ? `2026-06-01-${slug}.md` : `${slug}.md`;
     const raw = await readFile(join(dir, "content", filename), "utf8");
     expect(raw).toContain(title);
-    if (type === "blog") expect(raw).toContain(`slug: ${slug}`);
+    if (type === "blog") expect(raw).toContain(`slug: "${slug}"`);
     await build([]);
     expect(process.exitCode).toBe(0);
     const html = await readFile(
