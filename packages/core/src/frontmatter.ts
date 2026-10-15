@@ -50,7 +50,7 @@ const parseYaml = (file: string, raw: string) =>
     catch: (cause) =>
       new InvalidFrontmatter({
         file,
-        message: cause instanceof Error ? cause.message : String(cause),
+        message: `${file}: invalid frontmatter — ${cause instanceof Error ? cause.message : String(cause)}`,
         cause,
       }),
   });
@@ -63,7 +63,7 @@ export const parseFrontmatter = (file: string, raw: string) =>
         (cause) =>
           new InvalidFrontmatter({
             file,
-            message: ParseResult.TreeFormatter.formatErrorSync(cause),
+            message: `${file}: invalid frontmatter — ${ParseResult.TreeFormatter.formatErrorSync(cause)}`,
             cause,
           }),
       ),

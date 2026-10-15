@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -149,6 +149,31 @@ describe("voxx dev", () => {
     expect(handle).toBeUndefined();
     expect(process.exitCode).toBe(1);
   });
+
+  it.each([
+    ["schema", "title: 404", "Expected string, actual 404"],
+    ["YAML", "title: [Unclosed", "unexpected end of the stream"],
+  ])(
+    "names the file when the initial rebuild has %s errors",
+    async (_kind, yaml, detail) => {
+      await writeConfig();
+      await writePost("nested/bad.md", yaml, "Body");
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const handle = await startDev();
+      try {
+        expect(handle).toBeDefined();
+        expect(error).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "content/nested/bad.md: invalid frontmatter — ",
+          ),
+        );
+        expect(error).toHaveBeenCalledWith(expect.stringContaining(detail));
+      } finally {
+        await handle?.close();
+        error.mockRestore();
+      }
+    },
+  );
 
   it("rejects an invalid port", async () => {
     await writeConfig();

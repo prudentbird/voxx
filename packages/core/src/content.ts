@@ -81,8 +81,12 @@ const buildMeta = (
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const filePath = yield* Path.Path;
     const raw = yield* fs.readFileString(absPath);
-    const { data, content } = yield* parseFrontmatter(rel, raw);
+    const { data, content } = yield* parseFrontmatter(
+      filePath.relative(".", absPath),
+      raw,
+    );
     const isDocs = config.content.type === "docs";
     const isChangelog = config.content.type === "changelog";
 
@@ -205,8 +209,12 @@ const renderBuilt = (
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const filePath = yield* Path.Path;
     const raw = yield* fs.readFileString(built.absPath);
-    const { content } = yield* parseFrontmatter(built.rel, raw);
+    const { content } = yield* parseFrontmatter(
+      filePath.relative(".", built.absPath),
+      raw,
+    );
     const { html, toc } = yield* renderMarkdownEffect(content, config, {
       assetBase: built.assetBase,
       assetPrefix: opts.assetPrefix,
