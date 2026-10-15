@@ -134,6 +134,9 @@ describe("voxx dev", () => {
     expect(handle).toBeDefined();
     const base = `http://127.0.0.1:${handle!.port}`;
     try {
+      const initial = await fetch(`${base}/blog/hello/`);
+      expect(initial.status).toBe(200);
+      await initial.text();
       await rm(join(dir, "content/hello.md"));
       await vi.waitFor(
         async () => {
