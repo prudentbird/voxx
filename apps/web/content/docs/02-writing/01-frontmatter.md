@@ -63,7 +63,8 @@ Voxx tries three sources, in order:
 3. The file's creation time on disk
 
 So a blog can be nothing but date-prefixed files with `title:` — Voxx fills
-in the rest.
+in the rest. A filename date must be calendar-valid when used; an explicit
+frontmatter `date` takes precedence over the filename.
 
 ## Authors
 

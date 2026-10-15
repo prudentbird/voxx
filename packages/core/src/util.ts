@@ -1,3 +1,4 @@
+import { isValidDate } from "./dates";
 import type { VoxxAuthor } from "./types";
 
 type AuthorEntryInput =
@@ -261,13 +262,13 @@ export function serializeJsonLd(data: unknown): string {
 /** Formats an ISO 8601 date string as RFC 822 (used in RSS feeds). */
 export function rfc822(date: string): string {
   const d = new Date(date);
-  if (Number.isNaN(d.getTime())) throw new RangeError(`Invalid date: ${date}`);
+  if (!isValidDate(date)) throw new RangeError(`Invalid date: ${date}`);
   return d.toUTCString();
 }
 
 /** Formats an ISO 8601 date string as `YYYY-MM-DD` (used in sitemaps). */
 export function isoDate(date: string): string {
   const d = new Date(date);
-  if (Number.isNaN(d.getTime())) throw new RangeError(`Invalid date: ${date}`);
+  if (!isValidDate(date)) throw new RangeError(`Invalid date: ${date}`);
   return d.toISOString().slice(0, 10);
 }

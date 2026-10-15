@@ -2,7 +2,8 @@ import { Effect, Option } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { parseFrontmatter } from "./frontmatter";
 import { renderMarkdownEffect } from "./render";
-import { ConfigError, PostNotFound } from "./errors";
+import { isValidDate } from "./dates";
+import { ConfigError, InvalidFrontmatter, PostNotFound } from "./errors";
 import {
   ABSOLUTE_RE,
   compareVersions,
@@ -158,6 +159,12 @@ const buildMeta = (
         : `${assetPrefix ?? ""}${resolveRelativePath(assetBase, data.image)}`
       : undefined;
 
+    if (data.date === undefined && filenameDate && !isValidDate(filenameDate)) {
+      return yield* new InvalidFrontmatter({
+        file: rel,
+        message: `Invalid filename date "${filenameDate}": expected a valid YYYY-MM-DD date`,
+      });
+    }
     let date = data.date ?? filenameDate;
     if (!date) {
       if (!isDocs) {
