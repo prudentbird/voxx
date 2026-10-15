@@ -529,6 +529,24 @@ describe("listing, filtering, and pagination", () => {
     expect(posts[0]).not.toHaveProperty("content");
   });
 
+  it("keeps repeated metadata excerpts fresh when a source definition changes", async () => {
+    const cfg = await makeManyPostsDir();
+    const file = join(cfg.content.dir, "post-5.md");
+    const header = "---\ntitle: Post 5\ndate: 2026-05-01\n---\n\n";
+    const body =
+      "Metadata cache [label][ref].\n\n" + "<!-- padding -->\n".repeat(100);
+    await writeFile(file, `${header}${body}\n[ref]: https://example.com`);
+    const first = await listPosts({ config: cfg });
+    expect(first.posts[0]?.excerpt).toBe("Metadata cache label.");
+    expect((await listPosts({ config: cfg })).posts[0]?.excerpt).toBe(
+      "Metadata cache label.",
+    );
+    await writeFile(file, `${header}${body}\n[other]: https://example.com`);
+    expect((await listPosts({ config: cfg })).posts[0]?.excerpt).toBe(
+      "Metadata cache [label][ref].",
+    );
+  });
+
   it("paginates with offset and limit while reporting the full total", async () => {
     const cfg = await makeManyPostsDir();
     const page1 = await listPosts({ config: cfg, limit: 2 });

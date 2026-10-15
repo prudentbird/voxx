@@ -164,10 +164,44 @@ export function readingTimeMinutes(markdown: string): number {
 // Reuse the processor; parsing needs no rendering, highlighting, or async plugins.
 const excerptParser = unified().use(remarkParse).use(remarkGfm).freeze();
 
+// Retain source/excerpt strings, never ASTs. Bound both the number of posts and
+// source/output characters (roughly 16 MiB of UTF-16 text plus Map overhead).
+const EXCERPT_CACHE_ENTRIES = 1024;
+const EXCERPT_CACHE_CHARACTERS = 8 * 1024 * 1024;
+const excerptCache = new Map<string, { max: number; excerpt: string }>();
+let excerptCacheCharacters = 0;
+
+function cacheExcerpt(markdown: string, max: number, excerpt: string): string {
+  const previous = excerptCache.get(markdown);
+  if (previous) {
+    excerptCacheCharacters -= markdown.length + previous.excerpt.length;
+    excerptCache.delete(markdown);
+  }
+  const characters = markdown.length + excerpt.length;
+  if (characters > EXCERPT_CACHE_CHARACTERS) return excerpt;
+  while (
+    excerptCache.size >= EXCERPT_CACHE_ENTRIES ||
+    excerptCacheCharacters + characters > EXCERPT_CACHE_CHARACTERS
+  ) {
+    const oldest = excerptCache.entries().next().value;
+    if (!oldest) break;
+    excerptCacheCharacters -= oldest[0].length + oldest[1].excerpt.length;
+    excerptCache.delete(oldest[0]);
+  }
+  excerptCache.set(markdown, { max, excerpt });
+  excerptCacheCharacters += characters;
+  return excerpt;
+}
+
 function excerptChildren(children: PhrasingContent[]): PhrasingContent[] {
   return children.flatMap((node): PhrasingContent[] => {
     switch (node.type) {
       case "html":
+        // The Markdown parser has already recognized a valid HTML token.
+        // Match only the tag name; quoted attributes can contain `>`.
+        return /^<br(?=[\s/>])/i.test(node.value)
+          ? [{ type: "text", value: " " }]
+          : [];
       case "inlineCode":
       case "image":
       case "imageReference":
@@ -187,12 +221,19 @@ function excerptChildren(children: PhrasingContent[]): PhrasingContent[] {
 
 /**
  * Extracts plain text from the first Markdown paragraphs, omitting code,
- * HTML, headings, images, tables, and link/footnote definitions.
+ * HTML, headings, images, tables, and link/footnote definitions. Inline HTML
+ * line breaks become spaces. A bounded cache avoids reparsing unchanged sources.
  *
  * @param markdown - Raw Markdown source.
  * @param max - Maximum character length before truncation. Defaults to `180`.
  */
 export function deriveExcerpt(markdown: string, max = 180): string {
+  const cached = excerptCache.get(markdown);
+  if (cached && cached.max === max) {
+    excerptCache.delete(markdown);
+    excerptCache.set(markdown, cached);
+    return cached.excerpt;
+  }
   const tree = excerptParser.parse(markdown);
   let text = "";
   function collect(node: Nodes): void {
@@ -225,9 +266,10 @@ export function deriveExcerpt(markdown: string, max = 180): string {
     }
   }
   collect(tree);
-  if (text.length <= max) return text;
+  if (text.length <= max) return cacheExcerpt(markdown, max, text);
   const prefix = text.slice(0, max);
-  return `${/\s/.test(text.charAt(max)) ? prefix.trimEnd() : prefix.replace(/\s+\S*$/, "")}…`;
+  const excerpt = `${/\s/.test(text.charAt(max)) ? prefix.trimEnd() : prefix.replace(/\s+\S*$/, "")}…`;
+  return cacheExcerpt(markdown, max, excerpt);
 }
 
 /**
