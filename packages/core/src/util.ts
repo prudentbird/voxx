@@ -37,8 +37,8 @@ export function normalizeAuthors(input: AuthorInput): VoxxAuthor[] {
 /**
  * Converts a string to a URL-safe slug.
  *
- * Normalizes unicode, lowercases, trims, and replaces non-alphanumeric
- * characters with hyphens.
+ * Normalizes Unicode, lowercases, trims, and replaces characters other than
+ * letters, numbers, and marks with hyphens.
  */
 export function slugify(input: string): string {
   return input
@@ -46,7 +46,7 @@ export function slugify(input: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
 }
 

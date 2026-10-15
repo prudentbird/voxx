@@ -361,6 +361,22 @@ export const getPostsEffect = (
     );
   });
 
+// Next route params can contain percent-encoded segments. Decode once at the
+// lookup boundary, keeping slugify itself independent of URL encoding.
+const normalizeLookupPath = (slug: string): string =>
+  slug
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => {
+      try {
+        return slugify(decodeURIComponent(segment));
+      } catch {
+        // Preserve lookup behavior for literal or malformed percent sequences.
+        return slugify(segment);
+      }
+    })
+    .join("/");
+
 /**
  * Finds a post in an already-loaded array by slug or path.
  *
@@ -372,7 +388,7 @@ export function findPost<T extends PostMeta>(
   posts: T[],
   slug: string,
 ): T | undefined {
-  const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
+  const wanted = normalizeLookupPath(slug);
   return posts.find((p) => matchesSlug(p, wanted));
 }
 
@@ -391,7 +407,7 @@ export const getPostEffect = (
       ...opts,
       reachable: opts.reachable ?? true,
     });
-    const wanted = slug.split("/").filter(Boolean).map(slugify).join("/");
+    const wanted = normalizeLookupPath(slug);
     const built = all.find((b) => matchesSlug(b.meta, wanted));
     if (!built) return yield* new PostNotFound({ slug });
     return yield* renderBuilt(config, built, opts);
