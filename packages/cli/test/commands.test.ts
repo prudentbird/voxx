@@ -360,7 +360,7 @@ describe("voxx add collection", () => {
     expect(data).toContain('{ collection: "docs" }');
 
     const sitemap = await readFile(join(dir, "app/(voxx)/sitemap.ts"), "utf8");
-    expect(sitemap).toContain("./blog/_data");
+    expect(sitemap).toContain("./_voxx/data");
   });
 
   it("appends to an existing collections array without touching entries", async () => {

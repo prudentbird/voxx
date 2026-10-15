@@ -105,7 +105,9 @@ export async function collectionOps(
     await op(
       cwd,
       join(dir, "_data.ts"),
-      cacheComponents ? "shared/data-cached.ts.tpl" : "shared/data-static.ts.tpl",
+      cacheComponents
+        ? "shared/data-cached.ts.tpl"
+        : "shared/data-static.ts.tpl",
       {
         COLLECTION_ARG: `{ collection: ${JSON.stringify(name)} }`,
       },
@@ -199,24 +201,54 @@ export async function collectionOps(
   return ops;
 }
 
+/** Shared data access reads the collection list at runtime, including newly added collections. */
+async function siteDataOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
+  const dir = join(groupDir(ctx.cwd, ctx.appDir), "_voxx");
+  const ops = [
+    await op(
+      ctx.cwd,
+      join(dir, "data.ts"),
+      "shared/site-data.ts.tpl",
+      {
+        CACHE_IMPORT: ctx.cacheComponents
+          ? 'import { cacheLife } from "next/cache";\nimport { CONTENT_VERSION } from "./content-version";'
+          : "",
+        CACHE_START: ctx.cacheComponents
+          ? '  "use cache";\n  cacheLife("max");'
+          : "",
+        VERSION_ARG: ctx.cacheComponents ? "CONTENT_VERSION" : "0",
+      },
+      true,
+    ),
+  ];
+  if (ctx.cacheComponents)
+    ops.push(
+      await op(
+        ctx.cwd,
+        join(dir, "content-version.ts"),
+        "shared/content-version.ts.tpl",
+        {},
+        true,
+      ),
+    );
+  return ops;
+}
+
 /**
  * Builds the files shared across collections: the Voxx root layout (when
  * split), the theme stylesheets, instrumentation, and the sitemap, robots, and
- * llms routes for the enabled features. Data imports resolve against the first
- * collection's `_data` module.
+ * llms routes for the enabled features, aggregating every configured collection.
  *
  * @param ctx - Scaffold context.
  */
 export async function siteWideOps(ctx: ScaffoldContext): Promise<WriteOp[]> {
-  const { cwd, appDir, collections, flags, hasTokens, split, cacheComponents } =
-    ctx;
+  const { cwd, appDir, flags, hasTokens, split, cacheComponents } = ctx;
   const group = groupDir(cwd, appDir);
   const voxxDir = join(group, "_voxx");
-  const segment = baseSegmentOf(collections[0]!);
-  const dataFromGroup = `./${segment}/_data`;
-  const dataFromRouteDir = `../${segment}/_data`;
+  const dataFromGroup = "./_voxx/data";
+  const dataFromRouteDir = "../_voxx/data";
 
-  const ops: WriteOp[] = [];
+  const ops: WriteOp[] = await siteDataOps(ctx);
 
   if (split) {
     ops.push(
@@ -341,9 +373,13 @@ export async function featureAddOps(
 ): Promise<WriteOp[]> {
   const { cwd, appDir, collections, cacheComponents } = ctx;
   const group = groupDir(cwd, appDir);
-  const segment = baseSegmentOf(collections[0]!);
-  const dataFromGroup = `./${segment}/_data`;
-  const dataFromRouteDir = `../${segment}/_data`;
+  const dataFromGroup = "./_voxx/data";
+  const dataFromRouteDir = "../_voxx/data";
+
+  const shared =
+    key === "sitemap" || key === "robots" || key === "llmsTxt"
+      ? await siteDataOps(ctx)
+      : [];
 
   switch (key) {
     case "rss": {
@@ -366,18 +402,21 @@ export async function featureAddOps(
     }
     case "sitemap":
       return [
+        ...shared,
         await op(cwd, join(group, "sitemap.ts"), "shared/sitemap.ts.tpl", {
           DATA_IMPORT: dataFromGroup,
         }),
       ];
     case "robots":
       return [
+        ...shared,
         await op(cwd, join(group, "robots.ts"), "shared/robots.ts.tpl", {
           DATA_IMPORT: dataFromGroup,
         }),
       ];
     case "llmsTxt":
       return [
+        ...shared,
         await op(
           cwd,
           join(group, "llms.txt", "route.ts"),

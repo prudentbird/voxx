@@ -1,5 +1,5 @@
 import { renderLlmsFull } from "@prudentbird/voxx-core";
-import { getConfig, getPosts } from "../docs/_data";
+import { getConfig, getPosts } from "../_voxx/data";
 
 export async function GET() {
   const [posts, config] = await Promise.all([getPosts(), getConfig()]);

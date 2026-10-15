@@ -10,6 +10,7 @@ import {
   absoluteUrl,
   buildNavTree,
   buildSeo,
+  scopeConfig,
   deriveExcerpt,
   findPost,
   getPost,
@@ -816,6 +817,29 @@ const samplePost: Post = {
 };
 
 describe("seo", () => {
+  it("uses a non-first collection's type and basePath through a scoped config", () => {
+    const docs = {
+      ...config.content,
+      name: "docs",
+      type: "docs" as const,
+      basePath: "/docs",
+    };
+    const multi = {
+      ...config,
+      collections: [{ ...config.content, name: "blog" }, docs],
+    };
+    const scoped = scopeConfig(multi, "docs");
+    const post = { ...samplePost, url: "/docs/hello" };
+    expect(buildSeo(post, scoped).jsonLd?.["@type"]).toBe("TechArticle");
+    expect(renderRss([post], scoped)).toContain(
+      'href="https://example.com/docs/rss.xml" rel="self"',
+    );
+    expect(renderLlmsTxt([post], scoped)).toContain("## Pages");
+    expect(multi.content.type).toBe("blog");
+    expect(scoped.collections).toBe(multi.collections);
+    expect(() => scopeConfig(multi, "missing")).toThrow(/Unknown collection/);
+  });
+
   it("builds canonical, open graph, and json-ld", () => {
     const seo = buildSeo(samplePost, config);
     expect(seo.canonical).toBe("https://example.com/blog/hello");
