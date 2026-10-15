@@ -75,9 +75,10 @@ collections nest naturally and don't have this issue.
 
 Files below an `assets/` directory, excluding Markdown sources (`.md` and
 `.mdx`, case-insensitive) and any path with a dot-file or dot-directory at
-any depth. Symlinks are allowed only when their resolved targets stay
-inside the collection directory and are also visible, non-Markdown files
-below an `assets/` directory. Markdown sources are never served as
+any depth. File and directory symlinks are allowed only when their resolved
+targets stay inside the collection directory. Every file reached through a
+symlink must also resolve to a visible, non-Markdown file below an `assets/`
+directory. Static builds skip directory links that create cycles. Markdown sources are never served as
 static files. Files outside `assets/` are not published as downloads by
 either target. If you previously relied on static builds copying files
 elsewhere in the content tree, move them into `assets/` and update their

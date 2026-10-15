@@ -94,6 +94,7 @@ describe("static content asset security", () => {
       "source.txt",
       "outside.txt",
       "external",
+      "cycle",
       "broken.txt",
     ]) {
       expect(await exists(join(dir, "dist/blog/assets", name))).toBe(false);
