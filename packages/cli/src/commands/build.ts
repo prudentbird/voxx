@@ -503,24 +503,28 @@ async function buildCollection(
     const hasRootPage = (posts: Post[]) =>
       posts.some((p) => p.path.length === 0);
     if (!hasRootPage(listed) && !hasRootPage(reachable)) {
+      const noindex =
+        config.content.drafts !== true && listed.some((post) => post.draft);
       await writePage(
         indexPath,
         shell({
           title: config.site.title,
           lang: config.site.locale,
-          head: `<meta name="description" content="${esc(config.site.description)}">`,
+          head: `<meta name="description" content="${esc(config.site.description)}">${noindex ? '\n    <meta name="robots" content="noindex, nofollow">' : ""}`,
           body: docsIndexBody(nav, config),
         }),
         outDir,
       );
     }
   } else {
+    const noindex =
+      config.content.drafts !== true && listed.some((post) => post.draft);
     await writePage(
       indexPath,
       shell({
         title: config.site.title,
         lang: config.site.locale,
-        head: `<meta name="description" content="${esc(config.site.description)}">`,
+        head: `<meta name="description" content="${esc(config.site.description)}">${noindex ? '\n    <meta name="robots" content="noindex, nofollow">' : ""}`,
         body: `${siteHeader(config)}\n${indexBody(listed, config)}`,
       }),
       outDir,

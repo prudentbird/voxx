@@ -206,6 +206,69 @@ describe("voxx build", () => {
     },
   );
 
+  it.each([
+    { drafts: false, args: ["--drafts"], containsDraft: true, noindex: true },
+    {
+      drafts: "unlisted",
+      args: ["--drafts"],
+      containsDraft: true,
+      noindex: true,
+    },
+    { drafts: true, args: [], containsDraft: true, noindex: false },
+    { drafts: "unlisted", args: [], containsDraft: false, noindex: false },
+    { drafts: false, args: [], containsDraft: false, noindex: false },
+  ])(
+    "sets blog index robots for drafts: $drafts and args: $args",
+    async ({ drafts, args, containsDraft, noindex }) => {
+      await writeConfig({
+        content: { type: "blog", dir: "content", basePath: "/blog", drafts },
+      });
+      await writePost("live.md", "title: Live\ndate: 2026-01-01", "Live.");
+      await writePost(
+        "wip.md",
+        "title: WIP\ndate: 2026-01-02\ndraft: true",
+        "WIP.",
+      );
+      await build(args);
+      const html = await readFile(join(dir, "dist/blog/index.html"), "utf8");
+      expect(html.includes("WIP")).toBe(containsDraft);
+      expect(
+        html.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(html).toContain("Live");
+    },
+  );
+
+  it.each([
+    { drafts: false, args: ["--drafts"], containsDraft: true, noindex: true },
+    { drafts: true, args: [], containsDraft: true, noindex: false },
+    { drafts: "unlisted", args: [], containsDraft: false, noindex: false },
+  ])(
+    "sets docs index robots for drafts: $drafts and args: $args",
+    async ({ drafts, args, containsDraft, noindex }) => {
+      await writeConfig({
+        content: { type: "docs", dir: "content", basePath: "/docs", drafts },
+      });
+      await writePost(
+        "guide.md",
+        "title: Guide\ndate: 2026-01-01",
+        "Guide.",
+      );
+      await writePost(
+        "wip.md",
+        "title: WIP\ndate: 2026-01-02\ndraft: true",
+        "WIP.",
+      );
+      await build(args);
+      const html = await readFile(join(dir, "dist/docs/index.html"), "utf8");
+      expect(html.includes(">WIP<")).toBe(containsDraft);
+      expect(
+        html.includes('<meta name="robots" content="noindex, nofollow">'),
+      ).toBe(noindex);
+      expect(html).toContain(">Guide<");
+    },
+  );
+
   it("builds every collection in a multi-collection config", async () => {
     await writeConfig({
       content: undefined,
