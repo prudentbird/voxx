@@ -24,8 +24,8 @@ describe("titleCase", () => {
 });
 
 describe("yamlValue", () => {
-  it("leaves plain scalars unquoted", () => {
-    expect(yamlValue("My First Post")).toBe("My First Post");
+  it("quotes plain strings", () => {
+    expect(yamlValue("My First Post")).toBe('"My First Post"');
   });
 
   it("quotes values containing a colon", () => {
