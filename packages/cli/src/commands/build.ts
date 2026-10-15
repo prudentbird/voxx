@@ -566,19 +566,28 @@ export async function buildSite(
     const previous = await stat(outDir).catch(() => undefined);
     const mode = previous ? (previous.mode & 0o7777) | 0o700 : 0o755;
     await chmod(staging, mode);
-    if (previous) await chmod(outDir, mode);
-    if (previous) {
-      backup = await mkdtemp(join(dirname(outDir), ".voxx-previous-"));
-      await rename(outDir, join(backup, "site"));
-      removeBackup = false;
-    }
+    // Widen the old output only when needed, and undo it if the swap fails.
+    const widened = previous && (previous.mode & 0o700) !== 0o700;
+    if (widened) await chmod(outDir, mode).catch(() => {});
     try {
-      await rename(staging, outDir);
-      removeBackup = true;
-    } catch (err) {
-      if (backup) {
-        await rename(join(backup, "site"), outDir);
+      if (previous) {
+        backup = await mkdtemp(join(dirname(outDir), ".voxx-previous-"));
+        await rename(outDir, join(backup, "site"));
+        removeBackup = false;
+      }
+      try {
+        await rename(staging, outDir);
         removeBackup = true;
+      } catch (err) {
+        if (backup) {
+          await rename(join(backup, "site"), outDir);
+          removeBackup = true;
+        }
+        throw err;
+      }
+    } catch (err) {
+      if (widened && (await exists(outDir))) {
+        await chmod(outDir, previous.mode & 0o7777).catch(() => {});
       }
       throw err;
     }
@@ -599,10 +608,18 @@ export async function buildSite(
   }
 }
 
-// Best-effort cleanup: a read-only previous output (copied mode) must not stop
+// Best-effort cleanup: read-only directories (copied modes) must not stop
 // removal or mask the build's own error.
 async function discard(dir: string): Promise<void> {
-  await chmod(dir, 0o700).catch(() => {});
+  const unlock = async (path: string): Promise<void> => {
+    await chmod(path, 0o700).catch(() => {});
+    const entries = await readdir(path, { withFileTypes: true }).catch(
+      () => [],
+    );
+    for (const e of entries)
+      if (e.isDirectory()) await unlock(join(path, e.name));
+  };
+  await unlock(dir);
   await rm(dir, { recursive: true, force: true }).catch(() => {});
 }
 
