@@ -75,6 +75,8 @@ describe("util", () => {
   it.each([
     ["Привет мир", "привет-мир"],
     ["你好 世界", "你好-世界"],
+    ["বাংলা ভাষা", "বাংলা-ভাষা"],
+    ["हिन्दी भाषा", "हिन्दी-भाषा"],
     ["مرحبا بالعالم ١٢٣", "مرحبا-بالعالم-١٢٣"],
     ["Γειά σου", "γεια-σου"],
     ["Hello_ WORLD...123 / test", "hello-world-123-test"],
@@ -242,7 +244,7 @@ describe("content", () => {
         join(dir, section, "index.md"),
         "---\ntitle: Index\n---\nIndex body.",
       );
-      for (const name of ["привет", "你好"]) {
+      for (const name of ["привет", "你好", "বাংলা", "हिन्दी"]) {
         await writeFile(
           join(dir, section, `${name}.md`),
           `---\ntitle: ${name}\n---\nUnicode body.`,
@@ -253,7 +255,7 @@ describe("content", () => {
         content: { ...config.content, type, dir, basePath: `/${type}` },
       };
       const { posts } = await listPosts({ config: cfg });
-      for (const name of ["привет", "你好"]) {
+      for (const name of ["привет", "你好", "বাংলা", "हिन्दी"]) {
         const path = [section, name].filter(Boolean);
         const expected = {
           slug: name,
